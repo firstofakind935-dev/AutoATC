@@ -8,12 +8,15 @@ and persona (e.g. "Springfield Tower", "Springfield Ground"). A bot:
 
 1. Joins its configured voice channel on startup.
 2. Listens for a pilot to key up, using Discord's per-user voice receive.
-3. Transcribes the transmission with OpenAI Whisper.
+3. Transcribes the transmission via a Whisper-compatible speech-to-text
+   endpoint (OpenAI's hosted API by default, or your own self-hosted server).
 4. Feeds the transcript (plus recent conversation history) to an LLM —
    Anthropic Claude or OpenAI GPT, configurable per bot — using a system
    prompt that keeps it in character as one ATC position with real
    phraseology.
-5. Synthesizes the reply with OpenAI TTS and plays it back into the channel.
+5. Synthesizes the reply via an OpenAI-speech-API-compatible endpoint
+   (again, OpenAI's hosted API by default, or self-hosted) and plays it
+   back into the channel.
 
 ## How the human handoff works today
 
@@ -65,11 +68,38 @@ cp .env.example .env
 Fill in:
 
 - `ANTHROPIC_API_KEY` — needed for any bot using `"provider": "anthropic"`.
-- `OPENAI_API_KEY` — always required (Whisper STT + TTS use it regardless
-  of which provider writes the response text), and needed for any bot
-  using `"provider": "openai"`.
+- `OPENAI_API_KEY` — needed for any bot using `"provider": "openai"`, and
+  also needed for STT/TTS unless you self-host those (see below).
 - One token variable per bot (name them whatever you like, e.g.
   `BOT_TOWER_TOKEN`), matching the `tokenEnv` field you use in step 4.
+
+#### Self-hosting speech-to-text / text-to-speech instead of OpenAI
+
+By default, transcription and speech synthesis call OpenAI's hosted APIs.
+If you'd rather run your own — e.g. deployed as a service on
+[Railway](https://railway.app) — set `STT_BASE_URL` and/or `TTS_BASE_URL`
+in `.env` to your server's public URL. The client code calls the same
+`/v1/audio/transcriptions` and `/v1/audio/speech` request shapes OpenAI
+uses, so this only works out of the box if your self-hosted server
+implements that same contract. Several self-hostable projects are built
+specifically to be drop-in compatible with those endpoints (for example
+`speaches` for STT, and `openedai-speech` for TTS) — deploy one as a
+Railway service from its GitHub repo, grab the public URL Railway gives
+it, and point `STT_BASE_URL`/`TTS_BASE_URL` at it. If your server expects
+a different model name than OpenAI's `whisper-1`/`tts-1`, set
+`STT_MODEL`/`TTS_MODEL`; if it needs its own API key, set
+`STT_API_KEY`/`TTS_API_KEY` (otherwise no `Authorization` header is sent).
+`persona.ttsVoice` in `config/bots.json` is passed straight through as the
+`voice` parameter, so use whatever voice name your TTS server expects.
+
+If a self-hosted project you want to use does **not** implement this exact
+API shape (e.g. the raw `whisper.cpp` `server` example has a different
+response format), `src/speech/providers/openaiWhisper.js` and
+`openaiTts.js` are the two files to adapt — swap the request/response
+parsing for that server's actual contract.
+
+With both `STT_BASE_URL` and `TTS_BASE_URL` set (and no bot using
+`"provider": "openai"`), `OPENAI_API_KEY` isn't needed at all.
 
 ### 4. Configure the bot fleet
 
@@ -122,10 +152,12 @@ All configured bots start concurrently. Logs are prefixed with each bot's
   sandbox has no way to create a real bot token or join an actual voice
   channel, so the code has been reviewed and syntax/dependency-checked but
   not run end-to-end. Test it against a real server before relying on it.
-- Costs money: every pilot transmission costs one Whisper call, one LLM
-  call, and one TTS call.
-- STT and TTS are hard-wired to OpenAI regardless of the `ai.provider`
-  setting (Anthropic doesn't currently offer either).
+- Costs money unless you self-host STT/TTS: every pilot transmission costs
+  one transcription call, one LLM call, and one speech synthesis call.
+- STT/TTS default to OpenAI's hosted APIs; self-hosting requires a server
+  that implements the same request/response contract (see above) — an
+  incompatible server needs a small adapter change in
+  `src/speech/providers/`.
 - The human-controller handoff is a stub (see above) plus a manual chat
   command — there's no automatic detection of a human joining as ATC yet.
 - One voice utterance is processed at a time per bot; if two pilots key up

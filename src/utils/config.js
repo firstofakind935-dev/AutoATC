@@ -28,7 +28,30 @@ function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
     throw new Error(`${configPath} must contain a non-empty JSON array of bot configs.`);
   }
 
+  validateSpeechConfig();
+
   return parsed.map((entry, index) => validateEntry(entry, index));
+}
+
+function validateSpeechConfig() {
+  // STT/TTS default to OpenAI's hosted API and need OPENAI_API_KEY (or the
+  // more specific STT_API_KEY/TTS_API_KEY) unless a self-hosted server is
+  // configured via STT_BASE_URL/TTS_BASE_URL, which may not require a key.
+  const usingDefaultStt = !process.env.STT_BASE_URL;
+  const usingDefaultTts = !process.env.TTS_BASE_URL;
+
+  if (usingDefaultStt && !process.env.STT_API_KEY && !process.env.OPENAI_API_KEY) {
+    throw new Error(
+      `No STT_BASE_URL is set, so speech-to-text will use OpenAI's hosted Whisper API, ` +
+        `which requires OPENAI_API_KEY (or STT_API_KEY) to be set.`
+    );
+  }
+  if (usingDefaultTts && !process.env.TTS_API_KEY && !process.env.OPENAI_API_KEY) {
+    throw new Error(
+      `No TTS_BASE_URL is set, so text-to-speech will use OpenAI's hosted TTS API, ` +
+        `which requires OPENAI_API_KEY (or TTS_API_KEY) to be set.`
+    );
+  }
 }
 
 function validateEntry(entry, index) {
@@ -65,15 +88,6 @@ function validateEntry(entry, index) {
   }
   if (ai.provider === 'openai' && !process.env.OPENAI_API_KEY) {
     throw new Error(`${where} uses ai.provider "openai" but OPENAI_API_KEY is not set.`);
-  }
-
-  // Speech-to-text and text-to-speech always go through OpenAI today,
-  // regardless of which provider writes the actual ATC response text.
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error(
-      `OPENAI_API_KEY is required for all bots because speech-to-text and ` +
-        `text-to-speech both call OpenAI, even when ai.provider is "anthropic".`
-    );
   }
 
   return {
