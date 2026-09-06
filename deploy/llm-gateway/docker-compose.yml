@@ -1,0 +1,24 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80" # required for the ACME HTTP challenge (Let's Encrypt)
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - LLM_PUBLIC_HOSTNAME=${LLM_PUBLIC_HOSTNAME}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_UPSTREAM=${LLM_UPSTREAM:-host.docker.internal:11434}
+    extra_hosts:
+      # Lets the container reach a model server (e.g. Ollama) running
+      # directly on this host, outside of Docker. Not needed if
+      # LLM_UPSTREAM instead points at another container or another host.
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  caddy_data:
+  caddy_config:

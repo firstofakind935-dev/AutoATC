@@ -122,6 +122,42 @@ it that requires an API key/token if it's reachable from the public
 internet — an unauthenticated local LLM server exposed publicly is an open
 door for anyone who finds the URL to burn your compute.
 
+**If you're using DDNS on your own server instead of a tunnel service**,
+DDNS alone isn't enough — you also need:
+
+1. **Port forwarding** on your router (80 and 443) to that machine.
+2. **A real public IP** — some ISPs put home connections behind carrier-grade
+   NAT, which silently breaks port forwarding. Verify your router's WAN IP
+   matches what an external site reports from a device on that network.
+3. **HTTPS + an API key check in front of the model server.**
+
+`deploy/llm-gateway/` has a ready-to-use reverse proxy for exactly this:
+a [Caddy](https://caddyserver.com) config that gets you free automatic
+HTTPS via your DDNS hostname and rejects any request that doesn't carry
+the right `Authorization: Bearer <token>` header, before it ever reaches
+your model server. To use it, on the machine running your LLM server:
+
+```
+cd deploy/llm-gateway
+cp .env.example .env   # fill in LLM_PUBLIC_HOSTNAME, a generated LLM_API_KEY, and LLM_UPSTREAM
+docker compose up -d
+```
+
+Then set, in the bot fleet's own `.env`:
+
+```
+OPENAI_BASE_URL=https://yourname.ddns.net
+OPENAI_API_KEY=<the same LLM_API_KEY value>
+```
+
+Verify it's actually reachable from outside your network (not just your
+own LAN, which can give a false positive) before wiring it into the bot:
+
+```
+curl -H "Authorization: Bearer <LLM_API_KEY>" https://yourname.ddns.net/v1/models   # expect a real response
+curl https://yourname.ddns.net/v1/models                                            # expect 401
+```
+
 ### 4. Configure the bot fleet
 
 ```

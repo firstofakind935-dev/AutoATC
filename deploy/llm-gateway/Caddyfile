@@ -1,0 +1,14 @@
+{$LLM_PUBLIC_HOSTNAME} {
+	# Only the OpenAI-compatible chat endpoint is exposed. Everything else
+	# on the upstream (e.g. Ollama's own /api/* model-management routes)
+	# stays unreachable from outside this machine.
+	route /v1/* {
+		@authorized {
+			header Authorization "Bearer {$LLM_API_KEY}"
+		}
+		reverse_proxy @authorized {$LLM_UPSTREAM}
+		respond 401
+	}
+
+	respond 404
+}
