@@ -86,8 +86,12 @@ function validateEntry(entry, index) {
   if (ai.provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
     throw new Error(`${where} uses ai.provider "anthropic" but ANTHROPIC_API_KEY is not set.`);
   }
-  if (ai.provider === 'openai' && !process.env.OPENAI_API_KEY) {
-    throw new Error(`${where} uses ai.provider "openai" but OPENAI_API_KEY is not set.`);
+  if (ai.provider === 'openai' && !process.env.OPENAI_BASE_URL && !process.env.OPENAI_API_KEY) {
+    throw new Error(
+      `${where} uses ai.provider "openai" with no OPENAI_BASE_URL set, so it will call ` +
+        `OpenAI's hosted API, which requires OPENAI_API_KEY to be set. If you meant to use ` +
+        `a self-hosted LLM server, set OPENAI_BASE_URL to its URL.`
+    );
   }
 
   return {

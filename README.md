@@ -101,6 +101,27 @@ parsing for that server's actual contract.
 With both `STT_BASE_URL` and `TTS_BASE_URL` set (and no bot using
 `"provider": "openai"`), `OPENAI_API_KEY` isn't needed at all.
 
+#### Using a self-hosted / local LLM for the brain
+
+Set `"provider": "openai"` on a bot and point `OPENAI_BASE_URL` (in `.env`)
+at a local or self-hosted LLM server instead of OpenAI's hosted API. This
+works with Ollama, llama.cpp's `server`, vLLM, text-generation-webui, or
+anything else that implements an OpenAI-compatible `/v1/chat/completions`
+endpoint — no code changes needed. `OPENAI_API_KEY` becomes optional in
+that case (only send one if your server requires it).
+
+**Network reachability matters here.** If STT/TTS/the bots run on Railway
+but the LLM runs on your own machine or a home server, Railway's servers
+need to actually be able to reach it over the internet — a server sitting
+behind home NAT with no port forwarding is invisible to Railway. Options:
+expose it via a tunnel (Tailscale Funnel, Cloudflare Tunnel, ngrok) and
+point `OPENAI_BASE_URL` at that public tunnel URL, or run the LLM on a
+machine with a real public IP (a VPS, or a Railway service itself if it's
+small enough to run without a GPU). Either way, put something in front of
+it that requires an API key/token if it's reachable from the public
+internet — an unauthenticated local LLM server exposed publicly is an open
+door for anyone who finds the URL to burn your compute.
+
 ### 4. Configure the bot fleet
 
 ```

@@ -14,7 +14,7 @@ const { HumanHandoff } = require('./HumanHandoff');
 const { pcmToWav, bufferToStream } = require('../utils/audio');
 const { transcribeAudio } = require('../speech/stt');
 const { synthesizeSpeech } = require('../speech/tts');
-const { generateAtcReply, apiKeyForProvider, ConversationHistory } = require('../ai/llmProvider');
+const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
 const { makeLogger } = require('../utils/logger');
 
@@ -139,6 +139,7 @@ class AtcBot {
       reply = await generateAtcReply({
         provider: this.config.ai.provider,
         apiKey: apiKeyForProvider(this.config.ai.provider),
+        baseUrl: baseUrlForProvider(this.config.ai.provider),
         model: this.config.ai.model,
         systemPrompt: this.systemPrompt,
         history: this.history.toArray(),

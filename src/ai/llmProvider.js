@@ -38,12 +38,12 @@ class ConversationHistory {
   }
 }
 
-async function generateAtcReply({ provider, apiKey, model, systemPrompt, history }) {
+async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt, history }) {
   const impl = PROVIDERS[provider];
   if (!impl) {
     throw new Error(`Unknown AI provider "${provider}". Expected one of: ${Object.keys(PROVIDERS).join(', ')}`);
   }
-  return impl.generateReply({ apiKey, model, systemPrompt, history });
+  return impl.generateReply({ apiKey, baseUrl, model, systemPrompt, history });
 }
 
 function apiKeyForProvider(provider) {
@@ -52,4 +52,15 @@ function apiKeyForProvider(provider) {
   throw new Error(`Unknown AI provider "${provider}"`);
 }
 
-module.exports = { generateAtcReply, apiKeyForProvider, ConversationHistory };
+/**
+ * Only meaningful for the "openai" provider today - lets it target a
+ * self-hosted, OpenAI-API-compatible LLM server (e.g. Ollama, llama.cpp)
+ * instead of OpenAI's hosted API. Anthropic's Claude API isn't reachable
+ * through a self-hosted drop-in the same way, so this is undefined there.
+ */
+function baseUrlForProvider(provider) {
+  if (provider === 'openai') return process.env.OPENAI_BASE_URL || undefined;
+  return undefined;
+}
+
+module.exports = { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory };
