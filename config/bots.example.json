@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Springfield Tower",
+    "tokenEnv": "BOT_TOWER_TOKEN",
+    "guildId": "REPLACE_WITH_GUILD_ID",
+    "voiceChannelId": "REPLACE_WITH_TOWER_VOICE_CHANNEL_ID",
+    "logChannelId": "REPLACE_WITH_LOG_TEXT_CHANNEL_ID",
+    "commandPrefix": "!tower",
+    "persona": {
+      "position": "Tower",
+      "callsign": "Springfield Tower",
+      "airport": "KSGF",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-5"
+    }
+  },
+  {
+    "name": "Springfield Ground",
+    "tokenEnv": "BOT_GROUND_TOKEN",
+    "guildId": "REPLACE_WITH_GUILD_ID",
+    "voiceChannelId": "REPLACE_WITH_GROUND_VOICE_CHANNEL_ID",
+    "logChannelId": "REPLACE_WITH_LOG_TEXT_CHANNEL_ID",
+    "commandPrefix": "!ground",
+    "persona": {
+      "position": "Ground",
+      "callsign": "Springfield Ground",
+      "airport": "KSGF",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "openai",
+      "model": "gpt-4o-mini"
+    }
+  }
+]

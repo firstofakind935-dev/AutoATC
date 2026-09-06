@@ -1,0 +1,226 @@
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const {
+  joinVoiceChannel,
+  createAudioPlayer,
+  createAudioResource,
+  entersState,
+  StreamType,
+  VoiceConnectionStatus,
+  AudioPlayerStatus,
+} = require('@discordjs/voice');
+
+const { VoiceCapture } = require('./VoiceCapture');
+const { HumanHandoff } = require('./HumanHandoff');
+const { pcmToWav, bufferToStream } = require('../utils/audio');
+const { transcribeAudio } = require('../speech/stt');
+const { synthesizeSpeech } = require('../speech/tts');
+const { generateAtcReply, apiKeyForProvider, ConversationHistory } = require('../ai/llmProvider');
+const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
+const { makeLogger } = require('../utils/logger');
+
+const MIN_TRANSCRIPT_LENGTH = 2;
+
+/**
+ * One Discord bot identity acting as a single ATC position (e.g. one
+ * airport's Tower or Ground). A fleet of these, each with its own token
+ * and config entry, runs concurrently from src/index.js.
+ */
+class AtcBot {
+  constructor(config) {
+    this.config = config;
+    this.logger = makeLogger(config.name);
+    this.handoff = new HumanHandoff();
+    this.history = new ConversationHistory();
+    this.systemPrompt = buildAtcSystemPrompt(config.persona);
+    this.player = createAudioPlayer();
+    this.processingQueue = Promise.resolve();
+    this.connection = null;
+    this.logChannel = null;
+
+    this.client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
+    });
+
+    this.client.on('ready', () => this._onReady().catch((err) => this.logger.error('Startup failed:', err)));
+    this.client.on('messageCreate', (message) => this._onMessage(message));
+    this.client.on('error', (err) => this.logger.error('Discord client error:', err));
+    this.player.on('error', (err) => this.logger.error('Audio player error:', err));
+  }
+
+  async start() {
+    await this.client.login(this.config.token);
+  }
+
+  async _onReady() {
+    this.logger.info(`Logged in as ${this.client.user.tag}`);
+
+    const guild = await this.client.guilds.fetch(this.config.guildId);
+    await guild.members.fetch(); // populate cache so we can tell humans from bots
+
+    if (this.config.logChannelId) {
+      this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
+    }
+
+    this.connection = joinVoiceChannel({
+      channelId: this.config.voiceChannelId,
+      guildId: this.config.guildId,
+      adapterCreator: guild.voiceAdapterCreator,
+      selfDeaf: false,
+      selfMute: false,
+    });
+
+    this._watchConnectionHealth();
+
+    await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
+    this.connection.subscribe(this.player);
+    this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
+
+    const capture = new VoiceCapture(this.connection, {
+      logger: this.logger,
+      getUserIsBot: (userId) => guild.members.cache.get(userId)?.user.bot ?? false,
+    });
+    capture.start((userId, pcmBuffer) => {
+      this._enqueue(() => this._handleUtterance(guild, userId, pcmBuffer));
+    });
+
+    await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
+  }
+
+  _watchConnectionHealth() {
+    this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
+      try {
+        await Promise.race([
+          entersState(this.connection, VoiceConnectionStatus.Signalling, 5_000),
+          entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000),
+        ]);
+      } catch {
+        this.logger.warn('Voice connection lost, destroying connection.');
+        this.connection.destroy();
+      }
+    });
+  }
+
+  _enqueue(task) {
+    this.processingQueue = this.processingQueue.then(task).catch((err) => {
+      this.logger.error('Error while processing utterance:', err);
+    });
+    return this.processingQueue;
+  }
+
+  async _handleUtterance(guild, userId, pcmBuffer) {
+    if (await this.handoff.shouldStayQuiet(this.config.guildId, this.config.voiceChannelId)) {
+      return;
+    }
+
+    let transcript;
+    try {
+      transcript = await transcribeAudio(pcmToWav(pcmBuffer));
+    } catch (err) {
+      this.logger.error('Transcription failed:', err.message);
+      return;
+    }
+
+    if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return;
+
+    const speaker = guild.members.cache.get(userId);
+    const speakerName = speaker ? speaker.displayName : userId;
+    this.logger.info(`${speakerName}: ${transcript}`);
+    await this._log(`🎙️ **${speakerName}:** ${transcript}`);
+
+    this.history.addPilotTransmission(transcript);
+
+    let reply;
+    try {
+      reply = await generateAtcReply({
+        provider: this.config.ai.provider,
+        apiKey: apiKeyForProvider(this.config.ai.provider),
+        model: this.config.ai.model,
+        systemPrompt: this.systemPrompt,
+        history: this.history.toArray(),
+      });
+    } catch (err) {
+      this.logger.error('LLM generation failed:', err.message);
+      return;
+    }
+
+    if (!reply) return;
+    this.history.addAtcReply(reply);
+    this.logger.info(`${this.config.persona.callsign}: ${reply}`);
+    await this._log(`📻 **${this.config.persona.callsign}:** ${reply}`);
+
+    await this._speak(reply);
+  }
+
+  async _speak(text) {
+    let mp3Buffer;
+    try {
+      mp3Buffer = await synthesizeSpeech(text, { voice: this.config.persona.ttsVoice });
+    } catch (err) {
+      this.logger.error('Speech synthesis failed:', err.message);
+      return;
+    }
+
+    const resource = createAudioResource(bufferToStream(mp3Buffer), {
+      inputType: StreamType.Arbitrary,
+    });
+
+    await new Promise((resolve) => {
+      const onIdle = () => {
+        this.player.off(AudioPlayerStatus.Idle, onIdle);
+        this.player.off('error', onError);
+        resolve();
+      };
+      const onError = (err) => {
+        this.logger.error('Playback error:', err.message);
+        onIdle();
+      };
+      this.player.once(AudioPlayerStatus.Idle, onIdle);
+      this.player.once('error', onError);
+      this.player.play(resource);
+    });
+  }
+
+  async _announce(text) {
+    await this._log(`ℹ️ ${text}`);
+  }
+
+  async _log(text) {
+    if (!this.logChannel) return;
+    try {
+      await this.logChannel.send(text);
+    } catch (err) {
+      this.logger.warn('Failed to write to log channel:', err.message);
+    }
+  }
+
+  async _onMessage(message) {
+    if (message.author.bot || !this.config.commandPrefix) return;
+    if (!message.content.startsWith(this.config.commandPrefix)) return;
+
+    const args = message.content.trim().split(/\s+/).slice(1);
+    const subcommand = args[0];
+
+    const canControl = message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild);
+    if (!canControl) {
+      await message.reply('You need the "Manage Server" permission to control this bot.').catch(() => {});
+      return;
+    }
+
+    if (subcommand === 'pause') {
+      this.handoff.pause();
+      await message.reply(`${this.config.persona.callsign}: AI ATC paused. Human controller has the position.`).catch(() => {});
+    } else if (subcommand === 'resume') {
+      this.handoff.resume();
+      await message.reply(`${this.config.persona.callsign}: AI ATC resumed.`).catch(() => {});
+    } else {
+      await message.reply(`Usage: \`${this.config.commandPrefix} pause\` or \`${this.config.commandPrefix} resume\``).catch(() => {});
+    }
+  }
+}
+
+module.exports = { AtcBot };
