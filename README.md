@@ -269,6 +269,53 @@ npm start
 All configured bots start concurrently. Logs are prefixed with each bot's
 `name`.
 
+### 6. Optional: deploy the monitoring dashboard
+
+`monitor/` is a small, separate service — a live web dashboard showing
+every bot's logs in one place, with an online/offline status card per bot.
+Worth setting up once you're running more than a couple of bots at once
+(e.g. the 40-airport fleet), since digging through 40 separate Discord log
+channels or Railway log tabs to find one bot's error isn't practical.
+
+It's a standalone app, deployed as its own Railway service, independent of
+the bot fleet:
+
+```
+cd monitor
+npm install
+cp .env.example .env   # fill in INGEST_API_KEY and DASHBOARD_USERNAME/PASSWORD
+npm start              # runs locally on :3000 by default
+```
+
+On Railway: **Deploy from GitHub repo**, set the service's root directory
+to `monitor/`, and set `INGEST_API_KEY`, `DASHBOARD_USERNAME`, and
+`DASHBOARD_PASSWORD` as environment variables (`PORT` is provided by
+Railway automatically). Generate a public domain for it, same as any other
+Railway service.
+
+Both `INGEST_API_KEY` and the dashboard credentials are technically
+optional — omit them and the service just logs a startup warning and runs
+open — but skipping them means anyone who finds the URL can either post
+fake bot logs or read live pilot transcripts, so set them.
+
+Then, in the **bot fleet's** `.env` (not the monitor's):
+
+```
+MONITOR_URL=https://your-monitor-service.up.railway.app
+MONITOR_API_KEY=<same value as the monitor's INGEST_API_KEY>
+```
+
+Every bot automatically starts pushing its logs there — no other config
+needed, since `src/utils/logger.js` (used everywhere in this codebase)
+forwards to the monitor whenever `MONITOR_URL` is set. A monitor outage
+never affects the bots themselves: the forwarding call is fire-and-forget
+and swallows its own errors.
+
+Each bot also sends a quiet "heartbeat" log line every 60 seconds after
+it's ready, so the dashboard's online/offline status stays accurate even
+during long quiet stretches with no radio traffic — a bot is shown
+offline once nothing's been heard from it for 90 seconds.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this

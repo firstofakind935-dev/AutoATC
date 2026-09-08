@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutoATC Monitor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>AutoATC Monitor</h1>
+    <div id="connection-status" class="conn-status conn-disconnected">connecting…</div>
+  </header>
+
+  <section id="bot-status-panel" aria-label="Bot status">
+    <p class="empty-state" id="status-empty">No bots have reported in yet.</p>
+  </section>
+
+  <section id="log-panel" aria-label="Live logs">
+    <div class="log-controls">
+      <input type="text" id="search-input" placeholder="Filter by text…" autocomplete="off" />
+      <select id="bot-filter">
+        <option value="">All bots</option>
+      </select>
+      <label class="autoscroll-toggle">
+        <input type="checkbox" id="autoscroll-checkbox" checked />
+        Auto-scroll
+      </label>
+      <span id="log-count" class="log-count"></span>
+    </div>
+    <div id="log-feed"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

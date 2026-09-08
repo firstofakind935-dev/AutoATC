@@ -21,6 +21,7 @@ const { getChartContext } = require('../charts/store');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
+const HEARTBEAT_INTERVAL_MS = 60_000; // keeps the monitor dashboard's "online" status fresh during quiet periods
 
 /**
  * One Discord bot identity acting as a single ATC position (e.g. one
@@ -92,6 +93,10 @@ class AtcBot {
     });
 
     await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
+
+    this.heartbeatInterval = setInterval(() => {
+      this.logger.info('heartbeat');
+    }, HEARTBEAT_INTERVAL_MS);
   }
 
   _watchConnectionHealth() {

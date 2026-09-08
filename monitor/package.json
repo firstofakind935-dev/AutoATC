@@ -1,0 +1,19 @@
+{
+  "name": "autoatc-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live log/status dashboard for the AutoATC bot fleet, deployed as its own Railway service.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "ws": "^8.21.3"
+  }
+}
