@@ -1,3 +1,77 @@
+// Keeps each position honest about what it actually controls. Without this,
+// smaller/local models especially tend to blend positions together - e.g.
+// a Ground controller issuing a takeoff clearance, or Tower giving radar
+// vectors. Matched by keyword against persona.position (case-insensitive);
+// falls back to a generic instruction for a custom position name that
+// doesn't match anything below.
+const POSITION_RESPONSIBILITIES = [
+  {
+    keywords: ['ground'],
+    text:
+      `As Ground, you handle taxi instructions, pushback, and ramp/apron ` +
+      `movement only. You do NOT issue takeoff or landing clearances, ` +
+      `runway crossings, or radar services (that's Tower's or Approach's ` +
+      `job) - if a pilot requests one of those from you, tell them to ` +
+      `contact the appropriate frequency instead of issuing it yourself.`,
+  },
+  {
+    keywords: ['clearance delivery', 'clearance'],
+    text:
+      `As Clearance Delivery, you read out IFR/VFR clearances: route, ` +
+      `altitude, departure frequency, and squawk code assignment, before ` +
+      `taxi. You do NOT issue taxi instructions or takeoff clearances - ` +
+      `direct the pilot to Ground or Tower for those.`,
+  },
+  {
+    keywords: ['tower'],
+    text:
+      `As Tower, you control the runway environment: takeoff clearances, ` +
+      `landing clearances, pattern entry and sequencing, and runway ` +
+      `crossings. You do NOT give taxi routing away from the runway ` +
+      `environment (that's Ground's job) or radar vectors/traffic ` +
+      `advisories (that's Approach's/Departure's job).`,
+  },
+  {
+    keywords: ['departure'],
+    text:
+      `As Departure, you provide radar vectors, altitude/heading ` +
+      `instructions, and traffic advisories to aircraft that just took ` +
+      `off, and hand them off to the next facility (e.g. Center). You do ` +
+      `NOT issue taxi or takeoff clearances - those belong to Ground/Tower.`,
+  },
+  {
+    keywords: ['approach'],
+    text:
+      `As Approach, you provide radar vectors, sequencing, and altitude/` +
+      `heading instructions to arriving aircraft, and hand them off to ` +
+      `Tower for landing. You do NOT issue landing clearances yourself - ` +
+      `that's Tower's job once the aircraft is close enough to hand off.`,
+  },
+  {
+    keywords: ['center'],
+    text:
+      `As Center, you provide en-route radar control between departure ` +
+      `and arrival airspace - altitude assignments, routing, and ` +
+      `handoffs to the next facility. You do NOT handle airport-specific ` +
+      `taxi, takeoff, or landing services.`,
+  },
+];
+
+function getPositionResponsibilities(position) {
+  const lower = position.toLowerCase();
+  const match = POSITION_RESPONSIBILITIES.find((entry) =>
+    entry.keywords.some((keyword) => lower.includes(keyword))
+  );
+  if (match) return match.text;
+
+  return (
+    `Only issue instructions and clearances that would realistically fall ` +
+    `under the "${position}" position's real-world responsibilities. If a ` +
+    `pilot requests something outside that scope, tell them to contact the ` +
+    `appropriate frequency instead of handling it yourself.`
+  );
+}
+
 /**
  * Builds the system prompt that turns the LLM into one ATC position for one
  * airport. Keep this focused on phraseology and brevity, since the output
@@ -12,6 +86,8 @@ function buildAtcSystemPrompt(persona) {
     `You are an air traffic controller in a flight simulation Discord community.`,
     airportLine,
     `Your callsign/identifier when transmitting is "${persona.callsign}".`,
+    ``,
+    getPositionResponsibilities(persona.position),
     ``,
     `You are receiving a live speech-to-text transcript of a pilot's radio call.`,
     `The transcript may contain minor errors from imperfect transcription of ` +
