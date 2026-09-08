@@ -127,6 +127,12 @@ function buildAtcSystemPrompt(persona) {
       `plan's route, altitude, and aircraft type where relevant to your reply. ` +
       `If no flight plan is given, or nothing matches, respond using only the ` +
       `transmission itself - don't invent flight plan details.`,
+    ``,
+    `Some transmissions will also come with a list of known oceanic tracks ` +
+      `(named routes between island entry/exit points, e.g. "Track A"). If a ` +
+      `pilot requests an oceanic clearance or references a track by letter, use ` +
+      `the real entry/exit points from that list - never invent a track letter ` +
+      `or a point name that isn't in it.`,
   ].join('\n');
 }
 

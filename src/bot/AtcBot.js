@@ -18,6 +18,7 @@ const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHis
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
 const { getFlightPlanContext } = require('../flightplans/store');
 const { getChartContext } = require('../charts/store');
+const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -36,6 +37,7 @@ class AtcBot {
     this.history = new ConversationHistory();
     this.systemPrompt = buildAtcSystemPrompt(config.persona);
     this.chartContext = getChartContext(config.persona.airport); // static per airport, fetched once
+    this.oceanicTracksContext = getOceanicTracksContext(); // static fleet-wide, fetched once
     this.player = createAudioPlayer();
     this.processingQueue = Promise.resolve();
     this.connection = null;
@@ -143,7 +145,9 @@ class AtcBot {
     this.history.addPilotTransmission(transcript);
 
     const flightPlanContext = await getFlightPlanContext();
-    const turnContext = [this.chartContext, flightPlanContext].filter(Boolean).join('\n\n') || undefined;
+    const turnContext = [this.chartContext, this.oceanicTracksContext, flightPlanContext]
+      .filter(Boolean)
+      .join('\n\n') || undefined;
 
     let reply;
     try {

@@ -224,6 +224,21 @@ contributors at https://github.com/Treelon/ptfs-charts. If you
 redistribute `data/charts/` or anything derived from it outside this
 project, carry that attribution and license forward.
 
+#### Oceanic tracks
+
+`data/oceanic-tracks.json` holds the named oceanic routes connecting
+islands (e.g. `Track A: SAUTH_N <-> ORENJI_S`), sourced from the
+server's own ATC365 Oceanic Tracks Chart. Unlike the per-airport chart
+data above, this is fleet-wide — every bot includes the full track list
+in context regardless of position, so any bot can reference a real track
+letter and its actual entry/exit points if a pilot requests an oceanic
+clearance, instead of inventing one.
+
+To update it (a track added, a point renamed, etc.), just edit
+`data/oceanic-tracks.json` directly — it's a plain array of
+`{ "track", "point1", "point2" }` objects, no extraction script needed
+since there's no image/chart to parse this data out of.
+
 ### 4. Configure the bot fleet
 
 ```

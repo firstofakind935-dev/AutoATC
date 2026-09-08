@@ -1,0 +1,23 @@
+[
+  { "track": "A", "point1": "SAUTH_N", "point2": "ORENJI_S" },
+  { "track": "B", "point1": "SAUTH_N", "point2": "GRIND_S" },
+  { "track": "C", "point1": "SAUTH_N", "point2": "GREAT_W" },
+  { "track": "D", "point1": "SAUTH_N", "point2": "CYPRUS_S" },
+  { "track": "E", "point1": "GRIND_N", "point2": "ORENJI_S" },
+  { "track": "F", "point1": "GREAT_N", "point2": "ORENJI_S" },
+  { "track": "G", "point1": "BARTH_NW", "point2": "ORENJI_S" },
+  { "track": "H", "point1": "GREAT_W", "point2": "BARTH_S" },
+  { "track": "I", "point1": "GREAT_N", "point2": "BARTH_S" },
+  { "track": "J", "point1": "GREAT_N", "point2": "SKOP_S" },
+  { "track": "K", "point1": "GREAT_N", "point2": "CYPRUS_N" },
+  { "track": "L", "point1": "PERTH_W", "point2": "ORENJI_E" },
+  { "track": "M", "point1": "IZOL_W", "point2": "ORENJI_E" },
+  { "track": "N", "point1": "SKOP_N", "point2": "ORENJI_E" },
+  { "track": "O", "point1": "CYPRUS_N", "point2": "ORENJI_E" },
+  { "track": "P", "point1": "CYPRUS_N", "point2": "SKOP_S" },
+  { "track": "Q", "point1": "CYPRUS_N", "point2": "IZOL_W" },
+  { "track": "R", "point1": "SKOP_N", "point2": "IZOL_W" },
+  { "track": "S", "point1": "IZOL_W", "point2": "PERTH_S" },
+  { "track": "T", "point1": "BARTH_NW", "point2": "PERTH_S" },
+  { "track": "U", "point1": "GREAT_W", "point2": "GRIND_S" }
+]
