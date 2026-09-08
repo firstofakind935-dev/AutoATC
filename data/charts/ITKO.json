@@ -1,0 +1,147 @@
+{
+  "icao": "ITKO",
+  "iata": "HND",
+  "name": "Tokyo Intl.",
+  "location": "Tokyo, Orenji",
+  "elevationFt": "1'",
+  "coordinates": "N41 59.2  W000 00.2",
+  "runways": [
+    {
+      "designator": "2",
+      "heading": "020°",
+      "length": null
+    },
+    {
+      "designator": "20",
+      "heading": "200°",
+      "length": null
+    },
+    {
+      "designator": "31",
+      "heading": "307°",
+      "length": {
+        "feet": "4850'",
+        "meters": "1478m"
+      }
+    },
+    {
+      "designator": "13",
+      "heading": "127°",
+      "length": {
+        "feet": "3754'",
+        "meters": "1144m"
+      }
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "128.800"
+    },
+    {
+      "facility": "TOKYO Delivery",
+      "frequency": "121.825"
+    },
+    {
+      "facility": "TOYKO Ground",
+      "frequency": "118.225"
+    },
+    {
+      "facility": "TOKYO Tower",
+      "frequency": "118.800"
+    },
+    {
+      "facility": "TOKYO Departure",
+      "frequency": "119.100"
+    }
+  ],
+  "otherLabels": [
+    "N",
+    "APRON",
+    "CARGO",
+    "AREA",
+    "Ground Crew",
+    "Station",
+    "Terminal",
+    "Cargo",
+    "Fuel",
+    "Control",
+    "Tower",
+    "1",
+    "A",
+    "A13",
+    "A12",
+    "A11",
+    "A10",
+    "B",
+    "B13",
+    "B12S",
+    "B11N",
+    "B11",
+    "F",
+    "FS",
+    "C",
+    "D",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "C1",
+    "C2",
+    "E",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "2",
+    "3",
+    "4",
+    "Heli 1",
+    "Bridges",
+    "Heli 2",
+    "Heli 3",
+    "Stopway",
+    "Elev 36'",
+    "Elev 1'",
+    "A9",
+    "A8",
+    "A7N",
+    "A7",
+    "A6",
+    "A5",
+    "A3",
+    "A2",
+    "A1",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "B12",
+    "B10",
+    "B8",
+    "B7N",
+    "B7",
+    "B6",
+    "B6S",
+    "B5",
+    "B4",
+    "B4N",
+    "B3",
+    "B2",
+    "B1",
+    "A14",
+    "C3"
+  ],
+  "sourceFile": "Orenji/Tokyo/ITKO Ground Chart.svg"
+}

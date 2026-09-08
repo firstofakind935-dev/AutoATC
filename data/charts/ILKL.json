@@ -1,0 +1,42 @@
+{
+  "icao": "ILKL",
+  "iata": "LUA",
+  "name": "Lukla Airport",
+  "location": "Lukla, Perth",
+  "elevationFt": "954'",
+  "coordinates": "N41 54.4  E000 09.2",
+  "runways": [
+    {
+      "designator": "9",
+      "heading": "089°",
+      "length": {
+        "feet": "1303'",
+        "meters": "397m"
+      }
+    },
+    {
+      "designator": "27",
+      "heading": "269°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "LUKLA Information",
+      "frequency": "120.150"
+    }
+  ],
+  "otherLabels": [
+    "MAIN",
+    "APRON",
+    "HELI",
+    "A",
+    "B",
+    "Terminal",
+    "Fuel",
+    "Control",
+    "Tower",
+    "N"
+  ],
+  "sourceFile": "Perth/Lukla/ILKL Ground Chart.svg"
+}

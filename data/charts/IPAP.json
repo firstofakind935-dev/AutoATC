@@ -1,0 +1,80 @@
+{
+  "icao": "IPAP",
+  "iata": "PFO",
+  "name": "Paphos Intl.",
+  "location": "Paphos, Cyprus",
+  "elevationFt": "95'",
+  "coordinates": "N41 39.3  E000 12.1",
+  "runways": [
+    {
+      "designator": "35",
+      "heading": "354°",
+      "length": {
+        "feet": "3404'",
+        "meters": "1038m"
+      }
+    },
+    {
+      "designator": "17",
+      "heading": "174°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "127.325"
+    },
+    {
+      "facility": "PAPHOS Ground",
+      "frequency": "120.800"
+    },
+    {
+      "facility": "PAPHOS Tower",
+      "frequency": "119.900"
+    },
+    {
+      "facility": "PAPHOS Departure",
+      "frequency": "130.625"
+    }
+  ],
+  "otherLabels": [
+    "Hangar",
+    "NORTH",
+    "GA",
+    "APRON",
+    "Control",
+    "Tower",
+    "Fuel",
+    "Terminal",
+    "MAIN",
+    "Ground Crew",
+    "Station",
+    "Hangars",
+    "Helipad",
+    "SOUTH GA",
+    "A",
+    "B",
+    "B2",
+    "B1",
+    "A1",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "C1",
+    "C",
+    "C2",
+    "C3",
+    "C4",
+    "D",
+    "E2",
+    "E1",
+    "E",
+    "N",
+    "Run Up",
+    "Area"
+  ],
+  "sourceFile": "Cyprus/Paphos/IPAP Ground Chart.svg"
+}

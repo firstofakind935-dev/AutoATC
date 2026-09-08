@@ -1,0 +1,33 @@
+{
+  "icao": "IHEN",
+  "iata": "HEN",
+  "name": "Henstridge Airfield",
+  "location": "Henstridge, Cyprus",
+  "elevationFt": "1'",
+  "coordinates": "N41 37.0  E000 07.6",
+  "runways": [
+    {
+      "designator": "35",
+      "heading": "352°",
+      "length": null
+    },
+    {
+      "designator": "17",
+      "heading": "172°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "N",
+    "Backtrack Area",
+    "Hangars",
+    "Fuel",
+    "A",
+    "MAIN",
+    "APRON",
+    "1170'",
+    "357m"
+  ],
+  "sourceFile": "Cyprus/Henstridge/IHEN Ground Chart.svg"
+}

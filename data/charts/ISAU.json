@@ -1,0 +1,64 @@
+{
+  "icao": "ISAU",
+  "iata": "SAU",
+  "name": "Sauthemptona Airport",
+  "location": "Sauthemptona, Sauthemptona",
+  "elevationFt": "1'",
+  "coordinates": "N41 41.0  W000 11.5",
+  "runways": [
+    {
+      "designator": "8",
+      "heading": "081°",
+      "length": {
+        "feet": "2554'",
+        "meters": "778m"
+      }
+    },
+    {
+      "designator": "26",
+      "heading": "261°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "113.350"
+    },
+    {
+      "facility": "SAUTHEMPTONA Ground",
+      "frequency": "130.880"
+    },
+    {
+      "facility": "SAUTHEMPTONA Radar",
+      "frequency": "122.730"
+    },
+    {
+      "facility": "SAUTHEMPTONA Tower",
+      "frequency": "118.205"
+    }
+  ],
+  "otherLabels": [
+    "A",
+    "A1",
+    "A2",
+    "APRON",
+    "1",
+    "2",
+    "3",
+    "4",
+    "Terminal",
+    "Hangars",
+    "Ground Crew",
+    "Station",
+    "Control",
+    "Tower",
+    "Helipad",
+    "Fuel",
+    "Backtrack",
+    "Area",
+    "N",
+    "Stopway"
+  ],
+  "sourceFile": "Sauthemptona/Sauthemptona/ISAU Ground Chart.svg"
+}

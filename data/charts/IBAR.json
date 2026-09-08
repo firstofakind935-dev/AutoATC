@@ -1,0 +1,22 @@
+{
+  "icao": "IBAR",
+  "iata": "BRR",
+  "name": "Barra Airport",
+  "location": "Barra, Cyprus",
+  "elevationFt": "0'",
+  "coordinates": "N41 38.0  E000 10.8",
+  "runways": [],
+  "frequencies": [
+    {
+      "facility": "BARRA Information",
+      "frequency": "118.080"
+    }
+  ],
+  "otherLabels": [
+    "Terminal",
+    "Fuel",
+    "SAND",
+    "N"
+  ],
+  "sourceFile": "Cyprus/Barra/IBAR Ground Chart.svg"
+}

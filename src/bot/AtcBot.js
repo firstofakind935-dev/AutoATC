@@ -17,6 +17,7 @@ const { synthesizeSpeech } = require('../speech/tts');
 const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
 const { getFlightPlanContext } = require('../flightplans/store');
+const { getChartContext } = require('../charts/store');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -33,6 +34,7 @@ class AtcBot {
     this.handoff = new HumanHandoff();
     this.history = new ConversationHistory();
     this.systemPrompt = buildAtcSystemPrompt(config.persona);
+    this.chartContext = getChartContext(config.persona.airport); // static per airport, fetched once
     this.player = createAudioPlayer();
     this.processingQueue = Promise.resolve();
     this.connection = null;
@@ -136,6 +138,7 @@ class AtcBot {
     this.history.addPilotTransmission(transcript);
 
     const flightPlanContext = await getFlightPlanContext();
+    const turnContext = [this.chartContext, flightPlanContext].filter(Boolean).join('\n\n') || undefined;
 
     let reply;
     try {
@@ -145,7 +148,7 @@ class AtcBot {
         baseUrl: baseUrlForProvider(this.config.ai.provider),
         model: this.config.ai.model,
         systemPrompt: this.systemPrompt,
-        history: this.history.toArray({ contextForLastTurn: flightPlanContext }),
+        history: this.history.toArray({ contextForLastTurn: turnContext }),
       });
     } catch (err) {
       this.logger.error('LLM generation failed:', err.message);

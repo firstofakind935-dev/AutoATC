@@ -1,0 +1,41 @@
+{
+  "icao": "IDCS",
+  "iata": "SAB",
+  "name": "Saba Airport",
+  "location": "Saba, Orenji",
+  "elevationFt": "65'",
+  "coordinates": "N42 03.0  E000 01.0",
+  "runways": [
+    {
+      "designator": "25",
+      "heading": "251°",
+      "length": {
+        "feet": "750'",
+        "meters": "229m"
+      }
+    },
+    {
+      "designator": "7",
+      "heading": "71°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "SABA Information",
+      "frequency": "118.250"
+    }
+  ],
+  "otherLabels": [
+    "N",
+    "MAIN",
+    "APRON",
+    "Terminal",
+    "Ground Crew",
+    "Station",
+    "A",
+    "Fuel",
+    "Helipad"
+  ],
+  "sourceFile": "Orenji/Saba/IDCS Ground Chart.svg"
+}

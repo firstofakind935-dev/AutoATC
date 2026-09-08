@@ -1,0 +1,19 @@
+{
+  "icao": "TVO",
+  "iata": null,
+  "name": "Tavaro Seabase",
+  "location": "Grindavik, Grindavik",
+  "elevationFt": "0'",
+  "coordinates": "N41 50.2 W000 10.6",
+  "runways": [],
+  "frequencies": [],
+  "otherLabels": [
+    "Fuel",
+    "N",
+    "4W",
+    "305m",
+    "21W",
+    "Elev 0'"
+  ],
+  "sourceFile": "Grindavik/Tavaro Seabase/TVO Ground Chart.svg"
+}

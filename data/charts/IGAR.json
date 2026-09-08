@@ -1,0 +1,44 @@
+{
+  "icao": "IGAR",
+  "iata": "ABG",
+  "name": "Air Base Garry",
+  "location": "Rockford, Rockford",
+  "elevationFt": "138'",
+  "coordinates": "N41 31.9  E000 06.9",
+  "runways": [
+    {
+      "designator": "4",
+      "heading": "042°",
+      "length": {
+        "feet": "2980'",
+        "meters": "908m"
+      }
+    },
+    {
+      "designator": "22",
+      "heading": "222°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "N",
+    "Backrack",
+    "Area",
+    "Hangars",
+    "Stopway",
+    "Elev 138'",
+    "Helipads",
+    "Barracks",
+    "Control",
+    "Tower",
+    "Fuel",
+    "Run Up",
+    "A",
+    "C",
+    "SPAWN",
+    "RAMP",
+    "B"
+  ],
+  "sourceFile": "Rockford/Air Base Garry/IGAR Ground Chart.svg"
+}

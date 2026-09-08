@@ -189,6 +189,41 @@ not matter in practice) — if plans that shouldn't be "live" yet (e.g.
 pending ATC approval) start showing up in bot replies, add a `.eq()`
 filter on one of those columns in `fetchAndFormat()`.
 
+#### Chart data (real taxiways, runways, and frequencies)
+
+`data/charts/<ICAO>.json` holds per-airport reference data — runway
+designators/headings/lengths, ATC frequencies, and other chart labels
+(taxiways, aprons, gates) — extracted from the community
+[PTFS Charts](https://github.com/Treelon/ptfs-charts) repository
+(CC BY-SA 4.0). Every bot automatically loads the file matching its
+`persona.airport` (e.g. `"airport": "IZOL"` loads `data/charts/IZOL.json`)
+once at startup and includes it in context on every reply, so the model
+references real taxiway names and frequencies instead of inventing
+plausible-sounding ones. Missing airport → the bot just skips this
+context, same graceful fallback as flight plans.
+
+26 airports are pre-extracted and checked into this repo already. To
+re-extract (e.g. after the source charts repo updates, or to add more
+airports from it):
+
+```
+git clone https://github.com/Treelon/ptfs-charts /tmp/ptfs-charts
+node scripts/extract-charts.js /tmp/ptfs-charts
+```
+
+This is a heuristic extraction (see `scripts/extract-charts.js`'s header
+comment for exactly how), not a validated schema — spot-check
+`data/charts/<ICAO>.json` for an airport before trusting it, especially
+for chart layouts the extractor hasn't been tested against. Known gap:
+water/seaplane runways (e.g. Tavaro Seabase) use a notation the runway
+parser doesn't recognize, so those come back with an empty runway list
+even though the chart has one.
+
+**Attribution:** these charts are licensed CC BY-SA 4.0 by their
+contributors at https://github.com/Treelon/ptfs-charts. If you
+redistribute `data/charts/` or anything derived from it outside this
+project, carry that attribution and license forward.
+
 ### 4. Configure the bot fleet
 
 ```
@@ -208,7 +243,7 @@ Edit `config/bots.json` — an array with one entry per bot:
   "persona": {
     "position": "Tower",             // shown to the LLM, shapes phraseology
     "callsign": "Springfield Tower", // what the bot calls itself on comms
-    "airport": "KSGF",               // optional
+    "airport": "IZOL",                // optional; match a data/charts/<ICAO>.json filename to enable real chart data
     "ttsVoice": "onyx"               // any OpenAI TTS voice name
   },
   "ai": {

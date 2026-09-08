@@ -1,6 +1,6 @@
 [
   {
-    "name": "Springfield Tower",
+    "name": "Izolirani Tower",
     "tokenEnv": "BOT_TOWER_TOKEN",
     "guildId": "REPLACE_WITH_GUILD_ID",
     "voiceChannelId": "REPLACE_WITH_TOWER_VOICE_CHANNEL_ID",
@@ -8,8 +8,8 @@
     "commandPrefix": "!tower",
     "persona": {
       "position": "Tower",
-      "callsign": "Springfield Tower",
-      "airport": "KSGF",
+      "callsign": "Izolirani Tower",
+      "airport": "IZOL",
       "ttsVoice": "onyx"
     },
     "ai": {
@@ -18,7 +18,7 @@
     }
   },
   {
-    "name": "Springfield Ground",
+    "name": "Izolirani Ground",
     "tokenEnv": "BOT_GROUND_TOKEN",
     "guildId": "REPLACE_WITH_GUILD_ID",
     "voiceChannelId": "REPLACE_WITH_GROUND_VOICE_CHANNEL_ID",
@@ -26,8 +26,8 @@
     "commandPrefix": "!ground",
     "persona": {
       "position": "Ground",
-      "callsign": "Springfield Ground",
-      "airport": "KSGF",
+      "callsign": "Izolirani Ground",
+      "airport": "IZOL",
       "ttsVoice": "echo"
     },
     "ai": {

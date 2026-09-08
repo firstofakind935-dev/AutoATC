@@ -1,0 +1,33 @@
+{
+  "icao": "IBLT",
+  "iata": "BOL",
+  "name": "Boltic Airfield",
+  "location": "Boltic, Rockford",
+  "elevationFt": "1238'",
+  "coordinates": "N41 38.7  W000 03.4",
+  "runways": [
+    {
+      "designator": "1",
+      "heading": "014°",
+      "length": {
+        "feet": "1378'",
+        "meters": "420m"
+      }
+    },
+    {
+      "designator": "19",
+      "heading": "194°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "APRON",
+    "FBO",
+    "Elev 1238'",
+    "N",
+    "Backtrack",
+    "Area"
+  ],
+  "sourceFile": "Rockford/Boltic Airfield/IBLT Ground Chart.svg"
+}

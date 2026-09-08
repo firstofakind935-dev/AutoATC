@@ -1,0 +1,62 @@
+{
+  "icao": "ISCM",
+  "iata": "SCT",
+  "name": "RAF Scampton",
+  "location": "Scampton, Izolirani",
+  "elevationFt": "0'",
+  "coordinates": "N41 51.1  E000 13.3",
+  "runways": [
+    {
+      "designator": "13",
+      "heading": "126°",
+      "length": {
+        "feet": "1812'",
+        "meters": "552m"
+      }
+    },
+    {
+      "designator": "31",
+      "heading": "306°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "BRAVO",
+    "DISPERSAL",
+    "ALPHA",
+    "CHARLIE",
+    "Hangar 4",
+    "Control",
+    "Tower",
+    "Hangar 1",
+    "Hangar 2",
+    "Hangar 3",
+    "SPAWN",
+    "APRON",
+    "A",
+    "A1",
+    "A2",
+    "A3",
+    "B",
+    "B2",
+    "B1",
+    "D",
+    "C2",
+    "C",
+    "C1",
+    "F",
+    "F1",
+    "F2",
+    "G",
+    "G2",
+    "G1",
+    "E",
+    "H",
+    "H1",
+    "H2",
+    "Fuel",
+    "N"
+  ],
+  "sourceFile": "Izolirani/RAF Scampton/ISCM Ground Chart.svg"
+}

@@ -1,0 +1,30 @@
+{
+  "icao": "IUFO",
+  "iata": "UFO",
+  "name": "UFO Base",
+  "location": "Vitet, St Barthélemy",
+  "elevationFt": "1'",
+  "coordinates": "N41 50.8  E000 05.1",
+  "runways": [
+    {
+      "designator": "8",
+      "heading": "076°",
+      "length": null
+    },
+    {
+      "designator": "26",
+      "heading": "226°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "MAIN",
+    "APRON",
+    "Hangar",
+    "551'",
+    "168m",
+    "N"
+  ],
+  "sourceFile": "Saint Barthelemy/UFO Base/IUFO Ground Chart.svg"
+}

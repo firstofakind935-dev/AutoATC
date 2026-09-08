@@ -1,0 +1,36 @@
+{
+  "icao": "ITRC",
+  "iata": "TRN",
+  "name": "Training Centre",
+  "location": "Carrigknock, Rockford",
+  "elevationFt": "3'",
+  "coordinates": "N41 34.8  W000 00.6",
+  "runways": [
+    {
+      "designator": "36",
+      "heading": "360°",
+      "length": {
+        "feet": "1286'",
+        "meters": "392m"
+      }
+    },
+    {
+      "designator": "18",
+      "heading": "180°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "APRON",
+    "Fuel",
+    "Elev 3'",
+    "FBO",
+    "Backtrack",
+    "Area",
+    "A",
+    "1",
+    "N"
+  ],
+  "sourceFile": "Rockford/Training Center/ITRC Ground Chart.svg"
+}

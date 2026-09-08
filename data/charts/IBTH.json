@@ -1,0 +1,52 @@
+{
+  "icao": "IBTH",
+  "iata": "SBH",
+  "name": "Saint Barthélemy",
+  "location": "Aéroport, Saint Barthélemy",
+  "elevationFt": "9'",
+  "coordinates": "N41 50.8  E000 04.2",
+  "runways": [
+    {
+      "designator": "27",
+      "heading": "270°",
+      "length": null
+    },
+    {
+      "designator": "09",
+      "heading": "090°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "SAINT BARTHELEMY Information",
+      "frequency": "118.450"
+    }
+  ],
+  "otherLabels": [
+    "MAIN",
+    "APRON",
+    "GENERAL",
+    "AVIATION",
+    "Backtrack Area",
+    "Hangar",
+    "Fuel",
+    "Terminal",
+    "Control",
+    "Tower",
+    "Ground Crew",
+    "Station",
+    "E",
+    "C",
+    "B",
+    "A",
+    "D",
+    "HS",
+    "HOT SPOT",
+    "ATC instructions.",
+    "N",
+    "1547'",
+    "472m"
+  ],
+  "sourceFile": "Saint Barthelemy/Saint Barthelemy/IBTH Ground Chart.svg"
+}

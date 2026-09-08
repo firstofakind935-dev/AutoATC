@@ -1,0 +1,29 @@
+{
+  "icao": "ISKP",
+  "iata": "SKO",
+  "name": "Skopelos Airfield",
+  "location": "Chora, Skopelos",
+  "elevationFt": "0'",
+  "coordinates": "N41 45.5  E000 10.2",
+  "runways": [
+    {
+      "designator": "23",
+      "heading": "231°",
+      "length": null
+    },
+    {
+      "designator": "5",
+      "heading": "051°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "Fuel",
+    "Hangars",
+    "636'",
+    "194m",
+    "N"
+  ],
+  "sourceFile": "Skopelos/Skopelos Airfield/ISKP Ground Chart.svg"
+}

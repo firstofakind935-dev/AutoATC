@@ -1,0 +1,78 @@
+{
+  "icao": "IIAB",
+  "iata": "MCC",
+  "name": "McConnell AFB",
+  "location": "Girne, Cyprus",
+  "elevationFt": "1'",
+  "coordinates": "N41 31.9  E000 06.9",
+  "runways": [
+    {
+      "designator": "9L",
+      "heading": "095°",
+      "length": null
+    },
+    {
+      "designator": "9R",
+      "heading": "095°",
+      "length": null
+    },
+    {
+      "designator": "27R",
+      "heading": "275°",
+      "length": {
+        "feet": "4329'",
+        "meters": "1319m"
+      }
+    },
+    {
+      "designator": "27L",
+      "heading": "275°",
+      "length": {
+        "feet": "4329'",
+        "meters": "1319m"
+      }
+    }
+  ],
+  "frequencies": [],
+  "otherLabels": [
+    "N",
+    "Ground Crew",
+    "Station",
+    "Control",
+    "Tower",
+    "Mass",
+    "Parking",
+    "Barracks",
+    "Hangars",
+    "H",
+    "K",
+    "L1",
+    "L2",
+    "J1",
+    "I1",
+    "D1",
+    "D",
+    "D2",
+    "I2",
+    "Fuel",
+    "Elev 1'",
+    "Checkpoint",
+    "APRON",
+    "KILO",
+    "RAMP",
+    "Stopways",
+    "J2",
+    "F",
+    "G",
+    "E",
+    "B",
+    "C",
+    "A",
+    "HS1",
+    "HOT SPOT",
+    "ATC instructions.",
+    "holding point D1.",
+    "HS"
+  ],
+  "sourceFile": "Cyprus/McConnell/IIAB Ground Chart.svg"
+}

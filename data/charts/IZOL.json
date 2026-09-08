@@ -1,0 +1,94 @@
+{
+  "icao": "IZOL",
+  "iata": "IZO",
+  "name": "Izolirani Intl.",
+  "location": "Izolirani, Izolirani",
+  "elevationFt": "0'",
+  "coordinates": "N41 48.1  E000 16.1",
+  "runways": [
+    {
+      "designator": "10",
+      "heading": "106°",
+      "length": null
+    },
+    {
+      "designator": "28",
+      "heading": "286°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "127.800"
+    },
+    {
+      "facility": "IZOLIRANI Delivery",
+      "frequency": "128.200"
+    },
+    {
+      "facility": "IZOLIRANI Ground",
+      "frequency": "121.900"
+    },
+    {
+      "facility": "IZOLIRANI Tower",
+      "frequency": "118.700"
+    },
+    {
+      "facility": "IZOLIRANI Departure",
+      "frequency": "124.300"
+    }
+  ],
+  "otherLabels": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "N",
+    "Terminal",
+    "Hangars",
+    "Heli 2",
+    "Heli 1",
+    "Fuel",
+    "Cargo",
+    "CARGO",
+    "APRON",
+    "WEST",
+    "EAST",
+    "Backtrack",
+    "Area",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "A",
+    "B",
+    "C",
+    "D",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "E",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "4375'",
+    "1333m",
+    "Control",
+    "Tower",
+    "Ground Crew",
+    "Station"
+  ],
+  "sourceFile": "Izolirani/Izolirani/IZOL Ground Chart.svg"
+}
