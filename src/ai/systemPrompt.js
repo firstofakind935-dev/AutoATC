@@ -13,6 +13,7 @@ const POSITION_RESPONSIBILITIES = [
       `runway crossings, or radar services (that's Tower's or Approach's ` +
       `job) - if a pilot requests one of those from you, tell them to ` +
       `contact the appropriate frequency instead of issuing it yourself.`,
+    example: `Cessna 42Yankee, taxi to runway 27 via Alpha, hold short runway 27.`,
   },
   {
     keywords: ['clearance delivery', 'clearance'],
@@ -21,6 +22,10 @@ const POSITION_RESPONSIBILITIES = [
       `altitude, departure frequency, and squawk code assignment, before ` +
       `taxi. You do NOT issue taxi instructions or takeoff clearances - ` +
       `direct the pilot to Ground or Tower for those.`,
+    example:
+      `Cessna 42Yankee, cleared to Joplin as filed, climb via SID, ` +
+      `maintain 5000, expect one eight thousand ten minutes after ` +
+      `departure, departure frequency 125.4, squawk 4271.`,
   },
   {
     keywords: ['tower'],
@@ -30,6 +35,7 @@ const POSITION_RESPONSIBILITIES = [
       `crossings. You do NOT give taxi routing away from the runway ` +
       `environment (that's Ground's job) or radar vectors/traffic ` +
       `advisories (that's Approach's/Departure's job).`,
+    example: `Cessna 42Yankee, runway 27, cleared for takeoff.`,
   },
   {
     keywords: ['departure'],
@@ -38,6 +44,9 @@ const POSITION_RESPONSIBILITIES = [
       `instructions, and traffic advisories to aircraft that just took ` +
       `off, and hand them off to the next facility (e.g. Center). You do ` +
       `NOT issue taxi or takeoff clearances - those belong to Ground/Tower.`,
+    example:
+      `Cessna 42Yankee, radar contact, climb and maintain five thousand, ` +
+      `fly heading 270.`,
   },
   {
     keywords: ['approach'],
@@ -46,6 +55,9 @@ const POSITION_RESPONSIBILITIES = [
       `heading instructions to arriving aircraft, and hand them off to ` +
       `Tower for landing. You do NOT issue landing clearances yourself - ` +
       `that's Tower's job once the aircraft is close enough to hand off.`,
+    example:
+      `Cessna 42Yankee, descend and maintain four thousand, fly heading ` +
+      `090, vectors for the visual runway 27, contact Tower 128.5.`,
   },
   {
     keywords: ['center'],
@@ -54,15 +66,20 @@ const POSITION_RESPONSIBILITIES = [
       `and arrival airspace - altitude assignments, routing, and ` +
       `handoffs to the next facility. You do NOT handle airport-specific ` +
       `taxi, takeoff, or landing services.`,
+    example:
+      `Cessna 42Yankee, radar contact, climb and maintain flight level ` +
+      `one eight zero.`,
   },
 ];
 
-function getPositionResponsibilities(position) {
+function getPositionGuidance(position) {
   const lower = position.toLowerCase();
   const match = POSITION_RESPONSIBILITIES.find((entry) =>
     entry.keywords.some((keyword) => lower.includes(keyword))
   );
-  if (match) return match.text;
+  if (match) {
+    return `${match.text} Example of correctly structured phraseology for this position: "${match.example}"`;
+  }
 
   return (
     `Only issue instructions and clearances that would realistically fall ` +
@@ -87,7 +104,7 @@ function buildAtcSystemPrompt(persona) {
     airportLine,
     `Your callsign/identifier when transmitting is "${persona.callsign}".`,
     ``,
-    getPositionResponsibilities(persona.position),
+    getPositionGuidance(persona.position),
     ``,
     `You are receiving a live speech-to-text transcript of a pilot's radio call.`,
     `The transcript may contain minor errors from imperfect transcription of ` +
