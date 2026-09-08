@@ -7,11 +7,16 @@ const TABLE = process.env.SUPABASE_FLIGHT_PLANS_TABLE || 'flight_plans';
 const CACHE_TTL_MS = 30_000;
 const MAX_ROWS = 50;
 
-// Expected columns on the configured table - only "callsign" is required,
-// everything else is optional and skipped if missing/null on a row. If
-// your Lovable/Supabase schema uses different column names, this is the
-// one place to adjust the mapping.
-const COLUMNS = 'callsign, departure, arrival, route, aircraft_type, cruise_altitude, remarks';
+// Matches the AutoATC app's actual flight_plans schema. "status" and
+// "atc_status" both exist but aren't filtered on below since their valid
+// values aren't pinned down yet - the DB also has a
+// delete_landed_flight_plans() RPC function, which suggests landed
+// flights are already removed server-side. Add a .eq()/.in() filter in
+// fetchAndFormat() if stale (e.g. not-yet-approved) plans start showing
+// up here.
+const COLUMNS =
+  'callsign, aircraft, aircraft_icao, registration, dep_icao, arr_icao, route, waypoints, ' +
+  'cruise_alt, cruise_speed, squawk, flight_rules, remarks, atc_note, status, atc_status, updated_at';
 
 let cache = { text: null, expiresAt: 0 };
 let inFlight = null;
@@ -50,14 +55,15 @@ async function getFlightPlanContext() {
 }
 
 async function fetchAndFormat(supabase) {
-  const { data, error } = await supabase.from(TABLE).select(COLUMNS).limit(MAX_ROWS);
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(COLUMNS)
+    .order('updated_at', { ascending: false })
+    .limit(MAX_ROWS);
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) return null;
 
-  const lines = data
-    .filter((row) => row.callsign)
-    .map((row) => formatRow(row));
-
+  const lines = data.filter((row) => row.callsign).map(formatRow);
   if (lines.length === 0) return null;
 
   return [
@@ -68,13 +74,25 @@ async function fetchAndFormat(supabase) {
 
 function formatRow(row) {
   const parts = [`- ${row.callsign}`];
-  if (row.aircraft_type) parts.push(row.aircraft_type);
-  if (row.departure || row.arrival) {
-    parts.push(`${row.departure || '?'} to ${row.arrival || '?'}`);
+
+  const aircraft = [row.aircraft, row.aircraft_icao].filter(Boolean).join(' ');
+  if (aircraft) parts.push(aircraft);
+  if (row.registration) parts.push(`reg ${row.registration}`);
+  if (row.flight_rules) parts.push(row.flight_rules);
+
+  if (row.dep_icao || row.arr_icao) {
+    parts.push(`${row.dep_icao || '?'} to ${row.arr_icao || '?'}`);
   }
-  if (row.cruise_altitude) parts.push(`cruise ${row.cruise_altitude}`);
+  if (row.cruise_alt) parts.push(`cruise ${row.cruise_alt} ft`);
+  if (row.cruise_speed) parts.push(`${row.cruise_speed} kt`);
+  if (row.squawk) parts.push(`squawk ${row.squawk}`);
   if (row.route) parts.push(`route: ${row.route}`);
+  if (Array.isArray(row.waypoints) && row.waypoints.length > 0) {
+    parts.push(`waypoints: ${row.waypoints.join(' ')}`);
+  }
   if (row.remarks) parts.push(`remarks: ${row.remarks}`);
+  if (row.atc_note) parts.push(`ATC note: ${row.atc_note}`);
+
   return parts.join(', ');
 }
 

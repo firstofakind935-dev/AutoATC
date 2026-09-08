@@ -174,13 +174,20 @@ list gets included as context and the LLM itself matches the pilot's
 spoken callsign against it (LLMs handle the fuzzy phonetic matching -
 e.g. "four two yankee" → `N42Y` - better than a hand-written parser would).
 
-`src/flightplans/store.js` expects a table (default name `flight_plans`,
-override with `SUPABASE_FLIGHT_PLANS_TABLE`) with a `callsign` column plus
-any of `departure`, `arrival`, `route`, `aircraft_type`, `cruise_altitude`,
-`remarks` — missing columns are just skipped. If your actual schema uses
-different column names, that file's `COLUMNS` constant and `formatRow()`
-are the only things to edit. Results are cached for 30 seconds per process
-so a burst of radio calls doesn't hammer Supabase.
+`src/flightplans/store.js` is already matched to this project's actual
+`flight_plans` table: `callsign` (required to appear in the context at
+all), `aircraft`/`aircraft_icao`, `registration`, `dep_icao`/`arr_icao`,
+`route`, `waypoints`, `cruise_alt`, `cruise_speed`, `squawk`,
+`flight_rules`, `remarks`, `atc_note` — table name overridable via
+`SUPABASE_FLIGHT_PLANS_TABLE`. Results are cached for 30 seconds per
+process so a burst of radio calls doesn't hammer Supabase.
+
+The table also has `status` and `atc_status` columns that aren't filtered
+on yet (there's a `delete_landed_flight_plans()` DB function, which
+suggests landed flights are already cleaned up server-side, so this may
+not matter in practice) — if plans that shouldn't be "live" yet (e.g.
+pending ATC approval) start showing up in bot replies, add a `.eq()`
+filter on one of those columns in `fetchAndFormat()`.
 
 ### 4. Configure the bot fleet
 
