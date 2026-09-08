@@ -16,6 +16,7 @@ const { transcribeAudio } = require('../speech/stt');
 const { synthesizeSpeech } = require('../speech/tts');
 const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
+const { getFlightPlanContext } = require('../flightplans/store');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -134,6 +135,8 @@ class AtcBot {
 
     this.history.addPilotTransmission(transcript);
 
+    const flightPlanContext = await getFlightPlanContext();
+
     let reply;
     try {
       reply = await generateAtcReply({
@@ -142,7 +145,7 @@ class AtcBot {
         baseUrl: baseUrlForProvider(this.config.ai.provider),
         model: this.config.ai.model,
         systemPrompt: this.systemPrompt,
-        history: this.history.toArray(),
+        history: this.history.toArray({ contextForLastTurn: flightPlanContext }),
       });
     } catch (err) {
       this.logger.error('LLM generation failed:', err.message);

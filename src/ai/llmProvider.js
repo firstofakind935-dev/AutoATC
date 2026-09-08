@@ -33,8 +33,25 @@ class ConversationHistory {
     }
   }
 
-  toArray() {
-    return [...this.turns];
+  /**
+   * Returns the turns for an API call. When contextForLastTurn is given,
+   * it's prepended to the most recent pilot transmission for this request
+   * only - stored history stays as the plain transcript, so context (e.g.
+   * a currently-filed-flight-plans list) doesn't pollute earlier turns or
+   * get repeated back at the model on every subsequent request.
+   */
+  toArray({ contextForLastTurn } = {}) {
+    const turns = [...this.turns];
+    if (contextForLastTurn) {
+      const lastIndex = turns.length - 1;
+      if (lastIndex >= 0 && turns[lastIndex].role === 'user') {
+        turns[lastIndex] = {
+          role: 'user',
+          content: `${contextForLastTurn}\n\nPilot transmission: ${turns[lastIndex].content}`,
+        };
+      }
+    }
+    return turns;
   }
 }
 

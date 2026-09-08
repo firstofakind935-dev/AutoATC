@@ -26,6 +26,14 @@ function buildAtcSystemPrompt(persona) {
     `- Never break character, never mention that you are an AI, and never ` +
       `add narration, stage directions, or text that would not actually be spoken.`,
     `- Output only the words to be spoken over the radio. No formatting, no quotes.`,
+    ``,
+    `Some pilot transmissions will come with a list of currently filed flight ` +
+      `plans above the transcript. Match the pilot's spoken callsign against ` +
+      `that list (spoken callsigns are often phonetic or number-by-number, e.g. ` +
+      `"four two yankee" for "N42Y" - match generously) and use the matched ` +
+      `plan's route, altitude, and aircraft type where relevant to your reply. ` +
+      `If no flight plan is given, or nothing matches, respond using only the ` +
+      `transmission itself - don't invent flight plan details.`,
   ].join('\n');
 }
 

@@ -10,10 +10,10 @@ and persona (e.g. "Springfield Tower", "Springfield Ground"). A bot:
 2. Listens for a pilot to key up, using Discord's per-user voice receive.
 3. Transcribes the transmission via a Whisper-compatible speech-to-text
    endpoint (OpenAI's hosted API by default, or your own self-hosted server).
-4. Feeds the transcript (plus recent conversation history) to an LLM —
-   Anthropic Claude or OpenAI GPT, configurable per bot — using a system
-   prompt that keeps it in character as one ATC position with real
-   phraseology.
+4. Feeds the transcript (plus recent conversation history, and any
+   currently filed flight plans — see below) to an LLM — Anthropic Claude
+   or OpenAI GPT, configurable per bot — using a system prompt that keeps
+   it in character as one ATC position with real phraseology.
 5. Synthesizes the reply via an OpenAI-speech-API-compatible endpoint
    (again, OpenAI's hosted API by default, or self-hosted) and plays it
    back into the channel.
@@ -157,6 +157,30 @@ own LAN, which can give a false positive) before wiring it into the bot:
 curl -H "Authorization: Bearer <LLM_API_KEY>" https://yourname.ddns.net/v1/models   # expect a real response
 curl https://yourname.ddns.net/v1/models                                            # expect 401
 ```
+
+#### Flight plan awareness (optional)
+
+If pilots file flight plans through a separate app (e.g. one built with
+[Lovable](https://lovable.dev), which defaults to a Supabase backend), set
+`SUPABASE_URL` and `SUPABASE_KEY` in `.env` and every bot will pull the
+currently filed flight plans before generating each reply, and pass them
+to the LLM so it can match the pilot's spoken callsign to a plan and use
+its route/altitude/aircraft type where relevant.
+
+This is entirely optional — leave both blank and the bot behaves exactly
+as before, working from the radio transcript alone. There's no separate
+"is this callsign in the database" step in code: the whole flight plan
+list gets included as context and the LLM itself matches the pilot's
+spoken callsign against it (LLMs handle the fuzzy phonetic matching -
+e.g. "four two yankee" → `N42Y` - better than a hand-written parser would).
+
+`src/flightplans/store.js` expects a table (default name `flight_plans`,
+override with `SUPABASE_FLIGHT_PLANS_TABLE`) with a `callsign` column plus
+any of `departure`, `arrival`, `route`, `aircraft_type`, `cruise_altitude`,
+`remarks` — missing columns are just skipped. If your actual schema uses
+different column names, that file's `COLUMNS` constant and `formatRow()`
+are the only things to edit. Results are cached for 30 seconds per process
+so a burst of radio calls doesn't hammer Supabase.
 
 ### 4. Configure the bot fleet
 
