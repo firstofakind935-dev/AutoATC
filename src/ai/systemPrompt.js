@@ -4,6 +4,12 @@
 // vectors. Matched by keyword against persona.position (case-insensitive);
 // falls back to a generic instruction for a custom position name that
 // doesn't match anything below.
+//
+// Each entry's redirectExample is a concrete out-of-scope request/reply
+// pair, not just a rule stated in prose - testing showed a smaller local
+// model (qwen2.5:1.5b) would repeatedly issue taxi instructions as Tower
+// despite the prose rule saying not to, but held the line reliably once
+// given an actual worked example of the correct redirect.
 const POSITION_RESPONSIBILITIES = [
   {
     keywords: ['ground'],
@@ -14,6 +20,10 @@ const POSITION_RESPONSIBILITIES = [
       `job) - if a pilot requests one of those from you, tell them to ` +
       `contact the appropriate frequency instead of issuing it yourself.`,
     example: `Cessna 42Yankee, taxi to runway 27 via Alpha, hold short runway 27.`,
+    redirectExample: {
+      request: `Ground, Cessna 42Yankee, ready for departure, request takeoff clearance.`,
+      reply: `Cessna 42Yankee, contact Tower for takeoff clearance.`,
+    },
   },
   {
     keywords: ['clearance delivery', 'clearance'],
@@ -26,6 +36,10 @@ const POSITION_RESPONSIBILITIES = [
       `Cessna 42Yankee, cleared to Joplin as filed, climb via SID, ` +
       `maintain 5000, expect one eight thousand ten minutes after ` +
       `departure, departure frequency 125.4, squawk 4271.`,
+    redirectExample: {
+      request: `Clearance, Cessna 42Yankee, request taxi to the runway.`,
+      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+    },
   },
   {
     keywords: ['tower'],
@@ -36,6 +50,10 @@ const POSITION_RESPONSIBILITIES = [
       `environment (that's Ground's job) or radar vectors/traffic ` +
       `advisories (that's Approach's/Departure's job).`,
     example: `Cessna 42Yankee, runway 27, cleared for takeoff.`,
+    redirectExample: {
+      request: `Tower, Cessna 42Yankee, request taxi to the runway.`,
+      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+    },
   },
   {
     keywords: ['departure'],
@@ -47,6 +65,10 @@ const POSITION_RESPONSIBILITIES = [
     example:
       `Cessna 42Yankee, radar contact, climb and maintain five thousand, ` +
       `fly heading 270.`,
+    redirectExample: {
+      request: `Departure, Cessna 42Yankee, request taxi to the runway.`,
+      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+    },
   },
   {
     keywords: ['approach'],
@@ -58,6 +80,10 @@ const POSITION_RESPONSIBILITIES = [
     example:
       `Cessna 42Yankee, descend and maintain four thousand, fly heading ` +
       `090, vectors for the visual runway 27, contact Tower 128.5.`,
+    redirectExample: {
+      request: `Approach, Cessna 42Yankee, request landing clearance.`,
+      reply: `Cessna 42Yankee, contact Tower for landing clearance.`,
+    },
   },
   {
     keywords: ['center'],
@@ -69,6 +95,10 @@ const POSITION_RESPONSIBILITIES = [
     example:
       `Cessna 42Yankee, radar contact, climb and maintain flight level ` +
       `one eight zero.`,
+    redirectExample: {
+      request: `Center, Cessna 42Yankee, request taxi to the runway.`,
+      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+    },
   },
 ];
 
@@ -78,7 +108,13 @@ function getPositionGuidance(position) {
     entry.keywords.some((keyword) => lower.includes(keyword))
   );
   if (match) {
-    return `${match.text} Example of correctly structured phraseology for this position: "${match.example}"`;
+    return (
+      `${match.text} Example of correctly structured phraseology for this ` +
+      `position: "${match.example}" If a pilot requests something outside ` +
+      `this position's scope, redirect them instead of handling it - for ` +
+      `example, if the transmission is "${match.redirectExample.request}", ` +
+      `respond "${match.redirectExample.reply}".`
+    );
   }
 
   return (
@@ -114,8 +150,12 @@ function buildAtcSystemPrompt(persona) {
     `- Use standard ICAO/FAA phraseology appropriate to the ${persona.position} position.`,
     `- Be brief. Real controllers do not use full sentences or pleasantries.`,
     `- Always read back or reference the pilot's callsign if one was given.`,
-    `- If the transmission is unreadable, garbled, or not addressed to you, ` +
-      `respond with a short "say again" request instead of guessing.`,
+    `- If the transcript is fragments, static, or unclear words with no ` +
+      `complete identifiable request (for example: "...kssht... requesting ` +
+      `...zzzt... unable to..."), that transmission was NOT understood. Respond ` +
+      `only with "Say again" (or similar) - never guess a runway, request ` +
+      `type, or clearance from noise like that, and never invent a request ` +
+      `that was never actually made.`,
     `- Never break character, never mention that you are an AI, and never ` +
       `add narration, stage directions, or text that would not actually be spoken.`,
     `- Output only the words to be spoken over the radio. No formatting, no quotes.`,
