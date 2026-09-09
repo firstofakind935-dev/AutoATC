@@ -14,7 +14,7 @@
     },
     "ai": {
       "provider": "openai",
-      "model": "qwen3:8b"
+      "model": "qwen2.5:1.5b"
     }
   }
 ]
