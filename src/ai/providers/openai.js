@@ -19,6 +19,12 @@ async function generateReply({ apiKey, baseUrl = DEFAULT_BASE_URL, model, system
     // the thinking block. That stripping is the actual safety net here -
     // this higher cap just makes truncation-with-no-answer less likely.
     max_tokens: 600,
+    // Low temperature: ATC phraseology should be consistent and rule-
+    // following, not creative. Testing showed the same garbled input
+    // sometimes correctly got a "say again" and sometimes got a fabricated
+    // clearance, purely from sampling randomness - this cuts that variance
+    // down without going fully greedy (0), which some backends handle oddly.
+    temperature: 0.2,
     messages: [{ role: 'system', content: systemPrompt }, ...history],
   };
 
