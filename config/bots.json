@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Izolirani Tower",
+    "tokenEnv": "BOT_TOWER_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": "1507182218731323515",
+    "logChannelId": null,
+    "commandPrefix": "!tower",
+    "persona": {
+      "position": "Tower",
+      "callsign": "Izolirani Tower",
+      "airport": "IZOL",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "openai",
+      "model": "qwen3:8b"
+    }
+  }
+]
