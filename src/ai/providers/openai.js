@@ -40,6 +40,15 @@ async function generateReply({ apiKey, baseUrl = DEFAULT_BASE_URL, model, system
     body.reasoning_effort = process.env.LLM_REASONING_EFFORT;
   }
 
+  // Smaller/weaker models tend to keep going past the actual reply -
+  // hallucinating another "Pilot transmission:" line (the literal text
+  // llmProvider.js uses to mark where context ends and the live
+  // transmission starts) and answering their own fabrication, or just
+  // rambling into a second paragraph. Cutting at the first blank line or
+  // at that literal marker stops it right after the real, single-line
+  // reply instead of speaking an invented conversation aloud.
+  body.stop = ['\n\n', 'Pilot transmission:'];
+
   const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/chat/completions`, {
     method: 'POST',
     headers,

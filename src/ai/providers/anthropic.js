@@ -13,6 +13,10 @@ async function generateReply({ apiKey, model, systemPrompt, history }) {
     max_tokens: 200,
     system: systemPrompt,
     messages: history.map((turn) => ({ role: turn.role, content: turn.content })),
+    // Same safety net as the openai provider: stop before the model can
+    // hallucinate a second "Pilot transmission:" turn and answer itself,
+    // or ramble into a second paragraph.
+    stop_sequences: ['\n\n', 'Pilot transmission:'],
   });
 
   const textBlock = response.content.find((block) => block.type === 'text');
