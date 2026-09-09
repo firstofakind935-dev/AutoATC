@@ -55,12 +55,32 @@ class ConversationHistory {
   }
 }
 
+/**
+ * Reasoning models (e.g. Qwen3) can emit a <think>...</think> block before
+ * the actual reply even when reasoning_effort/think=false is requested -
+ * confirmed unreliable across models/versions during testing. This is a
+ * safety net independent of that setting: strip complete <think> blocks,
+ * and if an unclosed <think> tag remains (the response got cut off
+ * mid-thought, e.g. by max_tokens, before ever reaching a real answer),
+ * drop everything from that point on rather than speaking a truncated
+ * internal monologue aloud over voice chat.
+ */
+function stripThinkingBlocks(text) {
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  const unclosedIndex = cleaned.search(/<think>/i);
+  if (unclosedIndex !== -1) {
+    cleaned = cleaned.slice(0, unclosedIndex);
+  }
+  return cleaned.trim();
+}
+
 async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt, history }) {
   const impl = PROVIDERS[provider];
   if (!impl) {
     throw new Error(`Unknown AI provider "${provider}". Expected one of: ${Object.keys(PROVIDERS).join(', ')}`);
   }
-  return impl.generateReply({ apiKey, baseUrl, model, systemPrompt, history });
+  const reply = await impl.generateReply({ apiKey, baseUrl, model, systemPrompt, history });
+  return stripThinkingBlocks(reply);
 }
 
 function apiKeyForProvider(provider) {

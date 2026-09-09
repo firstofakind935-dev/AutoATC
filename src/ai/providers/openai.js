@@ -13,18 +13,29 @@ async function generateReply({ apiKey, baseUrl = DEFAULT_BASE_URL, model, system
 
   const body = {
     model,
-    max_tokens: 200,
+    // Generous headroom: a reasoning model's <think> block can run long,
+    // and if it got cut off before max_tokens ever reached the real
+    // answer, there'd be nothing left to say after llmProvider.js strips
+    // the thinking block. That stripping is the actual safety net here -
+    // this higher cap just makes truncation-with-no-answer less likely.
+    max_tokens: 600,
     messages: [{ role: 'system', content: systemPrompt }, ...history],
   };
 
   // Reasoning models (e.g. Qwen3 on Ollama) emit a <think>...</think> block
-  // before the actual reply unless told not to - a real latency and cost
-  // problem for a live voice reply. Opt-in only (via LLM_REASONING_EFFORT,
-  // e.g. "none"), since real OpenAI models don't necessarily expect this
-  // field and other self-hosted backends may not either. The CLI-level
-  // `ollama run --think=false` flag does NOT reliably suppress this on
-  // every Ollama/model version - this request-body field is what actually
-  // worked when tested directly against the API.
+  // before the actual reply unless told not to - real latency and cost for
+  // a live voice reply. Opt-in only (via LLM_REASONING_EFFORT, e.g. "none"),
+  // since real OpenAI models don't necessarily expect this field and other
+  // self-hosted backends may not either.
+  //
+  // Neither this field nor the CLI-level `ollama run --think=false` flag
+  // reliably suppresses thinking on every Ollama/model version - tested
+  // and confirmed both fail on qwen3:30b-a3b (this field worked on
+  // qwen3:8b, for comparison, so it's genuinely model/version-dependent,
+  // not just broken outright). Set it anyway since it's free to try and
+  // helps when it works, but llmProvider.js's stripping of <think> blocks
+  // is what actually guarantees the bot never speaks raw reasoning aloud
+  // regardless of whether this field takes effect.
   if (process.env.LLM_REASONING_EFFORT) {
     body.reasoning_effort = process.env.LLM_REASONING_EFFORT;
   }
