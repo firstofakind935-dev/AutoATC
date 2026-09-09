@@ -110,6 +110,14 @@ anything else that implements an OpenAI-compatible `/v1/chat/completions`
 endpoint — no code changes needed. `OPENAI_API_KEY` becomes optional in
 that case (only send one if your server requires it).
 
+**If you're using a Qwen3 (or other reasoning) model, set
+`LLM_REASONING_EFFORT=none`** in `.env`. Reasoning models write a full
+`<think>...</think>` block before the actual reply by default, which adds
+real latency for a live voice bot. Note this needs to be set at the
+request-body level (which this env var controls) - the `ollama run
+--think=false` CLI flag does not reliably suppress it on every
+Ollama/model version, confirmed by testing directly against both.
+
 **Network reachability matters here.** If STT/TTS/the bots run on Railway
 but the LLM runs on your own machine or a home server, Railway's servers
 need to actually be able to reach it over the internet — a server sitting

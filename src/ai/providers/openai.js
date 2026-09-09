@@ -11,14 +11,28 @@ async function generateReply({ apiKey, baseUrl = DEFAULT_BASE_URL, model, system
   const headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
+  const body = {
+    model,
+    max_tokens: 200,
+    messages: [{ role: 'system', content: systemPrompt }, ...history],
+  };
+
+  // Reasoning models (e.g. Qwen3 on Ollama) emit a <think>...</think> block
+  // before the actual reply unless told not to - a real latency and cost
+  // problem for a live voice reply. Opt-in only (via LLM_REASONING_EFFORT,
+  // e.g. "none"), since real OpenAI models don't necessarily expect this
+  // field and other self-hosted backends may not either. The CLI-level
+  // `ollama run --think=false` flag does NOT reliably suppress this on
+  // every Ollama/model version - this request-body field is what actually
+  // worked when tested directly against the API.
+  if (process.env.LLM_REASONING_EFFORT) {
+    body.reasoning_effort = process.env.LLM_REASONING_EFFORT;
+  }
+
   const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/chat/completions`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      model,
-      max_tokens: 200,
-      messages: [{ role: 'system', content: systemPrompt }, ...history],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
