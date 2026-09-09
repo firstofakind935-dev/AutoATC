@@ -66,7 +66,6 @@ class AtcBot {
     this.logger.info(`Logged in as ${this.client.user.tag}`);
 
     const guild = await this.client.guilds.fetch(this.config.guildId);
-    await guild.members.fetch(); // populate cache so we can tell humans from bots
 
     if (this.config.logChannelId) {
       this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
@@ -88,7 +87,10 @@ class AtcBot {
 
     const capture = new VoiceCapture(this.connection, {
       logger: this.logger,
-      getUserIsBot: (userId) => guild.members.cache.get(userId)?.user.bot ?? false,
+      getUserIsBot: async (userId) => {
+        const member = await getMember(guild, userId);
+        return member?.user.bot ?? false;
+      },
     });
     capture.start((userId, pcmBuffer) => {
       this._enqueue(() => this._handleUtterance(guild, userId, pcmBuffer));
@@ -137,7 +139,7 @@ class AtcBot {
 
     if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return;
 
-    const speaker = guild.members.cache.get(userId);
+    const speaker = await getMember(guild, userId);
     const speakerName = speaker ? speaker.displayName : userId;
     this.logger.info(`${speakerName}: ${transcript}`);
     await this._log(`🎙️ **${speakerName}:** ${transcript}`);
@@ -236,6 +238,24 @@ class AtcBot {
     } else {
       await message.reply(`Usage: \`${this.config.commandPrefix} pause\` or \`${this.config.commandPrefix} resume\``).catch(() => {});
     }
+  }
+}
+
+/**
+ * Looks up a single guild member, checking the cache first and falling
+ * back to a targeted REST fetch (GET /guilds/{guild}/members/{user}).
+ * Deliberately never bulk-fetches the whole member list - that requires
+ * the privileged "Server Members Intent" (opt-in per bot in the Discord
+ * Developer Portal); a single-member fetch doesn't. Returns null if the
+ * member can't be found (e.g. they left).
+ */
+async function getMember(guild, userId) {
+  const cached = guild.members.cache.get(userId);
+  if (cached) return cached;
+  try {
+    return await guild.members.fetch(userId);
+  } catch {
+    return null;
   }
 }
 

@@ -29,11 +29,14 @@ class VoiceCapture {
     this.activeUsers.clear();
   }
 
-  _onSpeakingStart(userId) {
+  async _onSpeakingStart(userId) {
     if (this.activeUsers.has(userId)) return;
-    if (this.getUserIsBot(userId)) return;
+    this.activeUsers.add(userId); // claim immediately - getUserIsBot below is async
 
-    this.activeUsers.add(userId);
+    if (await this.getUserIsBot(userId)) {
+      this.activeUsers.delete(userId);
+      return;
+    }
 
     const opusStream = this.connection.receiver.subscribe(userId, {
       end: { behavior: EndBehaviorType.AfterSilence, duration: SILENCE_DURATION_MS },
