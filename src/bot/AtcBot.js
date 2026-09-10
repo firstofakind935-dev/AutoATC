@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, Status } = require('discord.js');
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -71,6 +71,17 @@ class AtcBot {
       this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
     }
 
+    // discord.js's voiceAdapterCreator silently refuses to send the join
+    // request at all if the gateway shard isn't in Ready status yet
+    // (Guild.js: `if (this.shard.status !== Status.Ready) return false`) -
+    // and the client's own 'ready'/'clientReady' event can fire a beat
+    // before that internal shard flag flips, so joining voice from directly
+    // inside this handler can lose the race. When it does, the connection
+    // is immediately dropped to "disconnected" (AdapterUnavailable) before
+    // any listener has a chance to observe the transition, which is
+    // indistinguishable from a silent hang without this guard.
+    await waitForShardReady(guild.shard);
+
     this.connection = joinVoiceChannel({
       channelId: this.config.voiceChannelId,
       guildId: this.config.guildId,
@@ -79,11 +90,10 @@ class AtcBot {
       selfMute: false,
     });
 
-    // Reaching Ready needs both the voice WebSocket handshake (Signalling)
-    // and a separate UDP media handshake (Connecting) to succeed - logging
-    // every transition makes it possible to tell, from a bare timeout,
-    // which half actually failed (e.g. stuck at Connecting points at
-    // blocked/restricted UDP egress on the host, not a Discord-side issue).
+    // Logged immediately (not just on future transitions) since a failed
+    // sendPayload above flips the state synchronously during construction,
+    // before any 'stateChange' listener could be attached to see it.
+    this.logger.info(`Voice connection initial state: ${this.connection.state.status}`);
     this.connection.on('stateChange', (oldState, newState) => {
       this.logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
     });
@@ -247,6 +257,23 @@ class AtcBot {
     } else {
       await message.reply(`Usage: \`${this.config.commandPrefix} pause\` or \`${this.config.commandPrefix} resume\``).catch(() => {});
     }
+  }
+}
+
+const SHARD_READY_POLL_MS = 100;
+const SHARD_READY_TIMEOUT_MS = 10_000;
+
+/**
+ * Polls until the guild's gateway shard reports Ready status. See the
+ * comment at the call site in _onReady() for why this guard exists.
+ */
+async function waitForShardReady(shard, timeoutMs = SHARD_READY_TIMEOUT_MS) {
+  const start = Date.now();
+  while (shard.status !== Status.Ready) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`Shard did not reach Ready status within ${timeoutMs}ms (currently: ${shard.status})`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, SHARD_READY_POLL_MS));
   }
 }
 
