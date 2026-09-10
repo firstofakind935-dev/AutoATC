@@ -22,7 +22,7 @@ const POSITION_RESPONSIBILITIES = [
     example: `Cessna 42Yankee, taxi to runway 27 via Alpha, hold short runway 27.`,
     redirectExample: {
       request: `Ground, Cessna 42Yankee, ready for departure, request takeoff clearance.`,
-      reply: `Cessna 42Yankee, contact Tower for takeoff clearance.`,
+      reply: `Cessna 42Yankee, contact Tower, one one eight point seven, for takeoff clearance.`,
     },
   },
   {
@@ -38,7 +38,7 @@ const POSITION_RESPONSIBILITIES = [
       `departure, departure frequency 125.4, squawk 4271.`,
     redirectExample: {
       request: `Clearance, Cessna 42Yankee, request taxi to the runway.`,
-      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+      reply: `Cessna 42Yankee, contact Ground, one one eight point one, for taxi.`,
     },
   },
   {
@@ -53,7 +53,7 @@ const POSITION_RESPONSIBILITIES = [
     example: `Cessna 42Yankee, runway 27, cleared for takeoff.`,
     redirectExample: {
       request: `Tower, Cessna 42Yankee, stand one, request startup and push.`,
-      reply: `Cessna 42Yankee, contact Ground for push and start.`,
+      reply: `Cessna 42Yankee, contact Ground, one one eight point one, for push and start.`,
     },
   },
   {
@@ -68,7 +68,7 @@ const POSITION_RESPONSIBILITIES = [
       `fly heading 270.`,
     redirectExample: {
       request: `Departure, Cessna 42Yankee, request taxi to the runway.`,
-      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+      reply: `Cessna 42Yankee, contact Ground, one one eight point one, for taxi.`,
     },
   },
   {
@@ -83,7 +83,7 @@ const POSITION_RESPONSIBILITIES = [
       `090, vectors for the visual runway 27, contact Tower 128.5.`,
     redirectExample: {
       request: `Approach, Cessna 42Yankee, request landing clearance.`,
-      reply: `Cessna 42Yankee, contact Tower for landing clearance.`,
+      reply: `Cessna 42Yankee, contact Tower, one two eight point five, for landing clearance.`,
     },
   },
   {
@@ -98,7 +98,7 @@ const POSITION_RESPONSIBILITIES = [
       `one eight zero.`,
     redirectExample: {
       request: `Center, Cessna 42Yankee, request taxi to the runway.`,
-      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+      reply: `Cessna 42Yankee, contact Ground, one one eight point one, for taxi.`,
     },
   },
 ];
@@ -112,9 +112,14 @@ function getPositionGuidance(position) {
     return (
       `${match.text} Example of correctly structured phraseology for this ` +
       `position: "${match.example}" If a pilot requests something outside ` +
-      `this position's scope, redirect them instead of handling it - for ` +
-      `example, if the transmission is "${match.redirectExample.request}", ` +
-      `respond "${match.redirectExample.reply}".`
+      `this position's scope, redirect them instead of handling it, including ` +
+      `that position's real frequency from the frequency list provided (never ` +
+      `invent one, and never state a frequency for a station that isn't in ` +
+      `the list) - for example, if the transmission is ` +
+      `"${match.redirectExample.request}", respond something like ` +
+      `"${match.redirectExample.reply}" (the frequency in this example is ` +
+      `illustrative only - always substitute the real one for the actual ` +
+      `receiving station from the frequency list).`
     );
   }
 
@@ -151,6 +156,11 @@ function buildAtcSystemPrompt(persona) {
     `- Use standard ICAO/FAA phraseology appropriate to the ${persona.position} position.`,
     `- Be brief. Real controllers do not use full sentences or pleasantries.`,
     `- Always read back or reference the pilot's callsign if one was given.`,
+    `- Some transmissions will come with a list of real station frequencies ` +
+      `and callsigns. Whenever you tell a pilot to contact another position, ` +
+      `state that station's real frequency from the list (e.g. "contact ` +
+      `Ground, one one eight point one") - never invent a frequency, and ` +
+      `never state one for a station that isn't in the list.`,
     `- If the transcript is fragments, static, or unclear words with no ` +
       `complete identifiable request (for example: "...kssht... requesting ` +
       `...zzzt... unable to..."), that transmission was NOT understood. Respond ` +

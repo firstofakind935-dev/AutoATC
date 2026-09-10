@@ -25,14 +25,14 @@
     "positions": ["ground"],
     "situation": "Pilot asks Ground for takeoff clearance - not Ground's job.",
     "keywords": ["takeoff clearance", "cleared for takeoff", "ready for departure"],
-    "template": "{callsign}, contact Tower for takeoff clearance."
+    "template": "{callsign}, contact Tower, {freq}, for takeoff clearance."
   },
   {
     "id": "ground-out-of-scope-landing",
     "positions": ["ground"],
     "situation": "Pilot asks Ground for landing clearance - not Ground's job.",
     "keywords": ["landing clearance", "cleared to land", "request landing"],
-    "template": "{callsign}, contact Tower for landing."
+    "template": "{callsign}, contact Tower, {freq}, for landing."
   },
   {
     "id": "clearance-ifr-request",
@@ -46,7 +46,7 @@
     "positions": ["clearance delivery", "clearance"],
     "situation": "Pilot asks Clearance Delivery for taxi instructions - not their job.",
     "keywords": ["taxi", "request taxi"],
-    "template": "{callsign}, contact Ground for taxi."
+    "template": "{callsign}, contact Ground, {freq}, for taxi."
   },
   {
     "id": "tower-takeoff-clearance",
@@ -81,14 +81,14 @@
     "positions": ["tower"],
     "situation": "Pilot asks Tower for pushback/engine start - that's Ground's job.",
     "keywords": ["push and start", "startup and push", "pushback"],
-    "template": "{callsign}, contact Ground for push and start."
+    "template": "{callsign}, contact Ground, {freq}, for push and start."
   },
   {
     "id": "tower-out-of-scope-taxi",
     "positions": ["tower"],
     "situation": "Pilot asks Tower for taxi routing - that's Ground's job.",
     "keywords": ["taxi to the runway", "request taxi"],
-    "template": "{callsign}, contact Ground for taxi."
+    "template": "{callsign}, contact Ground, {freq}, for taxi."
   },
   {
     "id": "departure-radar-contact",
@@ -123,7 +123,7 @@
     "positions": ["approach"],
     "situation": "Pilot asks Approach for landing clearance - that's Tower's job.",
     "keywords": ["cleared to land", "landing clearance"],
-    "template": "{callsign}, contact Tower for landing clearance."
+    "template": "{callsign}, contact Tower, {freq}, for landing clearance."
   },
   {
     "id": "center-climb-descend",
