@@ -82,25 +82,15 @@ class AtcBot {
     // indistinguishable from a silent hang without this guard.
     await waitForShardReady(guild.shard);
 
-    this.connection = joinVoiceChannel({
+    const joinOptions = {
       channelId: this.config.voiceChannelId,
       guildId: this.config.guildId,
       adapterCreator: guild.voiceAdapterCreator,
       selfDeaf: false,
       selfMute: false,
-    });
-
-    // Logged immediately (not just on future transitions) since a failed
-    // sendPayload above flips the state synchronously during construction,
-    // before any 'stateChange' listener could be attached to see it.
-    this.logger.info(`Voice connection initial state: ${this.connection.state.status}`);
-    this.connection.on('stateChange', (oldState, newState) => {
-      this.logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
-    });
-
+    };
+    this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
     this._watchConnectionHealth();
-
-    await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
     this.connection.subscribe(this.player);
     this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
 
@@ -262,6 +252,44 @@ class AtcBot {
 
 const SHARD_READY_POLL_MS = 100;
 const SHARD_READY_TIMEOUT_MS = 10_000;
+const VOICE_JOIN_MAX_ATTEMPTS = 3;
+const VOICE_JOIN_TIMEOUT_MS = 15_000;
+const VOICE_JOIN_RETRY_DELAY_MS = 3_000;
+
+/**
+ * Joins a voice channel, retrying a few times on failure. Real-world
+ * testing showed an occasional transient hang (Discord never responding
+ * with voice server info in time) immediately after a run that had
+ * succeeded in under 200ms moments earlier, with no code change in
+ * between - a one-off Discord-side hiccup rather than a persistent bug.
+ * Recovering from that shouldn't require a full manual bot restart.
+ */
+async function joinVoiceWithRetry(joinOptions, logger) {
+  let lastError;
+  for (let attempt = 1; attempt <= VOICE_JOIN_MAX_ATTEMPTS; attempt++) {
+    const connection = joinVoiceChannel(joinOptions);
+    // Logged immediately (not just on future transitions) since a failed
+    // sendPayload can flip the state synchronously during construction,
+    // before any 'stateChange' listener could be attached to see it.
+    logger.info(`Voice connection initial state (attempt ${attempt}): ${connection.state.status}`);
+    connection.on('stateChange', (oldState, newState) => {
+      logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
+    });
+
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, VOICE_JOIN_TIMEOUT_MS);
+      return connection;
+    } catch (err) {
+      lastError = err;
+      logger.warn(`Voice join attempt ${attempt}/${VOICE_JOIN_MAX_ATTEMPTS} failed: ${err.message}`);
+      connection.destroy();
+      if (attempt < VOICE_JOIN_MAX_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, VOICE_JOIN_RETRY_DELAY_MS));
+      }
+    }
+  }
+  throw lastError;
+}
 
 /**
  * Polls until the guild's gateway shard reports Ready status. See the
