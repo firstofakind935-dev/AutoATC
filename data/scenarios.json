@@ -1,0 +1,156 @@
+[
+  {
+    "id": "ground-taxi-request",
+    "positions": ["ground"],
+    "situation": "Pilot requests taxi to the active runway.",
+    "keywords": ["taxi", "ready to taxi", "request taxi"],
+    "template": "{callsign}, taxi to runway {runway} via {taxiway}, hold short runway {runway}."
+  },
+  {
+    "id": "ground-pushback-start",
+    "positions": ["ground"],
+    "situation": "Pilot requests pushback and/or engine start.",
+    "keywords": ["push", "pushback", "start up", "startup", "request start"],
+    "template": "{callsign}, pushback and start approved."
+  },
+  {
+    "id": "ground-gate-parking",
+    "positions": ["ground"],
+    "situation": "Pilot requests taxi to a gate/stand/parking after landing.",
+    "keywords": ["gate", "parking", "stand"],
+    "template": "{callsign}, taxi to {gate} via {taxiway}."
+  },
+  {
+    "id": "ground-out-of-scope-takeoff",
+    "positions": ["ground"],
+    "situation": "Pilot asks Ground for takeoff clearance - not Ground's job.",
+    "keywords": ["takeoff clearance", "cleared for takeoff", "ready for departure"],
+    "template": "{callsign}, contact Tower for takeoff clearance."
+  },
+  {
+    "id": "ground-out-of-scope-landing",
+    "positions": ["ground"],
+    "situation": "Pilot asks Ground for landing clearance - not Ground's job.",
+    "keywords": ["landing clearance", "cleared to land", "request landing"],
+    "template": "{callsign}, contact Tower for landing."
+  },
+  {
+    "id": "clearance-ifr-request",
+    "positions": ["clearance delivery", "clearance"],
+    "situation": "Pilot requests an IFR/VFR clearance before taxi.",
+    "keywords": ["ifr clearance", "request clearance", "clearance to", "cleared to"],
+    "template": "{callsign}, cleared to {destination} as filed, climb via SID, maintain {altitude}, departure frequency {freq}, squawk {squawk}."
+  },
+  {
+    "id": "clearance-out-of-scope-taxi",
+    "positions": ["clearance delivery", "clearance"],
+    "situation": "Pilot asks Clearance Delivery for taxi instructions - not their job.",
+    "keywords": ["taxi", "request taxi"],
+    "template": "{callsign}, contact Ground for taxi."
+  },
+  {
+    "id": "tower-takeoff-clearance",
+    "positions": ["tower"],
+    "situation": "Pilot ready for departure, requests takeoff clearance.",
+    "keywords": ["ready for departure", "request takeoff", "ready to go", "holding short"],
+    "template": "{callsign}, runway {runway}, cleared for takeoff."
+  },
+  {
+    "id": "tower-landing-clearance",
+    "positions": ["tower"],
+    "situation": "Pilot on approach/final, requests landing clearance.",
+    "keywords": ["request landing", "request full stop", "on final", "request to land"],
+    "template": "{callsign}, runway {runway}, cleared to land."
+  },
+  {
+    "id": "tower-runway-crossing",
+    "positions": ["tower"],
+    "situation": "Pilot requests to cross an active runway to reach another part of the airport.",
+    "keywords": ["cross runway", "request to cross", "crossing runway"],
+    "template": "{callsign}, cross runway {runway}, {taxiway}."
+  },
+  {
+    "id": "tower-go-around",
+    "positions": ["tower"],
+    "situation": "Pilot reports going around / missed approach.",
+    "keywords": ["going around", "go around", "missed approach"],
+    "template": "{callsign}, roger, fly runway heading, climb and maintain {altitude}."
+  },
+  {
+    "id": "tower-out-of-scope-push-start",
+    "positions": ["tower"],
+    "situation": "Pilot asks Tower for pushback/engine start - that's Ground's job.",
+    "keywords": ["push and start", "startup and push", "pushback"],
+    "template": "{callsign}, contact Ground for push and start."
+  },
+  {
+    "id": "tower-out-of-scope-taxi",
+    "positions": ["tower"],
+    "situation": "Pilot asks Tower for taxi routing - that's Ground's job.",
+    "keywords": ["taxi to the runway", "request taxi"],
+    "template": "{callsign}, contact Ground for taxi."
+  },
+  {
+    "id": "departure-radar-contact",
+    "positions": ["departure"],
+    "situation": "Aircraft just departed, checking in with Departure.",
+    "keywords": ["departure", "with you", "climbing"],
+    "template": "{callsign}, radar contact, climb and maintain {altitude}."
+  },
+  {
+    "id": "departure-out-of-scope-ground-ops",
+    "positions": ["departure"],
+    "situation": "Pilot asks Departure for taxi/takeoff clearance - not their job.",
+    "keywords": ["taxi", "takeoff clearance"],
+    "template": "{callsign}, contact Ground/Tower for that."
+  },
+  {
+    "id": "approach-vectors",
+    "positions": ["approach"],
+    "situation": "Inbound aircraft requesting approach / being vectored in.",
+    "keywords": ["inbound", "request approach", "descend", "request vectors"],
+    "template": "{callsign}, descend and maintain {altitude}, fly heading {heading}, vectors for the {approachType} runway {runway}."
+  },
+  {
+    "id": "approach-handoff-to-tower",
+    "positions": ["approach"],
+    "situation": "Aircraft established on approach, ready to be handed to Tower.",
+    "keywords": ["established", "on approach"],
+    "template": "{callsign}, contact Tower {freq}."
+  },
+  {
+    "id": "approach-out-of-scope-landing",
+    "positions": ["approach"],
+    "situation": "Pilot asks Approach for landing clearance - that's Tower's job.",
+    "keywords": ["cleared to land", "landing clearance"],
+    "template": "{callsign}, contact Tower for landing clearance."
+  },
+  {
+    "id": "center-climb-descend",
+    "positions": ["center"],
+    "situation": "En-route aircraft requesting a climb or descent.",
+    "keywords": ["request climb", "request descent", "flight level"],
+    "template": "{callsign}, climb and maintain flight level {flightLevel}."
+  },
+  {
+    "id": "center-oceanic-clearance",
+    "positions": ["center"],
+    "situation": "Aircraft requesting an oceanic clearance / track assignment.",
+    "keywords": ["oceanic clearance", "track"],
+    "template": "{callsign}, cleared via Track {track}, maintain {altitude}, mach {mach}."
+  },
+  {
+    "id": "center-out-of-scope-airport-ops",
+    "positions": ["center"],
+    "situation": "Pilot asks Center for taxi/landing clearance - airport-local, not Center's job.",
+    "keywords": ["taxi", "landing clearance"],
+    "template": "{callsign}, contact the airport's local frequency for that."
+  },
+  {
+    "id": "any-radio-check",
+    "positions": ["any"],
+    "situation": "Pilot requests a radio check.",
+    "keywords": ["radio check"],
+    "template": "{callsign}, reading you five by five."
+  }
+]

@@ -16,6 +16,7 @@ const { transcribeAudio } = require('../speech/stt');
 const { synthesizeSpeech } = require('../speech/tts');
 const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
+const { findBestScenario, formatScenarioHint } = require('../ai/scenarioMatcher');
 const { getFlightPlanContext } = require('../flightplans/store');
 const { getChartContext } = require('../charts/store');
 const { getOceanicTracksContext } = require('../charts/oceanicTracks');
@@ -156,7 +157,9 @@ class AtcBot {
     this.history.addPilotTransmission(transcript);
 
     const flightPlanContext = await getFlightPlanContext();
-    const turnContext = [this.chartContext, this.oceanicTracksContext, flightPlanContext]
+    const matchedScenario = findBestScenario(transcript, this.config.persona.position);
+    const scenarioContext = matchedScenario ? formatScenarioHint(matchedScenario) : null;
+    const turnContext = [this.chartContext, this.oceanicTracksContext, flightPlanContext, scenarioContext]
       .filter(Boolean)
       .join('\n\n') || undefined;
 
