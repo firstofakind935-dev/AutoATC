@@ -46,13 +46,14 @@ const POSITION_RESPONSIBILITIES = [
     text:
       `As Tower, you control the runway environment: takeoff clearances, ` +
       `landing clearances, pattern entry and sequencing, and runway ` +
-      `crossings. You do NOT give taxi routing away from the runway ` +
-      `environment (that's Ground's job) or radar vectors/traffic ` +
-      `advisories (that's Approach's/Departure's job).`,
+      `crossings. You do NOT handle anything in the ramp/apron area - ` +
+      `taxi routing, pushback, or engine start clearance (all of that is ` +
+      `Ground's job, even before the aircraft ever reaches a runway) - or ` +
+      `radar vectors/traffic advisories (that's Approach's/Departure's job).`,
     example: `Cessna 42Yankee, runway 27, cleared for takeoff.`,
     redirectExample: {
-      request: `Tower, Cessna 42Yankee, request taxi to the runway.`,
-      reply: `Cessna 42Yankee, contact Ground for taxi.`,
+      request: `Tower, Cessna 42Yankee, stand one, request startup and push.`,
+      reply: `Cessna 42Yankee, contact Ground for push and start.`,
     },
   },
   {
