@@ -10,7 +10,7 @@
       "position": "Tower",
       "callsign": "Izolirani Tower",
       "airport": "IZOL",
-      "ttsVoice": "onyx"
+      "ttsVoice": "am_onyx"
     },
     "ai": {
       "provider": "openai",
