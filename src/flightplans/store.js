@@ -1,22 +1,10 @@
-const { getSupabaseClient } = require('./supabaseClient');
+const { getFlightPlans } = require('../flightradar365/client');
 const { makeLogger } = require('../utils/logger');
 
 const logger = makeLogger('flightplans');
 
-const TABLE = process.env.SUPABASE_FLIGHT_PLANS_TABLE || 'flight_plans';
 const CACHE_TTL_MS = 30_000;
 const MAX_ROWS = 50;
-
-// Matches the AutoATC app's actual flight_plans schema. "status" and
-// "atc_status" both exist but aren't filtered on below since their valid
-// values aren't pinned down yet - the DB also has a
-// delete_landed_flight_plans() RPC function, which suggests landed
-// flights are already removed server-side. Add a .eq()/.in() filter in
-// fetchAndFormat() if stale (e.g. not-yet-approved) plans start showing
-// up here.
-const COLUMNS =
-  'callsign, aircraft, aircraft_icao, registration, dep_icao, arr_icao, route, waypoints, ' +
-  'cruise_alt, cruise_speed, squawk, flight_rules, remarks, atc_note, status, atc_status, updated_at';
 
 let cache = { text: null, expiresAt: 0 };
 let inFlight = null;
@@ -25,12 +13,11 @@ let inFlight = null;
  * Returns a formatted text block listing currently filed flight plans, for
  * injection into the LLM's context so it can match a spoken callsign to a
  * known plan. Returns null if flight plan lookup isn't configured, the
- * query fails, or there are no rows - callers should just skip the
+ * request fails, or there are no rows - callers should just skip the
  * context block in that case rather than fail the whole reply.
  */
 async function getFlightPlanContext() {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
+  if (!process.env.FLIGHTRADAR365_BOT_KEY) return null;
 
   const now = Date.now();
   if (cache.text !== null && now < cache.expiresAt) {
@@ -38,7 +25,7 @@ async function getFlightPlanContext() {
   }
   if (inFlight) return inFlight;
 
-  inFlight = fetchAndFormat(supabase)
+  inFlight = fetchAndFormat()
     .then((text) => {
       cache = { text, expiresAt: Date.now() + CACHE_TTL_MS };
       return text;
@@ -54,16 +41,27 @@ async function getFlightPlanContext() {
   return inFlight;
 }
 
-async function fetchAndFormat(supabase) {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select(COLUMNS)
-    .order('updated_at', { ascending: false })
-    .limit(MAX_ROWS);
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) return null;
+/**
+ * The exact response envelope from GET .../data?resource=flight_plans
+ * isn't confirmed against real API docs - this handles a few reasonable
+ * shapes (bare array, {data: [...]}, {flight_plans: [...]}) and logs the
+ * actual top-level keys if none match, so a wrong assumption here is
+ * diagnosable from the logs instead of just silently returning nothing.
+ */
+function extractRows(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.flight_plans)) return response.flight_plans;
+  logger.warn(`Unrecognized flight_plans response shape - top-level keys: ${Object.keys(response || {}).join(', ') || '(none)'}`);
+  return [];
+}
 
-  const lines = data.filter((row) => row.callsign).map(formatRow);
+async function fetchAndFormat() {
+  const response = await getFlightPlans();
+  const rows = extractRows(response).slice(0, MAX_ROWS);
+  if (rows.length === 0) return null;
+
+  const lines = rows.filter((row) => row.callsign).map(formatRow);
   if (lines.length === 0) return null;
 
   return [

@@ -169,33 +169,33 @@ curl https://yourname.ddns.net/v1/models                                        
 #### Flight plan awareness (optional)
 
 If pilots file flight plans through a separate app (e.g. one built with
-[Lovable](https://lovable.dev), which defaults to a Supabase backend), set
-`SUPABASE_URL` and `SUPABASE_KEY` in `.env` and every bot will pull the
-currently filed flight plans before generating each reply, and pass them
-to the LLM so it can match the pilot's spoken callsign to a plan and use
-its route/altitude/aircraft type where relevant.
+[Lovable](https://lovable.dev)) that exposes a bot API for it, set
+`FLIGHTRADAR365_BOT_KEY` in `.env` and every bot will pull the currently
+filed flight plans before generating each reply, and pass them to the LLM
+so it can match the pilot's spoken callsign to a plan and use its
+route/altitude/aircraft type where relevant.
 
-This is entirely optional — leave both blank and the bot behaves exactly
+This is entirely optional — leave it blank and the bot behaves exactly
 as before, working from the radio transcript alone. There's no separate
 "is this callsign in the database" step in code: the whole flight plan
 list gets included as context and the LLM itself matches the pilot's
 spoken callsign against it (LLMs handle the fuzzy phonetic matching -
 e.g. "four two yankee" → `N42Y` - better than a hand-written parser would).
 
-`src/flightplans/store.js` is already matched to this project's actual
-`flight_plans` table: `callsign` (required to appear in the context at
-all), `aircraft`/`aircraft_icao`, `registration`, `dep_icao`/`arr_icao`,
+`src/flightradar365/client.js` talks to the bot API
+(`GET .../data?resource=flight_plans`, authenticated via the
+`x-bot-key` header); `src/flightplans/store.js` formats the response for
+the LLM, expecting fields matching this project's actual `flight_plans`
+schema: `callsign` (required to appear in the context at all),
+`aircraft`/`aircraft_icao`, `registration`, `dep_icao`/`arr_icao`,
 `route`, `waypoints`, `cruise_alt`, `cruise_speed`, `squawk`,
-`flight_rules`, `remarks`, `atc_note` — table name overridable via
-`SUPABASE_FLIGHT_PLANS_TABLE`. Results are cached for 30 seconds per
-process so a burst of radio calls doesn't hammer Supabase.
+`flight_rules`, `remarks`, `atc_note`. Results are cached for 30 seconds
+per process so a burst of radio calls doesn't hammer the API.
 
-The table also has `status` and `atc_status` columns that aren't filtered
-on yet (there's a `delete_landed_flight_plans()` DB function, which
-suggests landed flights are already cleaned up server-side, so this may
-not matter in practice) — if plans that shouldn't be "live" yet (e.g.
-pending ATC approval) start showing up in bot replies, add a `.eq()`
-filter on one of those columns in `fetchAndFormat()`.
+The client also exposes `getAirports()`/`getAtis()` reads and
+`publishAtis()`/`updateFlightPlan()`/`deleteFlightPlan()` write actions -
+none of these are wired into bot behavior yet, they're just available
+functions for whenever there's a concrete trigger in mind for them.
 
 #### Chart data (real taxiways, runways, and frequencies)
 
