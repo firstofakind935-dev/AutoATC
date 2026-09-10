@@ -2,15 +2,20 @@ process.env.FFMPEG_PATH = process.env.FFMPEG_PATH || require('ffmpeg-static');
 
 const { loadFleetConfig } = require('./utils/config');
 const { AtcBot } = require('./bot/AtcBot');
+const { AtisBot } = require('./bot/AtisBot');
 const { makeLogger } = require('./utils/logger');
 
 const logger = makeLogger('fleet');
+
+function createBot(config) {
+  return config.type === 'atis' ? new AtisBot(config) : new AtcBot(config);
+}
 
 async function main() {
   const fleetConfig = loadFleetConfig();
   logger.info(`Starting ${fleetConfig.length} bot(s): ${fleetConfig.map((c) => c.name).join(', ')}`);
 
-  const bots = fleetConfig.map((config) => new AtcBot(config));
+  const bots = fleetConfig.map(createBot);
 
   const results = await Promise.allSettled(bots.map((bot) => bot.start()));
   results.forEach((result, index) => {

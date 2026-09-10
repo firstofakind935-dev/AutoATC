@@ -34,5 +34,17 @@
       "provider": "openai",
       "model": "gpt-4o-mini"
     }
+  },
+  {
+    "name": "Izolirani ATIS",
+    "type": "atis",
+    "tokenEnv": "BOT_ATIS_TOKEN",
+    "guildId": "REPLACE_WITH_GUILD_ID",
+    "voiceChannelId": "REPLACE_WITH_ATIS_VOICE_CHANNEL_ID",
+    "persona": {
+      "airport": "IZOL",
+      "callsign": "Izolirani ATIS",
+      "ttsVoice": "alloy"
+    }
   }
 ]

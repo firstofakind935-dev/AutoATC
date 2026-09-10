@@ -6,6 +6,7 @@ const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.jso
 const EXAMPLE_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.example.json');
 
 const VALID_PROVIDERS = new Set(['anthropic', 'openai']);
+const VALID_TYPES = new Set(['atc', 'atis']);
 
 function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
   if (!fs.existsSync(configPath)) {
@@ -56,8 +57,12 @@ function validateSpeechConfig() {
 
 function validateEntry(entry, index) {
   const where = `config/bots.json entry #${index + 1} (${entry && entry.name ? entry.name : 'unnamed'})`;
+  const type = entry && entry.type ? entry.type : 'atc';
+  if (!VALID_TYPES.has(type)) {
+    throw new Error(`${where}.type must be one of: ${[...VALID_TYPES].join(', ')}`);
+  }
 
-  const required = ['name', 'tokenEnv', 'guildId', 'voiceChannelId', 'persona', 'ai'];
+  const required = ['name', 'tokenEnv', 'guildId', 'voiceChannelId', 'persona'];
   for (const field of required) {
     if (!entry || entry[field] === undefined || entry[field] === null || entry[field] === '') {
       throw new Error(`${where} is missing required field "${field}".`);
@@ -72,11 +77,41 @@ function validateEntry(entry, index) {
     );
   }
 
-  const { persona, ai } = entry;
+  const { persona } = entry;
+
+  const base = {
+    name: entry.name,
+    type,
+    token,
+    guildId: String(entry.guildId),
+    voiceChannelId: String(entry.voiceChannelId),
+    logChannelId: entry.logChannelId ? String(entry.logChannelId) : null,
+  };
+
+  if (type === 'atis') {
+    // No LLM/STT involved at all - this bot only broadcasts, it never
+    // listens, so it needs none of the "ai" config or a position/callsign
+    // to roleplay - just the airport to look up the right ATIS entry for.
+    if (!persona.airport) {
+      throw new Error(`${where}.persona.airport is required for an "atis" bot (used to match the right ATIS entry).`);
+    }
+    return {
+      ...base,
+      persona: {
+        airport: persona.airport,
+        callsign: persona.callsign || `${persona.airport} ATIS`,
+        ttsVoice: persona.ttsVoice || 'alloy',
+      },
+    };
+  }
+
+  const { ai } = entry;
+  if (!ai) {
+    throw new Error(`${where} is missing required field "ai".`);
+  }
   if (!persona.position || !persona.callsign) {
     throw new Error(`${where}.persona must include at least "position" and "callsign".`);
   }
-
   if (!VALID_PROVIDERS.has(ai.provider)) {
     throw new Error(`${where}.ai.provider must be one of: ${[...VALID_PROVIDERS].join(', ')}`);
   }
@@ -95,11 +130,7 @@ function validateEntry(entry, index) {
   }
 
   return {
-    name: entry.name,
-    token,
-    guildId: String(entry.guildId),
-    voiceChannelId: String(entry.voiceChannelId),
-    logChannelId: entry.logChannelId ? String(entry.logChannelId) : null,
+    ...base,
     commandPrefix: entry.commandPrefix || null,
     persona: {
       position: persona.position,

@@ -283,6 +283,37 @@ voice channel per server at a time, which is a Discord platform limit, not
 something this code can work around — that's why each position needs its
 own bot application/token.
 
+#### ATIS bots
+
+Set `"type": "atis"` on an entry to get a dedicated ATIS bot instead of a
+regular ATC position — it joins its own voice channel (its own frequency,
+same as every other position) and continuously loops the current ATIS
+report, re-synthesizing only when the content actually changes (polled
+from the flightradar365 bot API every 60 seconds). It never listens —
+no STT, no LLM, no `"ai"` field needed at all:
+
+```jsonc
+{
+  "name": "Izolirani ATIS",
+  "type": "atis",
+  "tokenEnv": "BOT_ATIS_TOKEN",
+  "guildId": "...",
+  "voiceChannelId": "...",           // its own dedicated ATIS channel
+  "persona": {
+    "airport": "IZOL",               // required - matches the right ATIS entry from the API
+    "callsign": "Izolirani ATIS",    // optional, defaults to "<airport> ATIS"
+    "ttsVoice": "alloy"
+  }
+}
+```
+
+Requires `FLIGHTRADAR365_BOT_KEY` to be set (see [Flight plan
+awareness](#flight-plan-awareness-optional) above for the same API). The
+exact ATIS response field names aren't confirmed against real API docs
+yet — `src/bot/AtisBot.js`'s `formatAtisBroadcast()` handles a few
+reasonable shapes and logs the raw field names if nothing matches, same
+pattern as the flight plan integration.
+
 ### 5. Run
 
 ```
