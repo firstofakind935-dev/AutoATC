@@ -13,6 +13,7 @@ const { findBestScenario, formatScenarioHint } = require('../ai/scenarioMatcher'
 const { getFlightPlanContext } = require('../flightplans/store');
 const { getChartContext } = require('../charts/store');
 const { getOceanicTracksContext } = require('../charts/oceanicTracks');
+const { getFrequencyContext } = require('../charts/frequencies');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -32,6 +33,7 @@ class AtcBot {
     this.systemPrompt = buildAtcSystemPrompt(config.persona);
     this.chartContext = getChartContext(config.persona.airport); // static per airport, fetched once
     this.oceanicTracksContext = getOceanicTracksContext(); // static fleet-wide, fetched once
+    this.frequencyContext = getFrequencyContext(); // static fleet-wide, fetched once
     this.player = createAudioPlayer();
     this.processingQueue = Promise.resolve();
     this.connection = null;
@@ -152,7 +154,7 @@ class AtcBot {
     const flightPlanContext = await getFlightPlanContext();
     const matchedScenario = findBestScenario(transcript, this.config.persona.position);
     const scenarioContext = matchedScenario ? formatScenarioHint(matchedScenario) : null;
-    const turnContext = [this.chartContext, this.oceanicTracksContext, flightPlanContext, scenarioContext]
+    const turnContext = [this.chartContext, this.oceanicTracksContext, this.frequencyContext, flightPlanContext, scenarioContext]
       .filter(Boolean)
       .join('\n\n') || undefined;
 

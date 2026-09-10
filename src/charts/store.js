@@ -42,7 +42,7 @@ function getChartContext(icao) {
 
 function formatChart(chart) {
   const lines = [
-    `Real chart data for ${chart.icao}${chart.name ? ` (${chart.name})` : ''} - use these actual taxiway/runway/frequency names instead of inventing your own:`,
+    `Real chart data for ${chart.icao}${chart.name ? ` (${chart.name})` : ''} - use these actual taxiway/runway names instead of inventing your own:`,
   ];
 
   if (chart.runways.length > 0) {
@@ -52,10 +52,12 @@ function formatChart(chart) {
     lines.push(`Runways: ${runwayText}`);
   }
 
-  if (chart.frequencies.length > 0) {
-    const freqText = chart.frequencies.map((f) => `${f.facility} ${f.frequency}`).join(', ');
-    lines.push(`Frequencies: ${freqText}`);
-  }
+  // Frequencies are deliberately not included here even though the SVG
+  // extraction captures them - src/charts/frequencies.js's hand-compiled
+  // sheet disagreed with this chart's extracted frequencies for IZOL
+  // (different Ground/Delivery numbers), so that sheet is the single
+  // authoritative frequency source injected into context instead, to
+  // avoid handing the LLM two conflicting numbers for the same station.
 
   if (chart.otherLabels.length > 0) {
     lines.push(`Other chart labels (taxiways, aprons, gates, buildings): ${chart.otherLabels.join(', ')}`);
