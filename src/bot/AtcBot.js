@@ -79,6 +79,15 @@ class AtcBot {
       selfMute: false,
     });
 
+    // Reaching Ready needs both the voice WebSocket handshake (Signalling)
+    // and a separate UDP media handshake (Connecting) to succeed - logging
+    // every transition makes it possible to tell, from a bare timeout,
+    // which half actually failed (e.g. stuck at Connecting points at
+    // blocked/restricted UDP egress on the host, not a Discord-side issue).
+    this.connection.on('stateChange', (oldState, newState) => {
+      this.logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
+    });
+
     this._watchConnectionHealth();
 
     await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
