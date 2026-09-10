@@ -171,7 +171,13 @@ class AtcBot {
         history: this.history.toArray({ contextForLastTurn: turnContext }),
       });
     } catch (err) {
-      this.logger.error('LLM generation failed:', err.message);
+      // Node's fetch wraps every network-level failure (connection refused,
+      // timeout, DNS failure, TLS error...) in a generic "fetch failed"
+      // TypeError, with the actual reason only available on err.cause -
+      // logging just err.message throws that reason away, making a real
+      // outage indistinguishable from every other kind of network failure.
+      const cause = err.cause ? ` (cause: ${err.cause.code || err.cause.message || err.cause})` : '';
+      this.logger.error(`LLM generation failed: ${err.message}${cause}`);
       return;
     }
 
