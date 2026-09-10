@@ -41,6 +41,8 @@ class AtcBot {
     this.player = createAudioPlayer();
     this.processingQueue = Promise.resolve();
     this.connection = null;
+    this.capture = null;
+    this.guild = null;
     this.logChannel = null;
 
     this.client = new Client({
@@ -54,6 +56,7 @@ class AtcBot {
 
     this.client.on('ready', () => this._onReady().catch((err) => this.logger.error('Startup failed:', err)));
     this.client.on('messageCreate', (message) => this._onMessage(message));
+    this.client.on('voiceStateUpdate', (oldState, newState) => this._onVoiceStateUpdate(oldState, newState));
     this.client.on('error', (err) => this.logger.error('Discord client error:', err));
     this.player.on('error', (err) => this.logger.error('Audio player error:', err));
   }
@@ -65,10 +68,10 @@ class AtcBot {
   async _onReady() {
     this.logger.info(`Logged in as ${this.client.user.tag}`);
 
-    const guild = await this.client.guilds.fetch(this.config.guildId);
+    this.guild = await this.client.guilds.fetch(this.config.guildId);
 
     if (this.config.logChannelId) {
-      this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
+      this.logChannel = await this.guild.channels.fetch(this.config.logChannelId).catch(() => null);
     }
 
     // discord.js's voiceAdapterCreator silently refuses to send the join
@@ -80,12 +83,36 @@ class AtcBot {
     // is immediately dropped to "disconnected" (AdapterUnavailable) before
     // any listener has a chance to observe the transition, which is
     // indistinguishable from a silent hang without this guard.
-    await waitForShardReady(guild.shard);
+    await waitForShardReady(this.guild.shard);
+
+    // Only actually join voice if a human is already there - an empty
+    // channel just sits in standby (logged into the gateway, watching for
+    // voiceStateUpdate) rather than holding an idle voice connection open.
+    // _onVoiceStateUpdate wakes it the moment someone joins.
+    const channel = await this.guild.channels.fetch(this.config.voiceChannelId);
+    if (channelHasHumans(channel)) {
+      await this._enterVoice();
+    } else {
+      this.logger.info(`Voice channel ${this.config.voiceChannelId} is empty - starting in standby.`);
+    }
+
+    this.heartbeatInterval = setInterval(() => {
+      this.logger.info('heartbeat');
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  /**
+   * Joins the configured voice channel and starts capturing speech. Safe to
+   * call repeatedly - a no-op if already connected (e.g. a redundant
+   * voiceStateUpdate firing while a previous _enterVoice() is in flight).
+   */
+  async _enterVoice() {
+    if (this.connection) return;
 
     const joinOptions = {
       channelId: this.config.voiceChannelId,
       guildId: this.config.guildId,
-      adapterCreator: guild.voiceAdapterCreator,
+      adapterCreator: this.guild.voiceAdapterCreator,
       selfDeaf: false,
       selfMute: false,
     };
@@ -94,22 +121,55 @@ class AtcBot {
     this.connection.subscribe(this.player);
     this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
 
-    const capture = new VoiceCapture(this.connection, {
+    this.capture = new VoiceCapture(this.connection, {
       logger: this.logger,
       getUserIsBot: async (userId) => {
-        const member = await getMember(guild, userId);
+        const member = await getMember(this.guild, userId);
         return member?.user.bot ?? false;
       },
     });
-    capture.start((userId, pcmBuffer) => {
-      this._enqueue(() => this._handleUtterance(guild, userId, pcmBuffer));
+    this.capture.start((userId, pcmBuffer) => {
+      this._enqueue(() => this._handleUtterance(this.guild, userId, pcmBuffer));
     });
 
     await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
+  }
 
-    this.heartbeatInterval = setInterval(() => {
-      this.logger.info('heartbeat');
-    }, HEARTBEAT_INTERVAL_MS);
+  /**
+   * Leaves the voice channel and stops capture, dropping resource usage
+   * (the voice UDP connection and audio decoding) back to near-zero while
+   * staying logged into the gateway so voiceStateUpdate can wake it again.
+   * Safe to call repeatedly - a no-op if not currently connected.
+   */
+  async _leaveVoice() {
+    if (!this.connection) return;
+
+    this.logger.info('Voice channel empty - entering standby.');
+    await this._log(`💤 ${this.config.persona.callsign} entering standby (channel empty).`);
+
+    if (this.capture) {
+      this.capture.stop();
+      this.capture = null;
+    }
+    this.connection.destroy();
+    this.connection = null;
+  }
+
+  async _onVoiceStateUpdate(oldState, newState) {
+    const channelId = this.config.voiceChannelId;
+    if (oldState.channelId !== channelId && newState.channelId !== channelId) return;
+
+    const channel = newState.channel ?? oldState.channel;
+    if (!channel) return;
+
+    const hasHumans = channelHasHumans(channel);
+    this._enqueue(async () => {
+      if (hasHumans && !this.connection) {
+        await this._enterVoice();
+      } else if (!hasHumans && this.connection) {
+        await this._leaveVoice();
+      }
+    });
   }
 
   _watchConnectionHealth() {
@@ -126,9 +186,13 @@ class AtcBot {
     });
   }
 
+  // Shared serialization queue: utterance processing and standby
+  // enter/leave transitions both go through here, so a voice-channel
+  // teardown can never race a still-in-flight utterance for the
+  // connection it's using, and vice versa.
   _enqueue(task) {
     this.processingQueue = this.processingQueue.then(task).catch((err) => {
-      this.logger.error('Error while processing utterance:', err);
+      this.logger.error('Error in queued task:', err);
     });
     return this.processingQueue;
   }
@@ -295,6 +359,10 @@ async function joinVoiceWithRetry(joinOptions, logger) {
     }
   }
   throw lastError;
+}
+
+function channelHasHumans(channel) {
+  return channel.members.some((member) => !member.user.bot);
 }
 
 /**
