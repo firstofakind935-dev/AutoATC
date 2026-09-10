@@ -6,7 +6,14 @@
 		@authorized {
 			header Authorization "Bearer {$LLM_API_KEY}"
 		}
-		reverse_proxy @authorized {$LLM_UPSTREAM}
+		# Ollama rejects requests whose Host header isn't localhost/127.0.0.1
+		# (DNS-rebinding protection) - without this, every proxied request
+		# gets a 403 straight from Ollama regardless of the Bearer token,
+		# since reverse_proxy otherwise forwards the original public Host
+		# header through untouched.
+		reverse_proxy @authorized {$LLM_UPSTREAM} {
+			header_up Host {$LLM_UPSTREAM}
+		}
 		respond 401
 	}
 
