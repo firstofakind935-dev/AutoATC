@@ -44,7 +44,7 @@
   { "station": "IHEN TWR", "frequency": "130.250", "callsign": "Henstridge Tower" },
   { "station": "IZCC", "frequency": "125.650", "callsign": "Izolirani Center" },
   { "station": "IZOL TWR", "frequency": "118.700", "callsign": "Izolirani Tower" },
-  { "station": "IZOL GND", "frequency": "118.700", "callsign": "Izolirani Ground" },
+  { "station": "IZOL GND", "frequency": "118.900", "callsign": "Izolirani Ground" },
   { "station": "IZOL DEL", "frequency": "123.000", "callsign": "Izoliranii Delivery" },
   { "station": "IJAF TWR", "frequency": "121.100", "callsign": "Al Najaf Tower" },
   { "station": "ISCM TWR", "frequency": "119.300", "callsign": "Scrampton Tower" },
