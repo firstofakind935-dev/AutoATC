@@ -18,11 +18,31 @@ const POSITION_RESPONSIBILITIES = [
       `movement only. You do NOT issue takeoff or landing clearances, ` +
       `runway crossings, or radar services (that's Tower's or Approach's ` +
       `job) - if a pilot requests one of those from you, tell them to ` +
-      `contact the appropriate frequency instead of issuing it yourself.`,
+      `contact the appropriate frequency instead of issuing it yourself. ` +
+      `Some airports have a separate Apron frequency (check the frequency ` +
+      `list for an "APRON" entry at your own airport) - at those airports, ` +
+      `you only handle taxi between the runway and the apron boundary; hand ` +
+      `off movement within the apron area itself (gates, parking, ` +
+      `marshalling) to Apron instead of handling it yourself.`,
     example: `Cessna 42Yankee, taxi to runway 27 via Alpha, hold short runway 27.`,
     redirectExample: {
       request: `Ground, Cessna 42Yankee, ready for departure, request takeoff clearance.`,
       reply: `Cessna 42Yankee, contact Tower, one one eight point seven, for takeoff clearance.`,
+    },
+  },
+  {
+    keywords: ['apron'],
+    text:
+      `As Apron, you handle ramp movement, gate/parking assignment, and ` +
+      `marshalling within the apron area(s) only. You do NOT handle taxi ` +
+      `between the runway and the apron boundary (that's Ground's job) or ` +
+      `takeoff/landing/runway operations (that's Tower's job) - if a pilot ` +
+      `requests one of those from you, tell them to contact the appropriate ` +
+      `frequency instead of issuing it yourself.`,
+    example: `Cessna 42Yankee, taxi to gate 3, marshaller will guide you in.`,
+    redirectExample: {
+      request: `Apron, Cessna 42Yankee, ready to taxi to the runway.`,
+      reply: `Cessna 42Yankee, contact Ground, one one eight point one, for taxi to the runway.`,
     },
   },
   {

@@ -93,9 +93,22 @@ below for where these two sources have disagreed before).
 Notes on individual airports:
 - **IPPH (Perth)** uses **ARR** (Arrivals) instead of a separate Approach —
   one combined frequency handles arrival sequencing.
-- **ISAU (Sauthemptona)** has *both* GND and APRON frequencies — doesn't
-  cleanly fit the normal-airport or carrier pattern; treat GND as the
-  primary ground-ops contact unless testing shows otherwise.
+- **ISAU (Sauthemptona)** has *both* GND and APRON frequencies, now
+  confirmed via a custom ground chart the user annotated (`ISAU_Ground_Chart.svg`,
+  added 2026-09-10): two distinct physical apron zones exist (the
+  terminal/gate ramp area near stands 1-4, and the hangar/control-tower
+  area) — Ground (130.880) covers taxi between the runway and those apron
+  boundaries; Apron (130.885) covers movement within them. ISAU now has a
+  dedicated Apron bot type in `config/bots.example.json`, and
+  `POSITION_RESPONSIBILITIES` in `src/ai/systemPrompt.js` has a matching
+  "apron" entry, with Ground's own guidance updated to hand off apron-zone
+  movement instead of handling it itself. This is the first airport (other
+  than the carriers) confirmed to need this split — worth checking whether
+  any other airport's chart shows the same pattern once more are uploaded.
+  Separately, ISAU's original (non-custom) chart also shows a
+  **"SAUTHEMPTONA Radar" frequency (122.730)** not present in
+  `data/frequencies.json` at all — unconfirmed whether that's active/real,
+  not yet added anywhere.
 - Most single-runway/general-aviation fields (IBAR, IBLT, IBRD, IDCS, IGAR,
   IHEN, IIAB, IJAF, ILKL, IPAP, ISCM, ITEY) only have a **TWR** frequency —
   no Ground/Delivery/Approach exist there at all. A bot at one of these
@@ -188,4 +201,9 @@ operations" above).
 - [ ] Confirm whether single-TWR-only fields (IBAR, IBLT, etc.) need their
       own carrier-style Tower override, or whether the generic Tower
       guidance is fine since there's nothing to redirect to anyway
-- [ ] Confirm ISAU's GND vs APRON split in practice
+- [x] ~~Confirm ISAU's GND vs APRON split in practice~~ — confirmed via
+      custom chart 2026-09-10, dedicated Apron position added
+- [ ] Confirm whether the "SAUTHEMPTONA Radar" frequency (122.730, from
+      ISAU's original chart) is real/active - not in the frequency sheet
+- [ ] Check other airports' charts for the same Ground/Apron split now
+      that ISAU has confirmed it happens at least once
