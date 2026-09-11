@@ -103,8 +103,44 @@ const POSITION_RESPONSIBILITIES = [
   },
 ];
 
-function getPositionGuidance(position) {
+// Confirmed against data/frequencies.json: neither carrier has an APP/DEP
+// entry (no Approach/Departure at a carrier at all) or a GND entry (ground
+// ops go through "Apron" instead of "Ground"). Cross-checked against a
+// real airspace chart the user provided showing carriers with no
+// Approach/Departure ring around them, unlike every island airport.
+const CARRIER_AIRPORTS = new Set(['USS', 'HMS']);
+
+function isCarrier(airport) {
+  return Boolean(airport) && CARRIER_AIRPORTS.has(airport.toUpperCase());
+}
+
+function getCarrierTowerGuidance() {
+  return (
+    `As Tower at this carrier, you control the entire flight deck: takeoff ` +
+    `clearances, landing clearances, and pattern entry. Carriers have no ` +
+    `separate Ground position - pushback, engine start, and deck/apron ` +
+    `movement are handled by Apron control instead, not Ground. Carriers ` +
+    `also have no Approach/Departure - once an aircraft is clear of the ` +
+    `carrier's immediate area, hand them directly to the covering Center, ` +
+    `not Approach/Departure. Example of correctly structured phraseology: ` +
+    `"Cessna 42Yankee, runway 27, cleared for takeoff." If a pilot requests ` +
+    `pushback/engine start, redirect them to Apron with its real frequency - ` +
+    `for example, if the transmission is "Tower, Cessna 42Yankee, request ` +
+    `startup and push.", respond something like "Cessna 42Yankee, contact ` +
+    `Apron, one two seven point seven, for push and start." (frequency ` +
+    `illustrative only - use the real one from the frequency list). If a ` +
+    `departing pilot requests further radar service, hand them directly to ` +
+    `Center with its real frequency instead - never mention Approach or ` +
+    `Departure, since this carrier has neither.`
+  );
+}
+
+function getPositionGuidance(position, airport) {
   const lower = position.toLowerCase();
+  if (lower.includes('tower') && isCarrier(airport)) {
+    return getCarrierTowerGuidance();
+  }
+
   const match = POSITION_RESPONSIBILITIES.find((entry) =>
     entry.keywords.some((keyword) => lower.includes(keyword))
   );
@@ -146,7 +182,7 @@ function buildAtcSystemPrompt(persona) {
     airportLine,
     `Your callsign/identifier when transmitting is "${persona.callsign}".`,
     ``,
-    getPositionGuidance(persona.position),
+    getPositionGuidance(persona.position, persona.airport),
     ``,
     `You are receiving a live speech-to-text transcript of a pilot's radio call.`,
     `The transcript may contain minor errors from imperfect transcription of ` +
