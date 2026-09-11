@@ -45,9 +45,17 @@ ring drawn around either carrier, unlike every island airport.
   **Apron** control instead.
 - **No Approach/Departure at all** — Tower hands departing traffic
   **directly to the covering Center**.
-- Tower's guidance is overridden for these two airports specifically in
-  `getCarrierTowerGuidance()` (`src/ai/systemPrompt.js`), triggered when
-  `persona.airport` is `USS` or `HMS`.
+- **No named taxiways on the deck.** The user uploaded custom deck charts
+  for both carriers (`HMS Queen.svg`, `USS Gerald.svg`, added
+  2026-09-10) showing simple linear deck layouts with hand-marked taxi
+  routes - decided against extracting named-route chart data from these
+  (deleted from the repo) in favor of Apron giving simple relative
+  directions ("turn right", "turn left") to an aircraft's departure point
+  or parking spot instead.
+- Both Tower's and Apron's guidance are overridden for these two airports
+  specifically - `getCarrierTowerGuidance()` and `getCarrierApronGuidance()`
+  (`src/ai/systemPrompt.js`), triggered when `persona.airport` is `USS` or
+  `HMS`.
 
 | Carrier | Callsign | Frequencies |
 |---|---|---|

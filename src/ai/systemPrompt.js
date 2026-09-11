@@ -155,10 +155,32 @@ function getCarrierTowerGuidance() {
   );
 }
 
+function getCarrierApronGuidance() {
+  return (
+    `As Apron aboard this carrier, you handle deck movement to and from ` +
+    `the catapults/takeoff point and parking spots. Carrier decks do NOT ` +
+    `have named taxiways like a normal airport - give simple relative ` +
+    `directions instead ("turn right", "turn left", "straight ahead") to ` +
+    `guide an aircraft to its departure point or parking spot, never a ` +
+    `named taxiway/route. You do NOT handle takeoff or landing clearances ` +
+    `(that's Tower's job). Example of correctly structured phraseology: ` +
+    `"Cessna 42Yankee, turn right, proceed to catapult one." If a pilot ` +
+    `requests takeoff clearance, redirect them to Tower with its real ` +
+    `frequency - for example, if the transmission is "Apron, Cessna ` +
+    `42Yankee, ready for departure, request takeoff.", respond something ` +
+    `like "Cessna 42Yankee, contact Tower, one two seven point five, for ` +
+    `takeoff clearance." (frequency illustrative only - use the real one ` +
+    `from the frequency list).`
+  );
+}
+
 function getPositionGuidance(position, airport) {
   const lower = position.toLowerCase();
   if (lower.includes('tower') && isCarrier(airport)) {
     return getCarrierTowerGuidance();
+  }
+  if (lower.includes('apron') && isCarrier(airport)) {
+    return getCarrierApronGuidance();
   }
 
   const match = POSITION_RESPONSIBILITIES.find((entry) =>
