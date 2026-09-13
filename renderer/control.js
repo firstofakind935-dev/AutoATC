@@ -21,6 +21,22 @@ let trackingTimer = null;
 const captureVideo = document.createElement('video');
 captureVideo.muted = true;
 
+// ---------- Status helpers (status pills + the sidebar status rail) ----------
+
+function setStatus(id, text, tone) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.remove('ok', 'warn', 'bad');
+  if (tone) el.classList.add(tone);
+}
+
+function setSidebar(dotId, textId, text, tone) {
+  document.getElementById(textId).textContent = text;
+  const dot = document.getElementById(dotId);
+  dot.classList.remove('good', 'warn', 'bad');
+  if (tone) dot.classList.add(tone);
+}
+
 // ---------- Settings ----------
 
 async function loadSettings() {
@@ -38,8 +54,8 @@ async function saveSettingsFromForm() {
   settings.monitorApiKey = document.getElementById('monitorApiKey').value.trim();
   settings.intervalSec = Number(document.getElementById('intervalSec').value) || 5;
   await window.companion.saveSettings(settings);
-  document.getElementById('settingsStatus').textContent = 'Saved.';
-  setTimeout(() => (document.getElementById('settingsStatus').textContent = ''), 2000);
+  setStatus('settingsStatus', 'Saved.', 'ok');
+  setTimeout(() => setStatus('settingsStatus', '', null), 2000);
 }
 
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
@@ -65,7 +81,7 @@ async function showOverlay() {
   const screenSources = await window.companion.getScreenSources();
   const match = screenSources.find((s) => String(s.display_id) === String(displayId)) || screenSources[0];
   if (!match) {
-    document.getElementById('overlayStatus').textContent = 'Overlay shown, but could not find a matching screen capture source.';
+    setStatus('overlayStatus', 'Overlay shown, but could not find a matching screen capture source.', 'bad');
     return;
   }
 
@@ -81,7 +97,8 @@ async function showOverlay() {
   captureVideo.srcObject = stream;
   await captureVideo.play();
 
-  document.getElementById('overlayStatus').textContent = `Overlay shown on ${overlayInfo.bounds.width}x${overlayInfo.bounds.height}.`;
+  setStatus('overlayStatus', `Overlay shown on ${overlayInfo.bounds.width}x${overlayInfo.bounds.height}.`, 'ok');
+  setSidebar('dotOverlay', 'sidebarOverlayText', `${overlayInfo.bounds.width}x${overlayInfo.bounds.height}`, 'good');
   document.getElementById('hideOverlayBtn').disabled = false;
   document.getElementById('regions').hidden = false;
   document.getElementById('calibration').hidden = false;
@@ -93,13 +110,15 @@ async function showOverlay() {
 async function hideOverlay() {
   await window.companion.closeOverlay();
   overlayInfo = null;
-  document.getElementById('overlayStatus').textContent = 'Overlay not shown';
+  setStatus('overlayStatus', 'Overlay not shown', null);
+  setSidebar('dotOverlay', 'sidebarOverlayText', 'Not shown', null);
   document.getElementById('hideOverlayBtn').disabled = true;
 }
 
 document.getElementById('showOverlayBtn').addEventListener('click', () => {
   showOverlay().catch((err) => {
-    document.getElementById('overlayStatus').textContent = `Could not show overlay: ${err.message}`;
+    setStatus('overlayStatus', `Could not show overlay: ${err.message}`, 'bad');
+    setSidebar('dotOverlay', 'sidebarOverlayText', 'Error', 'bad');
   });
 });
 document.getElementById('hideOverlayBtn').addEventListener('click', hideOverlay);
@@ -115,15 +134,15 @@ document.getElementById('showHudCheckbox').addEventListener('change', (e) => {
 // ---------- Region selection (arms the overlay for one drag) ----------
 
 document.getElementById('selectHeadingBtn').addEventListener('click', () => {
-  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the heading/compass readout...';
+  setStatus('regionStatus', 'Drag a box on your game over the heading/compass readout...', 'warn');
   window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'heading' });
 });
 document.getElementById('selectInfoBtn').addEventListener('click', () => {
-  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the aircraft type/speed/altitude box...';
+  setStatus('regionStatus', 'Drag a box on your game over the aircraft type/speed/altitude box...', 'warn');
   window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'info' });
 });
 document.getElementById('selectMinimapBtn').addEventListener('click', () => {
-  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the minimap...';
+  setStatus('regionStatus', 'Drag a box on your game over the minimap...', 'warn');
   window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'minimap' });
 });
 
@@ -133,11 +152,11 @@ document.getElementById('calibrateBtn').addEventListener('click', () => {
   const icaoA = document.getElementById('airportA').value;
   const icaoB = document.getElementById('airportB').value;
   if (!icaoA || !icaoB || icaoA === icaoB) {
-    document.getElementById('calibrationStatus').textContent = 'Pick two different airports first.';
+    setStatus('calibrationStatus', 'Pick two different airports first.', 'bad');
     return;
   }
   pendingCalibAirport = airports.find((a) => a.icao === icaoA);
-  document.getElementById('calibrationStatus').textContent = 'Click Airport A on your minimap...';
+  setStatus('calibrationStatus', 'Click Airport A on your minimap...', 'warn');
   window.companion.sendToOverlay({
     type: 'arm',
     kind: 'click',
@@ -149,7 +168,7 @@ document.getElementById('calibrateBtn').addEventListener('click', () => {
 
 document.getElementById('setPositionBtn').addEventListener('click', () => {
   if (!calibration) return;
-  document.getElementById('fixStatus').textContent = 'Click your aircraft marker on the minimap...';
+  setStatus('fixStatus', 'Click your aircraft marker on the minimap...', 'warn');
   window.companion.sendToOverlay({ type: 'arm', kind: 'click', tag: 'position', label: 'Click your aircraft marker on the minimap...' });
 });
 
@@ -163,7 +182,7 @@ window.companion.onOverlayResult(async (result) => {
     settings.regions = settings.regions || {};
     settings.regions[result.tag] = result.rect;
     await window.companion.saveSettings(settings);
-    document.getElementById('regionStatus').textContent = `${result.tag} region saved.`;
+    setStatus('regionStatus', `${result.tag} region saved.`, 'ok');
     sendRegionsToOverlay();
     return;
   }
@@ -172,7 +191,7 @@ window.companion.onOverlayResult(async (result) => {
     calibration = { refPoints: [{ pixel: result.point, world: result.meta.world }, null] };
     const icaoB = document.getElementById('airportB').value;
     pendingCalibAirport = airports.find((a) => a.icao === icaoB);
-    document.getElementById('calibrationStatus').textContent = `Now click ${icaoB} on your minimap...`;
+    setStatus('calibrationStatus', `Now click ${icaoB} on your minimap...`, 'warn');
     window.companion.sendToOverlay({
       type: 'arm',
       kind: 'click',
@@ -185,7 +204,7 @@ window.companion.onOverlayResult(async (result) => {
 
   if (result.tag === 'calibB') {
     calibration.refPoints[1] = { pixel: result.point, world: result.meta.world };
-    document.getElementById('calibrationStatus').textContent = 'Calibrated.';
+    setStatus('calibrationStatus', 'Calibrated.', 'ok');
     document.getElementById('setPositionBtn').disabled = false;
     return;
   }
@@ -195,8 +214,9 @@ window.companion.onOverlayResult(async (result) => {
     const nearest = await window.companion.nearestAirport(airports, world);
     currentFix = { world, atMs: Date.now() };
     lastCorrectionAtMs = Date.now();
-    document.getElementById('fixStatus').textContent =
-      `Fix set: ~${nearest.distanceNm.toFixed(1)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
+    const summary = `${nearest.distanceNm.toFixed(1)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
+    setStatus('fixStatus', `Fix set: ~${summary}`, 'ok');
+    setSidebar('dotFix', 'sidebarFixText', summary, 'good');
   }
 });
 
@@ -318,6 +338,7 @@ document.getElementById('startTrackingBtn').addEventListener('click', () => {
   trackTick();
   document.getElementById('startTrackingBtn').disabled = true;
   document.getElementById('stopTrackingBtn').disabled = false;
+  setSidebar('dotTracking', 'sidebarTrackingText', 'Running', 'good');
   log('Tracking started.');
 });
 
@@ -326,6 +347,7 @@ document.getElementById('stopTrackingBtn').addEventListener('click', () => {
   trackingTimer = null;
   document.getElementById('startTrackingBtn').disabled = false;
   document.getElementById('stopTrackingBtn').disabled = true;
+  setSidebar('dotTracking', 'sidebarTrackingText', 'Stopped', null);
   log('Tracking stopped.');
 });
 
