@@ -114,6 +114,19 @@ Pressing **Escape** while the overlay is armed cancels that one action
 (the banner disappears and the overlay goes back to click-through) without
 saving anything.
 
+## Datalink messages (CPDLC/PDC)
+
+Once a callsign and Monitor URL are set, the control window polls the
+monitor every few seconds for text messages an ATC bot has sent your
+callsign - comparable to real-world CPDLC/PDC datalink. Two kinds show up
+today: a "contact" instruction (an ATC position that can't reach you by
+voice, e.g. right after departing an uncontrolled field, asking you to
+switch to a frequency) and a PDC (a full IFR clearance sent as text instead
+of read aloud, typically during heavy voice traffic). A new message pops up
+as a toast on the overlay and is added to the message list behind the
+"Messages" button in the top bar, which also shows an unread count. This is
+one-directional for now - there's no way to type a reply back to ATC yet.
+
 ## Module layout
 
 - `lib/coords.js` - lat/lon parsing, flat-earth distance/bearing math.

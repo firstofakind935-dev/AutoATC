@@ -21,6 +21,7 @@ const { integrate } = tryRequire('deadReckoning', './lib/deadReckoning');
 const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
 const { recognizeText, parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition } = tryRequire('uploader', './lib/uploader');
+const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
 // renderer - not functions/class instances - so calibration.project() gets
@@ -64,4 +65,5 @@ contextBridge.exposeInMainWorld('companion', {
   parseFlightInfo,
   parseHeadingTape,
   uploadPosition,
+  pollCpdlc,
 });

@@ -9,19 +9,23 @@
 //     the standard Electron trick: toggle setIgnoreMouseEvents() based on
 //     whether the cursor is currently over the bar.
 
-const TOPBAR_HEIGHT = 40;
-
 const canvas = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
 const banner = document.getElementById('banner');
+const toast = document.getElementById('toast');
 const barToggleTrackingBtn = document.getElementById('barToggleTrackingBtn');
+const messagesBtn = document.getElementById('barMessagesBtn');
+const messagePanel = document.getElementById('messagePanel');
 
 let armed = null; // { kind: 'drag'|'click', tag, meta, label } or null
 let dragStart = null;
 let savedRegions = {};
 let showHud = true;
-let overBar = false; // whether the cursor is currently over the top bar
+let overUi = false; // whether the cursor is currently over an interactive UI element (bar/panel)
 let tracking = false;
+let messages = []; // datalink (CPDLC/PDC) messages received so far, newest first
+let unreadCount = 0;
+let toastTimer = null;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -74,7 +78,7 @@ function disarm() {
   // updateInteractivity below) rather than being forced on for the arm -
   // restore whatever it was last known to be; if the cursor has since
   // moved off the bar, the next mousemove corrects it immediately.
-  window.companion.setOverlayInteractive(overBar);
+  window.companion.setOverlayInteractive(overUi);
 }
 
 document.addEventListener('mousedown', (e) => {
@@ -119,16 +123,20 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ---------- Top bar hit-testing ----------
+// ---------- Top bar / panel hit-testing ----------
 // While armed, the whole window is already interactive (see arm() above),
-// so the hit-test only needs to run when nothing is armed.
+// so the hit-test only needs to run when nothing is armed. Uses
+// elementFromPoint against a shared ".overlay-ui" class rather than a fixed
+// pixel region, since the message panel below can be taller than the bar
+// itself and can open/close independently of it.
 
 function updateInteractivity(e) {
   if (armed) return;
-  const nowOverBar = e.clientY >= 0 && e.clientY < TOPBAR_HEIGHT;
-  if (nowOverBar === overBar) return;
-  overBar = nowOverBar;
-  window.companion.setOverlayInteractive(overBar);
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const nowOverUi = !!(el && el.closest && el.closest('.overlay-ui'));
+  if (nowOverUi === overUi) return;
+  overUi = nowOverUi;
+  window.companion.setOverlayInteractive(overUi);
 }
 
 document.addEventListener('mousemove', updateInteractivity);
@@ -139,6 +147,54 @@ barToggleTrackingBtn.addEventListener('click', () => {
 document.getElementById('barSetupBtn').addEventListener('click', () => {
   window.companion.focusControlWindow();
 });
+
+// ---------- Datalink (CPDLC/PDC) messages ----------
+
+function describeMessage(m) {
+  if (m.kind === 'contact') return `Contact ${m.facility || 'ATC'} on ${m.frequency || '(freq unknown)'}`;
+  if (m.kind === 'pdc') return `PDC: ${m.clearance}`;
+  return m.text || '(empty message)';
+}
+
+function renderMessagePanel() {
+  document.getElementById('messagesBadge').textContent = unreadCount > 0 ? String(unreadCount) : '';
+  document.getElementById('messagesBadge').hidden = unreadCount === 0;
+
+  const list = document.getElementById('messageList');
+  if (messages.length === 0) {
+    list.innerHTML = '<div class="message-empty">No messages yet.</div>';
+    return;
+  }
+  list.innerHTML = messages
+    .map(
+      (m) => `
+      <div class="message-item">
+        <div class="message-meta">${m.fromPosition || 'ATC'} · ${new Date(m.createdAt).toLocaleTimeString()}</div>
+        <div class="message-body">${describeMessage(m).replace(/</g, '&lt;')}</div>
+      </div>`
+    )
+    .join('');
+}
+
+function toggleMessagePanel(forceOpen) {
+  const open = forceOpen !== undefined ? forceOpen : messagePanel.hidden;
+  messagePanel.hidden = !open;
+  if (open) {
+    unreadCount = 0;
+    renderMessagePanel();
+  }
+}
+
+messagesBtn.addEventListener('click', () => toggleMessagePanel());
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  toast.textContent = describeMessage(message);
+  toast.style.display = 'block';
+  toastTimer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 8000);
+}
 
 // ---------- Commands from the control window ----------
 
@@ -161,5 +217,11 @@ window.companion.onOverlayCommand((command) => {
     document.getElementById('barDotTracking').className = 'bar-dot' + (tracking ? ' good' : '');
     barToggleTrackingBtn.textContent = tracking ? 'Stop tracking' : 'Start tracking';
     barToggleTrackingBtn.classList.toggle('armed', tracking);
+  } else if (command.type === 'cpdlc-messages') {
+    const incoming = command.messages || [];
+    messages = [...incoming].reverse().concat(messages).slice(0, 30);
+    unreadCount += incoming.length;
+    renderMessagePanel();
+    for (const m of incoming) showToast(m);
   }
 });

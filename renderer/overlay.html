@@ -110,12 +110,70 @@
     background: rgba(248, 113, 113, 0.18);
     border-color: rgba(248, 113, 113, 0.5);
   }
+
+  /* Messages badge button, positioned like any other bar action */
+  #barMessagesBtn { position: relative; }
+  #messagesBadge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #f87171;
+    color: #2a0a0a;
+    font-size: 0.68em;
+    font-weight: 700;
+    border-radius: 999px;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    padding: 0 3px;
+  }
+
+  /* Dropdown panel of received CPDLC/PDC messages, opened from the bar. */
+  #messagePanel {
+    position: fixed;
+    top: 44px;
+    right: 14px;
+    width: 320px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: rgba(11, 18, 32, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    padding: 8px;
+  }
+  .message-empty { color: #8ea0c0; padding: 10px; text-align: center; font-size: 0.9em; }
+  .message-item {
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    padding: 8px 6px;
+  }
+  .message-item:last-child { border-bottom: none; }
+  .message-meta { color: #8ea0c0; font-size: 0.72em; margin-bottom: 3px; }
+  .message-body { line-height: 1.4; }
+
+  /* Toast for a newly-arrived message - separate from #banner, which is
+     reserved for setup/calibration prompts. */
+  #toast {
+    position: fixed;
+    top: 54px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 480px;
+    background: rgba(251, 191, 36, 0.95);
+    color: #1a1200;
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
   <canvas id="hud"></canvas>
 
-  <div id="topbar">
+  <div id="topbar" class="overlay-ui">
     <div class="bar-brand">
       <span class="bar-mark">ATC</span>
       <span>AutoATC</span>
@@ -126,12 +184,18 @@
       <span class="bar-dot" id="barDotTracking"></span><span id="barTrackingText">Stopped</span>
     </div>
     <div class="bar-actions">
+      <button id="barMessagesBtn">Messages<span id="messagesBadge" hidden></span></button>
       <button id="barToggleTrackingBtn">Start tracking</button>
       <button id="barSetupBtn">Setup</button>
     </div>
   </div>
 
+  <div id="messagePanel" class="overlay-ui" hidden>
+    <div id="messageList"></div>
+  </div>
+
   <div id="banner"></div>
+  <div id="toast"></div>
   <script src="overlay.js"></script>
 </body>
 </html>
