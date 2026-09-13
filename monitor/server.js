@@ -135,12 +135,9 @@ app.post('/api/position', requireIngestAuth, (req, res) => {
   res.status(204).end();
 });
 
-// Read by the bot fleet (Approach/Departure/Center) to ground vectoring in
-// an actual reported position instead of guessing - same trust tier as
-// ingest, since this is a server-to-server call, not a human dashboard view.
-app.get('/api/positions', requireIngestAuth, (req, res) => {
+function freshPositions() {
   const now = Date.now();
-  const result = [...positions.values()]
+  return [...positions.values()]
     .filter((p) => now - p.receivedAt < POSITION_STALE_MS)
     .map(({ callsign, aircraftType, speed, position, receivedAt }) => ({
       callsign,
@@ -149,7 +146,22 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
       position,
       ageMs: now - receivedAt,
     }));
-  res.json(result);
+}
+
+// Read by the bot fleet (Approach/Departure/Center) to ground vectoring in
+// an actual reported position instead of guessing - same trust tier as
+// ingest, since this is a server-to-server call, not a human dashboard view.
+app.get('/api/positions', requireIngestAuth, (req, res) => {
+  res.json(freshPositions());
+});
+
+// Same data, for the dashboard's radar view (see public/radar.js) - a
+// separate route rather than reusing /api/positions above because the
+// dashboard authenticates with Basic auth (a browser session) while that
+// one expects a Bearer token (a server-to-server credential); the two
+// schemes can't cleanly share one route.
+app.get('/api/dashboard/positions', requireDashboardAuth, (req, res) => {
+  res.json(freshPositions());
 });
 
 // Pushed by an ATC bot (see src/atc/datalink.js) to reach a pilot via text

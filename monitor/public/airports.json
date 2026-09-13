@@ -1,0 +1,158 @@
+[
+  {
+    "icao": "IBAR",
+    "name": "Barra Airport",
+    "lat": 41.63333333333333,
+    "lon": 0.18000000000000002
+  },
+  {
+    "icao": "IBLT",
+    "name": "Boltic Airfield",
+    "lat": 41.645,
+    "lon": -0.056666666666666664
+  },
+  {
+    "icao": "IBRD",
+    "name": "Bird Island Airfield",
+    "lat": 41.928333333333335,
+    "lon": -0.006666666666666667
+  },
+  {
+    "icao": "IBTH",
+    "name": "Saint Barthélemy",
+    "lat": 41.846666666666664,
+    "lon": 0.07
+  },
+  {
+    "icao": "IDCS",
+    "name": "Saba Airport",
+    "lat": 42.05,
+    "lon": 0.016666666666666666
+  },
+  {
+    "icao": "IGAR",
+    "name": "Air Base Garry",
+    "lat": 41.531666666666666,
+    "lon": 0.115
+  },
+  {
+    "icao": "IHEN",
+    "name": "Henstridge Airfield",
+    "lat": 41.61666666666667,
+    "lon": 0.12666666666666665
+  },
+  {
+    "icao": "IIAB",
+    "name": "McConnell AFB",
+    "lat": 41.531666666666666,
+    "lon": 0.115
+  },
+  {
+    "icao": "IJAF",
+    "name": "Al Najaf",
+    "lat": 41.82333333333333,
+    "lon": 0.2733333333333333
+  },
+  {
+    "icao": "IKFL",
+    "name": "Keflavik Intl.",
+    "lat": 41.74166666666667,
+    "lon": -0.21833333333333332
+  },
+  {
+    "icao": "ILAR",
+    "name": "Larnaca Intl.",
+    "lat": 41.65833333333333,
+    "lon": 0.14666666666666667
+  },
+  {
+    "icao": "ILKL",
+    "name": "Lukla Airport",
+    "lat": 41.906666666666666,
+    "lon": 0.15333333333333332
+  },
+  {
+    "icao": "IMLR",
+    "name": "Mellor Intl.",
+    "lat": 41.66,
+    "lon": -0.09833333333333334
+  },
+  {
+    "icao": "IPAP",
+    "name": "Paphos Intl.",
+    "lat": 41.655,
+    "lon": 0.20166666666666666
+  },
+  {
+    "icao": "IPPH",
+    "name": "Perth Intl.",
+    "lat": 41.83166666666666,
+    "lon": 0.08666666666666667
+  },
+  {
+    "icao": "IRFD",
+    "name": "Greater Rockford",
+    "lat": 41.62833333333333,
+    "lon": -0.013333333333333334
+  },
+  {
+    "icao": "ISAU",
+    "name": "Sauthemptona Airport",
+    "lat": 41.68333333333333,
+    "lon": -0.19166666666666668
+  },
+  {
+    "icao": "ISCM",
+    "name": "RAF Scampton",
+    "lat": 41.85166666666667,
+    "lon": 0.22166666666666668
+  },
+  {
+    "icao": "ISKP",
+    "name": "Skopelos Airfield",
+    "lat": 41.75833333333333,
+    "lon": 0.16999999999999998
+  },
+  {
+    "icao": "ITEY",
+    "name": "Pingeyri Airport",
+    "lat": 41.78,
+    "lon": -0.20666666666666667
+  },
+  {
+    "icao": "ITKO",
+    "name": "Tokyo Intl.",
+    "lat": 41.986666666666665,
+    "lon": -0.0033333333333333335
+  },
+  {
+    "icao": "ITRC",
+    "name": "Training Centre",
+    "lat": 41.58,
+    "lon": -0.01
+  },
+  {
+    "icao": "IUFO",
+    "name": "UFO Base",
+    "lat": 41.846666666666664,
+    "lon": 0.08499999999999999
+  },
+  {
+    "icao": "IZOL",
+    "name": "Izolirani Intl.",
+    "lat": 41.80166666666667,
+    "lon": 0.26833333333333337
+  },
+  {
+    "icao": "SHV",
+    "name": "Sea Haven Seaplane Base",
+    "lat": 41.928333333333335,
+    "lon": 0.15333333333333332
+  },
+  {
+    "icao": "TVO",
+    "name": "Tavaro Seabase",
+    "lat": 41.836666666666666,
+    "lon": -0.17666666666666667
+  }
+]

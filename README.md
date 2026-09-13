@@ -438,6 +438,48 @@ poll for 5 seconds and formats each row (distance/bearing from a named
 airport, altitude, heading, and a staleness note once a fix is more than
 a minute past its last minimap correction) into the LLM's context.
 
+#### Radar view
+
+The dashboard (`monitor/public/`) has a **Radar** tab alongside Logs, so a
+human controller can see live traffic on a map without joining the game
+themselves. It plots every airport as a fixed reference point and every
+currently-fresh position as a heading-oriented arrow, using the same
+distance/bearing math as everywhere else in this project - an aircraft's
+absolute position is computed by projecting its `distanceNm`/`bearingDeg`
+from its `referenceAirport`, which in turn is projected from a centroid
+origin shared with every airport, so the whole map stays internally
+consistent.
+
+Airport coordinates are vendored into `monitor/public/airports.json`
+(generated from `data/charts/*.json`) rather than read live from the repo,
+since the monitor is typically deployed as its own service with a
+different root directory and shouldn't depend on filesystem access
+outside itself. **Regenerate this file if you add an airport or change a
+chart's `coordinates` field** — from the repo root:
+
+```
+node -e "
+const fs = require('fs'), path = require('path');
+const { parseCoordinates } = require('./companion/lib/coords');
+const dir = path.join(__dirname, 'data', 'charts');
+const airports = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => {
+  const chart = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+  const world = parseCoordinates(chart.coordinates);
+  return world && { icao: chart.icao, name: chart.name || chart.icao, lat: world.lat, lon: world.lon };
+}).filter(Boolean).sort((a, b) => a.icao.localeCompare(b.icao));
+fs.writeFileSync('monitor/public/airports.json', JSON.stringify(airports, null, 2) + '\n');
+"
+```
+
+The map itself is served from a separate dashboard-facing endpoint (not
+the bot fleet's own `/api/positions` above), since the dashboard
+authenticates with the `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth
+credentials, not the `INGEST_API_KEY` Bearer token bots use:
+
+```
+GET /api/dashboard/positions   — same data as /api/positions, gated by dashboard auth instead
+```
+
 ### Datalink messages (CPDLC/PDC)
 
 The monitor also relays one-directional text messages from an ATC bot to a

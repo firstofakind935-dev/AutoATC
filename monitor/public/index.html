@@ -16,7 +16,12 @@
     <p class="empty-state" id="status-empty">No bots have reported in yet.</p>
   </section>
 
-  <section id="log-panel" aria-label="Live logs">
+  <nav id="view-tabs" aria-label="View">
+    <button type="button" class="view-tab active" data-view="logs">Logs</button>
+    <button type="button" class="view-tab" data-view="radar">Radar</button>
+  </nav>
+
+  <section id="log-panel" class="view-panel active" aria-label="Live logs">
     <div class="log-controls">
       <input type="text" id="search-input" placeholder="Filter by text…" autocomplete="off" />
       <select id="bot-filter">
@@ -31,6 +36,20 @@
     <div id="log-feed"></div>
   </section>
 
+  <section id="radar-panel" class="view-panel" aria-label="Live traffic radar">
+    <div class="radar-controls">
+      <span id="radar-count" class="log-count"></span>
+      <span class="radar-legend">
+        <span class="radar-legend-dot fresh"></span> fresh
+        <span class="radar-legend-dot stale"></span> stale (2m+)
+      </span>
+    </div>
+    <div id="radar-wrap">
+      <canvas id="radar-canvas"></canvas>
+    </div>
+  </section>
+
   <script src="app.js"></script>
+  <script src="radar.js"></script>
 </body>
 </html>
