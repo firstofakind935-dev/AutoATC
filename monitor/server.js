@@ -12,6 +12,8 @@ const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || null;
 const MAX_LOGS = 5000;
 const OFFLINE_THRESHOLD_MS = 90_000; // matches the bot fleet's heartbeat interval (60s) with margin
 const POSITION_STALE_MS = 30_000; // a position report older than this is dropped from /api/positions - stale beats wrong
+const CPDLC_MAX_PER_CALLSIGN = 20; // ring buffer per callsign - old ones age out via CPDLC_TTL_MS below anyway
+const CPDLC_TTL_MS = 10 * 60_000; // a "contact me"/PDC message nobody's polled for in 10 minutes isn't worth surfacing late
 
 if (!INGEST_API_KEY) {
   console.warn(
@@ -29,6 +31,8 @@ if (!DASHBOARD_USERNAME || !DASHBOARD_PASSWORD) {
 const logs = []; // ring buffer, oldest first
 const botStatus = new Map(); // bot name -> { lastSeen, lastLevel, lastMessage }
 const positions = new Map(); // normalized callsign -> { callsign, aircraftType, speed, position, receivedAt }
+const cpdlcMessages = new Map(); // normalized callsign -> array of messages, oldest first
+let nextCpdlcId = 1;
 
 function normalizeCallsign(raw) {
   return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -145,6 +149,62 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
       ageMs: now - receivedAt,
     }));
   res.json(result);
+});
+
+// Pushed by an ATC bot (see src/atc/datalink.js) to reach a pilot via text
+// instead of voice - either because they're not currently on that bot's
+// frequency (a "contact me" instruction), or to deliver a routine clearance
+// as text (a PDC) instead of reading it aloud, e.g. to cut voice-frequency
+// congestion during heavy traffic. Comparable in spirit to real-world
+// CPDLC/PDC datalink.
+app.post('/api/cpdlc', requireIngestAuth, (req, res) => {
+  const { callsign, kind, fromPosition, facility, frequency, clearance, text } = req.body || {};
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" is required' });
+  if (!['contact', 'pdc', 'text'].includes(kind)) {
+    return res.status(400).json({ error: '"kind" must be "contact", "pdc", or "text"' });
+  }
+  if (kind === 'contact' && (!facility || !frequency)) {
+    return res.status(400).json({ error: 'kind "contact" requires "facility" and "frequency"' });
+  }
+  if (kind === 'pdc' && !clearance) return res.status(400).json({ error: 'kind "pdc" requires "clearance"' });
+  if (kind === 'text' && !text) return res.status(400).json({ error: 'kind "text" requires "text"' });
+
+  const key = normalizeCallsign(callsign);
+  if (!key) return res.status(400).json({ error: '"callsign" has no usable characters' });
+
+  const message = {
+    id: nextCpdlcId++,
+    callsign,
+    kind,
+    fromPosition: typeof fromPosition === 'string' ? fromPosition : null,
+    facility: typeof facility === 'string' ? facility : null,
+    frequency: typeof frequency === 'string' ? frequency : null,
+    clearance: typeof clearance === 'string' ? clearance : null,
+    text: typeof text === 'string' ? text : null,
+    createdAt: Date.now(),
+  };
+
+  const queue = cpdlcMessages.get(key) || [];
+  queue.push(message);
+  while (queue.length > CPDLC_MAX_PER_CALLSIGN) queue.shift();
+  cpdlcMessages.set(key, queue);
+
+  res.status(201).json({ id: message.id });
+});
+
+// Polled by the companion app for one callsign. `since` (a message id) lets
+// it ask for only what it hasn't already shown, rather than re-fetching and
+// re-displaying the same messages every poll.
+app.get('/api/cpdlc', requireIngestAuth, (req, res) => {
+  const { callsign, since } = req.query;
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" query param is required' });
+
+  const key = normalizeCallsign(callsign);
+  const sinceId = Number(since) || 0;
+  const now = Date.now();
+  const fresh = (cpdlcMessages.get(key) || [])
+    .filter((m) => now - m.createdAt < CPDLC_TTL_MS && m.id > sinceId);
+  res.json(fresh);
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));

@@ -335,6 +335,39 @@ function buildAtcSystemPrompt(persona) {
       `"124.3"}}". Example, Ground sending a taxied aircraft to Tower: ` +
       `"Cessna 42Yankee, contact Tower, one one eight point seven.\\nSTRIP: ` +
       `{"callsign": "N42Y", "handoffTo": "tower"}".`,
+    ``,
+    `Some pilots run a companion app that can also reach them by text ` +
+      `instead of voice, comparable to real-world CPDLC/PDC datalink. Use ` +
+      `it for exactly two situations, never as a general substitute for ` +
+      `talking to a pilot who's actively transmitting to you: (1) you need ` +
+      `to instruct an aircraft that is not currently on your frequency to ` +
+      `contact another facility - e.g. an aircraft you can see in the live ` +
+      `position data that just departed IUFO self-announcing on UNICOM, ` +
+      `which Center needs to pull onto frequency, but you have no voice ` +
+      `channel to them; (2) you want to deliver a routine IFR clearance as ` +
+      `text instead of reading the whole thing aloud, e.g. because voice ` +
+      `traffic is heavy and it would otherwise create a backlog. To send ` +
+      `one, add a line - after the spoken transmission, and after a STRIP ` +
+      `line if you're also sending one - on its own line, starting with ` +
+      `"CPDLC:" followed by compact JSON: {"callsign": "...", "kind": ` +
+      `"contact"|"pdc"|"text", "facility": "...", "frequency": "...", ` +
+      `"clearance": "...", "text": "..."}. Use "facility"+"frequency" only ` +
+      `for kind "contact", "clearance" only for kind "pdc" (the full ` +
+      `clearance exactly as you'd otherwise speak it), "text" only for ` +
+      `kind "text" (anything else worth sending as a message instead of ` +
+      `voice). Include only the fields the kind you're using actually ` +
+      `needs. This line is never spoken and the pilot never hears it over ` +
+      `voice - it's delivered to their companion app instead. Example, ` +
+      `Barths Center reaching an aircraft with no voice channel to them: ` +
+      `(no spoken transmission, since nobody's listening on your ` +
+      `frequency) "CPDLC: {"callsign": "N42Y", "kind": "contact", ` +
+      `"facility": "Barths Center", "frequency": "132.550"}". Example, ` +
+      `Delivery sending a PDC during heavy traffic instead of reading it ` +
+      `aloud: "Cessna 42Yankee, PDC sent, advise ready to copy readback.` +
+      `\\nCPDLC: {"callsign": "N42Y", "kind": "pdc", "clearance": "Cessna ` +
+      `42Yankee is cleared to Rockford as filed, climb via SID, maintain ` +
+      `five thousand, departure frequency one two four point three, ` +
+      `squawk four two five three."}".`,
   ].join('\n');
 }
 

@@ -179,6 +179,7 @@ class AtcBot {
           fallback: this.config.ai.fallback,
           systemPrompt: this.systemPrompt,
           history: this.history.toArray({ contextForLastTurn: turnContext }),
+          position: this.config.persona.position,
         },
         this.logger
       );
