@@ -412,6 +412,46 @@ poll for 5 seconds and formats each row (distance/bearing from a named
 airport, altitude, heading, and a staleness note once a fix is more than
 a minute past its last minimap correction) into the LLM's context.
 
+### Datalink messages (CPDLC/PDC)
+
+The monitor also relays one-directional text messages from an ATC bot to a
+specific pilot's companion app — comparable to real-world CPDLC/PDC. Two
+motivating cases: reaching an aircraft that isn't on that bot's frequency
+at all (e.g. "contact me" after an uncontrolled-field departure), and
+delivering a routine IFR clearance as text (a PDC) instead of reading the
+whole thing aloud when voice traffic is heavy. See `src/atc/datalink.js`
+for how a bot's reply triggers this, and the `CPDLC:` output contract in
+`src/ai/systemPrompt.js`.
+
+```
+POST /api/cpdlc   — an ATC bot sends one message to a callsign
+GET  /api/cpdlc   — companion app polls for its callsign's new messages
+```
+
+`POST /api/cpdlc` body (`kind` is `"contact"`, `"pdc"`, or `"text"`; only
+the fields that kind uses are required):
+
+```json
+{
+  "callsign": "N42Y",
+  "kind": "contact",
+  "fromPosition": "Barths Center",
+  "facility": "Barths Center",
+  "frequency": "132.550"
+}
+```
+
+`GET /api/cpdlc?callsign=N42Y&since=<last id seen>` returns only messages
+newer than `since`, so the companion app doesn't re-show ones it already
+displayed. Messages are capped at 20 per callsign and expire after 10
+minutes unpolled, mirroring the position-staleness pattern above.
+
+This is ATC-to-pilot only for now — there's no way for a pilot to type a
+reply back into the bot's conversation yet, and no scheduled/proactive
+trigger that fires a bot with no pilot transmission at all, so a "contact
+me" message today still only goes out as a side effect of some
+transmission triggering that bot's turn.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this

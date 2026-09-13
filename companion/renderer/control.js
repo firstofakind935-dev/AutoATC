@@ -15,6 +15,8 @@ let currentFix = null; // { world: {lat, lon}, atMs }
 let lastCorrectionAtMs = null;
 let trackingTimer = null;
 let lastFixSummary = null;
+let lastCpdlcId = 0;
+const CPDLC_POLL_MS = 3000;
 
 // Hidden video element used purely as a frame source for OCR - there's no
 // visible preview anymore, since the real screen showing through the
@@ -240,6 +242,36 @@ window.companion.onOverlayResult(async (result) => {
     else startTracking();
   }
 });
+
+// ---------- CPDLC/PDC datalink polling ----------
+// Independent of the tracking loop above - a "contact me" or PDC message
+// should reach the pilot whether or not tracking has been started yet, as
+// long as a callsign and Monitor URL are configured.
+
+async function pollCpdlcTick() {
+  if (!settings.callsign || !settings.monitorUrl) return;
+  let messages;
+  try {
+    messages = await window.companion.pollCpdlc({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      sinceId: lastCpdlcId,
+    });
+  } catch (err) {
+    log(`CPDLC poll failed: ${err.message}`);
+    return;
+  }
+  if (!Array.isArray(messages) || messages.length === 0) return;
+
+  for (const message of messages) {
+    if (message.id > lastCpdlcId) lastCpdlcId = message.id;
+  }
+  window.companion.sendToOverlay({ type: 'cpdlc-messages', messages });
+  log(`Received ${messages.length} datalink message(s).`);
+}
+
+setInterval(pollCpdlcTick, CPDLC_POLL_MS);
 
 // ---------- Airports dropdowns ----------
 
