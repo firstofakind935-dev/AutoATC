@@ -11,6 +11,7 @@ const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || null;
 
 const MAX_LOGS = 5000;
 const OFFLINE_THRESHOLD_MS = 90_000; // matches the bot fleet's heartbeat interval (60s) with margin
+const POSITION_STALE_MS = 30_000; // a position report older than this is dropped from /api/positions - stale beats wrong
 
 if (!INGEST_API_KEY) {
   console.warn(
@@ -27,6 +28,11 @@ if (!DASHBOARD_USERNAME || !DASHBOARD_PASSWORD) {
 
 const logs = []; // ring buffer, oldest first
 const botStatus = new Map(); // bot name -> { lastSeen, lastLevel, lastMessage }
+const positions = new Map(); // normalized callsign -> { callsign, aircraftType, speed, position, receivedAt }
+
+function normalizeCallsign(raw) {
+  return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
 
 function pushLog(entry) {
   logs.push(entry);
@@ -97,6 +103,47 @@ app.get('/api/status', requireDashboardAuth, (req, res) => {
     online: now - new Date(info.lastSeen).getTime() < OFFLINE_THRESHOLD_MS,
   }));
   result.sort((a, b) => a.bot.localeCompare(b.bot));
+  res.json(result);
+});
+
+// Pushed by the screen-capture companion app running on each pilot's own
+// machine (see companion/), not by the bot fleet. `position` is deliberately
+// opaque here - the server just stores and re-serves whatever shape the
+// companion app + bots have agreed on (e.g. distance/bearing from a named
+// airport, or a raw estimate), since that shape is still being finalized
+// against how the game's minimap actually behaves.
+app.post('/api/position', requireIngestAuth, (req, res) => {
+  const { callsign, aircraftType, speed, position } = req.body || {};
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" is required' });
+  if (!position || typeof position !== 'object') return res.status(400).json({ error: '"position" is required' });
+
+  const key = normalizeCallsign(callsign);
+  if (!key) return res.status(400).json({ error: '"callsign" has no usable characters' });
+
+  positions.set(key, {
+    callsign,
+    aircraftType: typeof aircraftType === 'string' ? aircraftType : null,
+    speed: typeof speed === 'number' ? speed : null,
+    position,
+    receivedAt: Date.now(),
+  });
+  res.status(204).end();
+});
+
+// Read by the bot fleet (Approach/Departure/Center) to ground vectoring in
+// an actual reported position instead of guessing - same trust tier as
+// ingest, since this is a server-to-server call, not a human dashboard view.
+app.get('/api/positions', requireIngestAuth, (req, res) => {
+  const now = Date.now();
+  const result = [...positions.values()]
+    .filter((p) => now - p.receivedAt < POSITION_STALE_MS)
+    .map(({ callsign, aircraftType, speed, position, receivedAt }) => ({
+      callsign,
+      aircraftType,
+      speed,
+      position,
+      ageMs: now - receivedAt,
+    }));
   res.json(result);
 });
 

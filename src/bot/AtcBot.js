@@ -15,6 +15,7 @@ const { getChartContext } = require('../charts/store');
 const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { getFrequencyContext } = require('../charts/frequencies');
 const { formatStripsContext } = require('../atc/flightStrips');
+const { getPositionsContext } = require('../atc/positions');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -154,6 +155,7 @@ class AtcBot {
 
     const flightPlanContext = await getFlightPlanContext();
     const stripsContext = formatStripsContext(this.config.persona.position);
+    const positionsContext = await getPositionsContext();
     const matchedScenario = findBestScenario(transcript, this.config.persona.position);
     const scenarioContext = matchedScenario ? formatScenarioHint(matchedScenario) : null;
     const turnContext = [
@@ -162,6 +164,7 @@ class AtcBot {
       this.frequencyContext,
       flightPlanContext,
       stripsContext,
+      positionsContext,
       scenarioContext,
     ]
       .filter(Boolean)
