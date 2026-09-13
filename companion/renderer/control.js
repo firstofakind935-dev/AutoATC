@@ -1,0 +1,362 @@
+// Runs in the small control window - no Node/require here (contextIsolation
+// is on); all app logic is reached through window.companion, exposed by
+// preload.js. The actual region/calibration clicks happen in the separate
+// overlay window (renderer/overlay.js); this file arms/disarms it and
+// reacts to what it reports back over IPC.
+
+let settings = { callsign: '', monitorUrl: '', monitorApiKey: '', intervalSec: 5, regions: {} };
+let airports = [];
+let displays = [];
+let overlayInfo = null; // { id, bounds, scaleFactor } for the currently-shown overlay
+
+let pendingCalibAirport = null; // the airport for the calibration point currently being clicked
+let calibration = null; // { refPoints: [{pixel, world}, {pixel, world}] }
+let currentFix = null; // { world: {lat, lon}, atMs }
+let lastCorrectionAtMs = null;
+let trackingTimer = null;
+
+// Hidden video element used purely as a frame source for OCR - there's no
+// visible preview anymore, since the real screen showing through the
+// transparent overlay already is the preview.
+const captureVideo = document.createElement('video');
+captureVideo.muted = true;
+
+// ---------- Settings ----------
+
+async function loadSettings() {
+  const saved = await window.companion.loadSettings();
+  settings = { ...settings, ...saved };
+  document.getElementById('callsign').value = settings.callsign || '';
+  document.getElementById('monitorUrl').value = settings.monitorUrl || '';
+  document.getElementById('monitorApiKey').value = settings.monitorApiKey || '';
+  document.getElementById('intervalSec').value = settings.intervalSec || 5;
+}
+
+async function saveSettingsFromForm() {
+  settings.callsign = document.getElementById('callsign').value.trim();
+  settings.monitorUrl = document.getElementById('monitorUrl').value.trim();
+  settings.monitorApiKey = document.getElementById('monitorApiKey').value.trim();
+  settings.intervalSec = Number(document.getElementById('intervalSec').value) || 5;
+  await window.companion.saveSettings(settings);
+  document.getElementById('settingsStatus').textContent = 'Saved.';
+  setTimeout(() => (document.getElementById('settingsStatus').textContent = ''), 2000);
+}
+
+document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
+
+// ---------- Display picker + overlay ----------
+
+async function populateDisplays() {
+  displays = await window.companion.getDisplays();
+  const select = document.getElementById('displaySelect');
+  select.innerHTML = '';
+  for (const display of displays) {
+    const opt = document.createElement('option');
+    opt.value = String(display.id);
+    opt.textContent = display.label;
+    select.appendChild(opt);
+  }
+}
+
+async function showOverlay() {
+  const displayId = Number(document.getElementById('displaySelect').value);
+  overlayInfo = await window.companion.createOverlay(displayId);
+
+  const screenSources = await window.companion.getScreenSources();
+  const match = screenSources.find((s) => String(s.display_id) === String(displayId)) || screenSources[0];
+  if (!match) {
+    document.getElementById('overlayStatus').textContent = 'Overlay shown, but could not find a matching screen capture source.';
+    return;
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      mandatory: {
+        chromeMediaSource: 'desktop',
+        chromeMediaSourceId: match.id,
+      },
+    },
+  });
+  captureVideo.srcObject = stream;
+  await captureVideo.play();
+
+  document.getElementById('overlayStatus').textContent = `Overlay shown on ${overlayInfo.bounds.width}x${overlayInfo.bounds.height}.`;
+  document.getElementById('hideOverlayBtn').disabled = false;
+  document.getElementById('regions').hidden = false;
+  document.getElementById('calibration').hidden = false;
+  document.getElementById('tracking').hidden = false;
+
+  sendRegionsToOverlay();
+}
+
+async function hideOverlay() {
+  await window.companion.closeOverlay();
+  overlayInfo = null;
+  document.getElementById('overlayStatus').textContent = 'Overlay not shown';
+  document.getElementById('hideOverlayBtn').disabled = true;
+}
+
+document.getElementById('showOverlayBtn').addEventListener('click', () => {
+  showOverlay().catch((err) => {
+    document.getElementById('overlayStatus').textContent = `Could not show overlay: ${err.message}`;
+  });
+});
+document.getElementById('hideOverlayBtn').addEventListener('click', hideOverlay);
+
+function sendRegionsToOverlay() {
+  window.companion.sendToOverlay({ type: 'draw-regions', regions: settings.regions || {} });
+}
+
+document.getElementById('showHudCheckbox').addEventListener('change', (e) => {
+  window.companion.sendToOverlay({ type: 'set-hud-visible', visible: e.target.checked });
+});
+
+// ---------- Region selection (arms the overlay for one drag) ----------
+
+document.getElementById('selectHeadingBtn').addEventListener('click', () => {
+  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the heading/compass readout...';
+  window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'heading' });
+});
+document.getElementById('selectInfoBtn').addEventListener('click', () => {
+  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the aircraft type/speed/altitude box...';
+  window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'info' });
+});
+document.getElementById('selectMinimapBtn').addEventListener('click', () => {
+  document.getElementById('regionStatus').textContent = 'Drag a box on your game over the minimap...';
+  window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'minimap' });
+});
+
+// ---------- Calibration + position (arms the overlay for one click each) ----------
+
+document.getElementById('calibrateBtn').addEventListener('click', () => {
+  const icaoA = document.getElementById('airportA').value;
+  const icaoB = document.getElementById('airportB').value;
+  if (!icaoA || !icaoB || icaoA === icaoB) {
+    document.getElementById('calibrationStatus').textContent = 'Pick two different airports first.';
+    return;
+  }
+  pendingCalibAirport = airports.find((a) => a.icao === icaoA);
+  document.getElementById('calibrationStatus').textContent = 'Click Airport A on your minimap...';
+  window.companion.sendToOverlay({
+    type: 'arm',
+    kind: 'click',
+    tag: 'calibA',
+    label: `Click ${icaoA} on your minimap...`,
+    meta: { world: pendingCalibAirport.world },
+  });
+});
+
+document.getElementById('setPositionBtn').addEventListener('click', () => {
+  if (!calibration) return;
+  document.getElementById('fixStatus').textContent = 'Click your aircraft marker on the minimap...';
+  window.companion.sendToOverlay({ type: 'arm', kind: 'click', tag: 'position', label: 'Click your aircraft marker on the minimap...' });
+});
+
+window.companion.onOverlayResult(async (result) => {
+  if (result.cancelled) {
+    log(`Cancelled (${result.tag}).`);
+    return;
+  }
+
+  if (result.tag === 'heading' || result.tag === 'info' || result.tag === 'minimap') {
+    settings.regions = settings.regions || {};
+    settings.regions[result.tag] = result.rect;
+    await window.companion.saveSettings(settings);
+    document.getElementById('regionStatus').textContent = `${result.tag} region saved.`;
+    sendRegionsToOverlay();
+    return;
+  }
+
+  if (result.tag === 'calibA') {
+    calibration = { refPoints: [{ pixel: result.point, world: result.meta.world }, null] };
+    const icaoB = document.getElementById('airportB').value;
+    pendingCalibAirport = airports.find((a) => a.icao === icaoB);
+    document.getElementById('calibrationStatus').textContent = `Now click ${icaoB} on your minimap...`;
+    window.companion.sendToOverlay({
+      type: 'arm',
+      kind: 'click',
+      tag: 'calibB',
+      label: `Click ${icaoB} on your minimap...`,
+      meta: { world: pendingCalibAirport.world },
+    });
+    return;
+  }
+
+  if (result.tag === 'calibB') {
+    calibration.refPoints[1] = { pixel: result.point, world: result.meta.world };
+    document.getElementById('calibrationStatus').textContent = 'Calibrated.';
+    document.getElementById('setPositionBtn').disabled = false;
+    return;
+  }
+
+  if (result.tag === 'position') {
+    const world = await window.companion.projectPixel(calibration.refPoints, result.point);
+    const nearest = await window.companion.nearestAirport(airports, world);
+    currentFix = { world, atMs: Date.now() };
+    lastCorrectionAtMs = Date.now();
+    document.getElementById('fixStatus').textContent =
+      `Fix set: ~${nearest.distanceNm.toFixed(1)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
+  }
+});
+
+// ---------- Airports dropdowns ----------
+
+async function populateAirportDropdowns() {
+  airports = await window.companion.getAirports();
+  for (const selectId of ['airportA', 'airportB']) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">-- select --</option>';
+    for (const airport of airports) {
+      const opt = document.createElement('option');
+      opt.value = airport.icao;
+      opt.textContent = `${airport.icao} - ${airport.name}`;
+      select.appendChild(opt);
+    }
+  }
+}
+
+// ---------- Tracking loop ----------
+
+function log(message) {
+  const el = document.getElementById('trackingStatus');
+  const line = `${new Date().toLocaleTimeString()}  ${message}`;
+  el.textContent = `${line}\n${el.textContent}`.slice(0, 8000);
+}
+
+async function ocrRegion(sourceCanvas, region) {
+  if (!region) return '';
+  const cropped = document.createElement('canvas');
+  cropped.width = Math.max(1, Math.round(region.w));
+  cropped.height = Math.max(1, Math.round(region.h));
+  cropped
+    .getContext('2d')
+    .drawImage(sourceCanvas, region.x, region.y, region.w, region.h, 0, 0, cropped.width, cropped.height);
+  return window.companion.recognizeText(cropped.toDataURL('image/png'));
+}
+
+// The overlay's boxes are in the display's logical (CSS) pixel space; the
+// captured screen video is in native/physical pixels (HiDPI scaling makes
+// these differ). This maps a saved region into the video's own pixel space
+// at OCR time, computed fresh each tick so it never needs a hardcoded
+// scale factor.
+function toVideoRect(region) {
+  if (!region || !overlayInfo || !captureVideo.videoWidth) return null;
+  const scaleX = captureVideo.videoWidth / overlayInfo.bounds.width;
+  const scaleY = captureVideo.videoHeight / overlayInfo.bounds.height;
+  return { x: region.x * scaleX, y: region.y * scaleY, w: region.w * scaleX, h: region.h * scaleY };
+}
+
+async function trackTick() {
+  if (!settings.regions || !settings.regions.heading || !settings.regions.info) {
+    log('Skipping - heading/info regions not set yet.');
+    return;
+  }
+  if (!currentFix) {
+    log('Skipping - no position fix yet. Click "Set my position" first.');
+    return;
+  }
+  if (!settings.monitorUrl) {
+    log('Skipping - no Monitor URL set in settings.');
+    return;
+  }
+  if (!captureVideo.videoWidth) {
+    log('Skipping - screen capture not ready yet.');
+    return;
+  }
+
+  const frame = document.createElement('canvas');
+  frame.width = captureVideo.videoWidth;
+  frame.height = captureVideo.videoHeight;
+  frame.getContext('2d').drawImage(captureVideo, 0, 0);
+
+  const [headingText, infoText] = await Promise.all([
+    ocrRegion(frame, toVideoRect(settings.regions.heading)),
+    ocrRegion(frame, toVideoRect(settings.regions.info)),
+  ]);
+
+  const heading = window.companion.parseHeadingTape(headingText);
+  const info = window.companion.parseFlightInfo(infoText);
+
+  if (heading == null || info.speedKts == null) {
+    log(`Could not read heading/speed cleanly (heading OCR: "${headingText.replace(/\n/g, ' ')}", info OCR: "${infoText.replace(/\n/g, ' ')}") - skipping tick.`);
+    return;
+  }
+
+  const now = Date.now();
+  currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts, atMs: now });
+
+  const nearest = await window.companion.nearestAirport(airports, currentFix.world);
+  const fixAgeSec = (now - lastCorrectionAtMs) / 1000;
+
+  try {
+    await window.companion.uploadPosition({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      aircraftType: info.aircraftType,
+      speed: info.speedKts,
+      distanceNm: nearest.distanceNm,
+      bearingDeg: nearest.bearingDeg,
+      referenceAirport: nearest.icao,
+      altitudeFt: info.altitudeFt,
+      headingDeg: heading,
+      fixAgeSec,
+    });
+    log(
+      `Uploaded: ${nearest.distanceNm.toFixed(1)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}, ` +
+        `${info.altitudeFt}ft, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)`
+    );
+  } catch (err) {
+    log(`Upload failed: ${err.message}`);
+  }
+}
+
+document.getElementById('startTrackingBtn').addEventListener('click', () => {
+  if (trackingTimer) return;
+  trackingTimer = setInterval(trackTick, Math.max(2, settings.intervalSec || 5) * 1000);
+  trackTick();
+  document.getElementById('startTrackingBtn').disabled = true;
+  document.getElementById('stopTrackingBtn').disabled = false;
+  log('Tracking started.');
+});
+
+document.getElementById('stopTrackingBtn').addEventListener('click', () => {
+  clearInterval(trackingTimer);
+  trackingTimer = null;
+  document.getElementById('startTrackingBtn').disabled = false;
+  document.getElementById('stopTrackingBtn').disabled = true;
+  log('Tracking stopped.');
+});
+
+// ---------- Init ----------
+
+function showLoadErrors() {
+  const errors = window.companion && window.companion.loadErrors;
+  if (!errors || Object.keys(errors).length === 0) return;
+  const banner = document.createElement('pre');
+  banner.style.cssText = 'background:#fee2e2;color:#991b1b;padding:10px;border-radius:6px;white-space:pre-wrap;';
+  banner.textContent =
+    'Some companion app modules failed to load - the features below that depend on them won\'t work:\n\n' +
+    Object.entries(errors)
+      .map(([name, err]) => `[${name}]\n${err}`)
+      .join('\n\n');
+  document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+}
+
+(async function init() {
+  if (!window.companion) {
+    const banner = document.createElement('pre');
+    banner.style.cssText = 'background:#fee2e2;color:#991b1b;padding:10px;border-radius:6px;white-space:pre-wrap;';
+    banner.textContent =
+      'The companion app failed to initialize (window.companion is missing) - ' +
+      'the preload script did not run. Check the terminal you ran "npm start" ' +
+      'from for an error, or run with COMPANION_DEVTOOLS=1 and check the DevTools console.';
+    document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+    return;
+  }
+  showLoadErrors();
+  await loadSettings();
+  await populateAirportDropdowns();
+  await populateDisplays();
+})();

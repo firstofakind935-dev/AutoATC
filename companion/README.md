@@ -46,31 +46,65 @@ is published - it's meant to be run from a checkout or packaged later with
 `electron-builder`/`electron-forge` if the fleet wants a one-click
 installer.)
 
+## Two windows: control + overlay
+
+The app is two Electron windows working together:
+
+- **Control window** - a normal small window: settings, monitor picker,
+  region/calibration buttons, and the tracking log. Nothing here overlaps
+  the game.
+- **Overlay window** - transparent, borderless, and sized to exactly cover
+  one monitor. It's click-through by default (clicks pass straight through
+  to the game beneath it), so it never gets in the way of actually flying.
+  It only becomes clickable for the instant you're dragging out a region
+  box or clicking a calibration point - the control window "arms" it for
+  one action, it captures that one drag/click, reports it back, and
+  immediately goes click-through again.
+
+This is what makes a single monitor workable: you're not alt-tabbing
+between a video preview and the real game to line things up, and you're
+not eyeballing a scaled-down copy of your HUD. You drag/click directly on
+the real game through the overlay, so a region box is exactly where you
+drew it, in real screen pixels - no separate preview coordinate system to
+get slightly wrong.
+
+**A game running in exclusive fullscreen can't be overlaid** - Windows
+(and most OSes) won't composite anything on top of an exclusive-fullscreen
+surface. Run PTFS in windowed or borderless-windowed mode.
+
 ## Using it
 
 1. **Settings** - enter your callsign, the fleet's Monitor URL (and API key,
    if the monitor requires one), and how often to report (default 5s).
-2. **Pick the game window** - refresh and click the PTFS window's thumbnail.
-   This starts a live preview via Electron's `desktopCapturer` +
-   `getUserMedia`.
-3. **Define regions** (once per window size) - click "Select heading
-   region" / "Select info-box region" / "Select minimap region", then drag
-   a box on the video over the matching part of your HUD. These are saved
-   to settings and don't need to be redone unless you resize the game
-   window.
+2. **Show the overlay** - pick the monitor your game is on and click "Show
+   overlay". You'll see a banner appear on your screen whenever it's armed
+   for an action; otherwise it's invisible and click-through.
+3. **Define regions** (once per game window size/position) - click "Select
+   heading region" / "Select info-box region" / "Select minimap region",
+   then drag a box directly on your game over the matching HUD element.
+   These are saved and don't need to be redone unless you move or resize
+   the game window. A checkbox lets you toggle whether the saved boxes are
+   drawn on the overlay as a passive reference.
 4. **Calibrate the map** - pick two airports you can currently see on your
    minimap from the two dropdowns, click "Calibrate", then click each
-   airport's exact spot on the minimap in the order prompted. This gives
-   the app a pixel-to-lat/lon transform for the current minimap view.
-   Re-calibrate any time you pan or zoom the minimap.
+   airport's exact spot on your minimap in the order prompted (the overlay
+   arms itself for each click automatically). This gives the app a
+   pixel-to-lat/lon transform for the current minimap view. Re-calibrate
+   any time you pan or zoom the minimap.
 5. **Set your position** - click "Set my position", then click your own
    aircraft marker on the minimap. This is also how you periodically
    correct dead-reckoning drift - do it again whenever convenient.
 6. **Start tracking** - the app now ticks on the configured interval: OCR's
-   the heading and info regions, integrates a new dead-reckoning position
-   from the last fix, works out distance/bearing to the nearest known
-   airport, and uploads that to the Monitor service. The log at the bottom
-   shows what was read and uploaded, or why a tick was skipped.
+   the heading and info regions (from a background screen capture of the
+   same monitor, not the overlay itself), integrates a new dead-reckoning
+   position from the last fix, works out distance/bearing to the nearest
+   known airport, and uploads that to the Monitor service. The log in the
+   control window shows what was read and uploaded, or why a tick was
+   skipped.
+
+Pressing **Escape** while the overlay is armed cancels that one action
+(the banner disappears and the overlay goes back to click-through) without
+saving anything.
 
 ## Module layout
 
@@ -83,8 +117,14 @@ installer.)
 - `lib/airports.js` - loads airport coordinates from `data/charts/*.json`,
   finds the nearest one to a given position.
 - `lib/uploader.js` - POSTs a position estimate to the Monitor service.
-- `main.js` / `preload.js` / `renderer/` - the Electron shell described
+- `main.js` - creates both windows, relays messages between them, and
+  hosts the desktop-capture/settings/airports IPC handlers.
+- `preload.js` - exposes IPC calls and direct `lib/` logic to both
+  renderers via `contextBridge`.
+- `renderer/control.html` / `control.js` - the control window described
   above.
+- `renderer/overlay.html` / `overlay.js` - the transparent overlay window
+  described above.
 
 ## Accuracy caveats
 

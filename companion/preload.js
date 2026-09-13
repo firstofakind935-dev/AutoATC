@@ -36,10 +36,22 @@ contextBridge.exposeInMainWorld('companion', {
   loadErrors,
 
   // IPC (main process)
-  getSources: () => ipcRenderer.invoke('get-sources'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   getAirports: () => ipcRenderer.invoke('get-airports'),
+  getDisplays: () => ipcRenderer.invoke('get-displays'),
+  createOverlay: (displayId) => ipcRenderer.invoke('create-overlay', displayId),
+  closeOverlay: () => ipcRenderer.invoke('close-overlay'),
+  setOverlayInteractive: (interactive) => ipcRenderer.invoke('set-overlay-interactive', interactive),
+  getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
+
+  // Control window <-> overlay window messaging, relayed through main
+  // (they're separate renderer processes and can't reach each other
+  // directly).
+  sendToOverlay: (payload) => ipcRenderer.send('control-to-overlay', payload),
+  onOverlayResult: (callback) => ipcRenderer.on('overlay-result', (event, payload) => callback(payload)),
+  sendToControl: (payload) => ipcRenderer.send('overlay-to-control', payload),
+  onOverlayCommand: (callback) => ipcRenderer.on('overlay-command', (event, payload) => callback(payload)),
 
   // Direct logic (runs here in the preload context, which has Node access)
   projectPixel,
