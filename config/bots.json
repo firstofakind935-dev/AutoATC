@@ -1,16 +1,16 @@
 [
   {
-    "name": "Izolirani Ground",
+    "name": "Izolirani Tower",
     "tokenEnv": "BOT_TOWER_TOKEN",
     "guildId": "1507182217393340426",
-    "voiceChannelId": "REPLACE_WITH_GROUND_VOICE_CHANNEL_ID",
+    "voiceChannelId": "1507182218731323515",
     "logChannelId": null,
-    "commandPrefix": "!ground",
+    "commandPrefix": "!tower",
     "persona": {
-      "position": "Ground",
-      "callsign": "Izolirani Ground",
+      "position": "Tower",
+      "callsign": "Izolirani Tower",
       "airport": "IZOL",
-      "ttsVoice": "echo"
+      "ttsVoice": "am_onyx"
     },
     "ai": {
       "provider": "anthropic",
