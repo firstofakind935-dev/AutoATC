@@ -18,7 +18,7 @@
     }
   ],
   "frequencies": [],
-  "groundLayout": "IUFO is an uncontrolled airfield, not a towered airport - there is no Ground, Tower, or other ATC position here, and none should ever be assumed. Pilots operating here self-announce on UNICOM rather than receiving clearances. If you are working a different position and a pilot mentions IUFO (inbound/outbound), tell them to monitor and self-announce on UNICOM - do not attempt to hand them off to a Ground/Tower/Approach at IUFO, and never invent a frequency for one. Runway 08/26 with no connecting taxiway drawn to Main Apron (Hangar) - aircraft cross open ground between the runway and the apron. No taxiway letters exist here - never invent one.",
+  "groundLayout": "IUFO is uncontrolled and VFR-only - no Ground, Tower, Delivery, or other ATC position exists here, and none should ever be assumed. Pilots self-announce on UNICOM 122.8 rather than receiving clearances. The only way in or out is via Saint Barthélemy (IBTH): traffic works Barths VFR (118.450) until near IUFO, then switches to UNICOM 122.8 for the approach/landing; departing IUFO, traffic flies VFR to IBTH (self-announcing on 122.8) and only there can it get an IFR clearance onward, since IUFO never issues one. If you are working a different position and a pilot mentions IUFO, route them through this IBTH procedure rather than a direct handoff. Runway 08/26 with no connecting taxiway drawn to Main Apron (Hangar) - aircraft cross open ground between the runway and the apron. No taxiway letters exist here - never invent one.",
   "otherLabels": [
     "MAIN",
     "APRON",

@@ -23,7 +23,7 @@
       "frequency": "118.450"
     }
   ],
-  "groundLayout": "Runway 09/27, with a Backtrack Area near the Rwy 27 end. Taxiway E runs alongside the runway's east side, from hold point C (mid-field) south through hold point B down to hold point A near the Rwy 09 end, serving Main Apron (Terminal, Control Tower, Ground Crew Station). Taxiway D connects General Aviation (Hangar, Fuel) on the west side to hold point D, also near the Rwy 09 end. Several hold points here are marked as hot spots on the chart (extra caution/confirm intentions, not special ATC phraseology) - real taxiway/hold-point letters are C, B, A, D, and E.",
+  "groundLayout": "Runway 09/27, with a Backtrack Area near the Rwy 27 end. Taxiway E runs alongside the runway's east side, from hold point C (mid-field) south through hold point B down to hold point A near the Rwy 09 end, serving Main Apron (Terminal, Control Tower, Ground Crew Station). Taxiway D connects General Aviation (Hangar, Fuel) on the west side to hold point D, also near the Rwy 09 end. Several hold points here are marked as hot spots on the chart (extra caution/confirm intentions, not special ATC phraseology) - real taxiway/hold-point letters are C, B, A, D, and E. IBTH is also the gateway to uncontrolled IUFO (UFO Base): Barths VFR (118.450) works aircraft VFR to/from IUFO, holding them on frequency until they're ready for the IUFO approach and releasing them to self-announce on UNICOM 122.8 from there; aircraft arriving VFR from IUFO get their IFR clearance to an onward destination here via Barths Delivery (118.705), since IUFO itself never issues one.",
   "otherLabels": [
     "MAIN",
     "APRON",

@@ -291,11 +291,17 @@ function buildAtcSystemPrompt(persona) {
       `the real entry/exit points from that list - never invent a track letter ` +
       `or a point name that isn't in it.`,
     ``,
-    `IUFO (UFO Base) is uncontrolled - it has no Ground, Tower, or other ATC ` +
-      `position, and none should ever be assumed for it. If a pilot mentions ` +
-      `IUFO as their destination or origin, tell them to monitor and ` +
-      `self-announce on UNICOM there instead of attempting to hand them off ` +
-      `to a controller at IUFO or inventing a frequency for one.`,
+    `IUFO (UFO Base) is uncontrolled and VFR-only - it has no Ground, Tower, ` +
+      `Delivery, or other ATC position, and none should ever be assumed for ` +
+      `it. The only way in or out is via Saint Barthélemy (IBTH): aircraft ` +
+      `bound for IUFO depart IBTH VFR and work Barths VFR (118.450) until ` +
+      `nearing IUFO, then request to leave the frequency and switch to ` +
+      `UNICOM 122.8 to self-announce the approach and landing. Aircraft ` +
+      `departing IUFO fly VFR to IBTH (self-announcing on UNICOM 122.8), and ` +
+      `only at IBTH can they file/obtain an IFR clearance to their actual ` +
+      `destination - IUFO itself never issues one. If a pilot mentions IUFO, ` +
+      `route them through this IBTH procedure rather than inventing a direct ` +
+      `clearance or handoff to/from IUFO.`,
     ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
