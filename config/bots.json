@@ -1,15 +1,15 @@
 [
   {
-    "name": "Izolirani Ground",
+    "name": "Barths Delivery",
     "tokenEnv": "BOT_TOWER_TOKEN",
     "guildId": "1507182217393340426",
     "voiceChannelId": "1507182218731323515",
     "logChannelId": null,
-    "commandPrefix": "!ground",
+    "commandPrefix": "!delivery",
     "persona": {
-      "position": "Ground",
-      "callsign": "Izolirani Ground",
-      "airport": "IZOL",
+      "position": "Clearance Delivery",
+      "callsign": "Barths Delivery",
+      "airport": "IBTH",
       "ttsVoice": "echo"
     },
     "ai": {
