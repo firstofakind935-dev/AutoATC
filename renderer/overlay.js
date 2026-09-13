@@ -1,18 +1,27 @@
 // Runs in the transparent, click-through-by-default overlay window that
-// sits directly on top of the game. It has two jobs: draw the saved
-// region boxes as a passive HUD, and - only while "armed" by the control
-// window - capture exactly one drag (a region box) or one click
-// (a calibration/position point) in real screen coordinates, then go
-// straight back to click-through so the pilot can keep flying.
+// sits directly on top of the game. It has three jobs:
+//  1. Draw the saved region boxes as a passive HUD.
+//  2. While "armed" by the control window, capture exactly one drag (a
+//     region box) or one click (a calibration/position point) in real
+//     screen coordinates, then go straight back to click-through.
+//  3. Host a persistent top bar (like a game overlay HUD) that stays
+//     clickable even though the rest of the window is click-through, via
+//     the standard Electron trick: toggle setIgnoreMouseEvents() based on
+//     whether the cursor is currently over the bar.
+
+const TOPBAR_HEIGHT = 40;
 
 const canvas = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
 const banner = document.getElementById('banner');
+const barToggleTrackingBtn = document.getElementById('barToggleTrackingBtn');
 
 let armed = null; // { kind: 'drag'|'click', tag, meta, label } or null
 let dragStart = null;
 let savedRegions = {};
 let showHud = true;
+let overBar = false; // whether the cursor is currently over the top bar
+let tracking = false;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -48,6 +57,8 @@ function setBanner(text) {
   banner.style.display = 'block';
 }
 
+// ---------- Region/calibration arm-disarm (unrelated to the bar) ----------
+
 function arm(command) {
   armed = command;
   window.companion.setOverlayInteractive(true);
@@ -57,9 +68,13 @@ function arm(command) {
 function disarm() {
   armed = null;
   dragStart = null;
-  window.companion.setOverlayInteractive(false);
   setBanner(null);
   draw();
+  // Interactivity now depends purely on cursor position again (see
+  // updateInteractivity below) rather than being forced on for the arm -
+  // restore whatever it was last known to be; if the cursor has since
+  // moved off the bar, the next mousemove corrects it immediately.
+  window.companion.setOverlayInteractive(overBar);
 }
 
 document.addEventListener('mousedown', (e) => {
@@ -104,6 +119,29 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ---------- Top bar hit-testing ----------
+// While armed, the whole window is already interactive (see arm() above),
+// so the hit-test only needs to run when nothing is armed.
+
+function updateInteractivity(e) {
+  if (armed) return;
+  const nowOverBar = e.clientY >= 0 && e.clientY < TOPBAR_HEIGHT;
+  if (nowOverBar === overBar) return;
+  overBar = nowOverBar;
+  window.companion.setOverlayInteractive(overBar);
+}
+
+document.addEventListener('mousemove', updateInteractivity);
+
+barToggleTrackingBtn.addEventListener('click', () => {
+  window.companion.sendToControl({ tag: 'bar-toggle-tracking' });
+});
+document.getElementById('barSetupBtn').addEventListener('click', () => {
+  window.companion.focusControlWindow();
+});
+
+// ---------- Commands from the control window ----------
+
 window.companion.onOverlayCommand((command) => {
   if (command.type === 'arm') {
     arm(command);
@@ -115,5 +153,13 @@ window.companion.onOverlayCommand((command) => {
     draw();
   } else if (command.type === 'disarm') {
     disarm();
+  } else if (command.type === 'set-bar-status') {
+    tracking = !!command.tracking;
+    document.getElementById('barFixText').textContent = command.fixSummary || 'No fix';
+    document.getElementById('barDotFix').className = 'bar-dot' + (command.fixSummary ? ' good' : '');
+    document.getElementById('barTrackingText').textContent = tracking ? 'Running' : 'Stopped';
+    document.getElementById('barDotTracking').className = 'bar-dot' + (tracking ? ' good' : '');
+    barToggleTrackingBtn.textContent = tracking ? 'Stop tracking' : 'Start tracking';
+    barToggleTrackingBtn.classList.toggle('armed', tracking);
   }
 });

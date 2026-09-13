@@ -102,6 +102,17 @@ ipcMain.handle('set-overlay-interactive', (event, interactive) => {
   if (overlayWindow) overlayWindow.setIgnoreMouseEvents(!interactive, { forward: true });
 });
 
+// The overlay's top bar toggles this on every mousemove based on whether
+// the cursor is over the bar, so the bar itself stays clickable while the
+// rest of the screen stays click-through for flying - the standard pattern
+// for a game-style HUD overlay.
+ipcMain.handle('focus-control', () => {
+  if (controlWindow) {
+    controlWindow.show();
+    controlWindow.focus();
+  }
+});
+
 // Relays between the control window and the overlay window - they're
 // separate renderer processes and can't reach each other directly.
 ipcMain.on('control-to-overlay', (event, payload) => {

@@ -14,6 +14,7 @@ let calibration = null; // { refPoints: [{pixel, world}, {pixel, world}] }
 let currentFix = null; // { world: {lat, lon}, atMs }
 let lastCorrectionAtMs = null;
 let trackingTimer = null;
+let lastFixSummary = null;
 
 // Hidden video element used purely as a frame source for OCR - there's no
 // visible preview anymore, since the real screen showing through the
@@ -35,6 +36,17 @@ function setSidebar(dotId, textId, text, tone) {
   const dot = document.getElementById(dotId);
   dot.classList.remove('good', 'warn', 'bad');
   if (tone) dot.classList.add(tone);
+}
+
+// Mirrors current tracking/fix state into the overlay's top bar, so it
+// stays useful as a quick glance while actually flying, without needing
+// the control window in focus.
+function syncBar() {
+  window.companion.sendToOverlay({
+    type: 'set-bar-status',
+    tracking: Boolean(trackingTimer),
+    fixSummary: lastFixSummary,
+  });
 }
 
 // ---------- Settings ----------
@@ -105,6 +117,7 @@ async function showOverlay() {
   document.getElementById('tracking').hidden = false;
 
   sendRegionsToOverlay();
+  syncBar();
 }
 
 async function hideOverlay() {
@@ -215,8 +228,16 @@ window.companion.onOverlayResult(async (result) => {
     currentFix = { world, atMs: Date.now() };
     lastCorrectionAtMs = Date.now();
     const summary = `${nearest.distanceNm.toFixed(1)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
+    lastFixSummary = summary;
     setStatus('fixStatus', `Fix set: ~${summary}`, 'ok');
     setSidebar('dotFix', 'sidebarFixText', summary, 'good');
+    syncBar();
+    return;
+  }
+
+  if (result.tag === 'bar-toggle-tracking') {
+    if (trackingTimer) stopTracking();
+    else startTracking();
   }
 });
 
@@ -332,24 +353,29 @@ async function trackTick() {
   }
 }
 
-document.getElementById('startTrackingBtn').addEventListener('click', () => {
+function startTracking() {
   if (trackingTimer) return;
   trackingTimer = setInterval(trackTick, Math.max(2, settings.intervalSec || 5) * 1000);
   trackTick();
   document.getElementById('startTrackingBtn').disabled = true;
   document.getElementById('stopTrackingBtn').disabled = false;
   setSidebar('dotTracking', 'sidebarTrackingText', 'Running', 'good');
+  syncBar();
   log('Tracking started.');
-});
+}
 
-document.getElementById('stopTrackingBtn').addEventListener('click', () => {
+function stopTracking() {
   clearInterval(trackingTimer);
   trackingTimer = null;
   document.getElementById('startTrackingBtn').disabled = false;
   document.getElementById('stopTrackingBtn').disabled = true;
   setSidebar('dotTracking', 'sidebarTrackingText', 'Stopped', null);
+  syncBar();
   log('Tracking stopped.');
-});
+}
+
+document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
+document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
 
 // ---------- Init ----------
 

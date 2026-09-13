@@ -60,6 +60,15 @@ The app is two Electron windows working together:
   one action, it captures that one drag/click, reports it back, and
   immediately goes click-through again.
 
+  The overlay also carries a **top bar** - a slim strip docked to the top
+  of the screen, like a game overlay HUD (Discord/Xbox Game Bar style).
+  Unlike the rest of the overlay, it's always clickable: moving the cursor
+  over it toggles the window briefly interactive, moving off it hands
+  control back to the game. It shows your current fix and whether tracking
+  is running, with a one-click Start/Stop, and a "Setup" button that brings
+  the control window back to front - so once you're calibrated, you can
+  fly with only the bar visible and never touch the control window again.
+
 This is what makes a single monitor workable: you're not alt-tabbing
 between a video preview and the real game to line things up, and you're
 not eyeballing a scaled-down copy of your HUD. You drag/click directly on

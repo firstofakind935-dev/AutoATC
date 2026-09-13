@@ -11,6 +11,8 @@
     overflow: hidden;
     width: 100%;
     height: 100%;
+    font: 13px -apple-system, "Segoe UI", sans-serif;
+    color: #e6ebf5;
   }
   #hud {
     position: fixed;
@@ -18,22 +20,118 @@
   }
   #banner {
     position: fixed;
-    top: 14px;
+    top: 54px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(37, 99, 235, 0.92);
     color: #fff;
     padding: 7px 16px;
     border-radius: 6px;
-    font: 13px -apple-system, "Segoe UI", sans-serif;
     display: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* The top bar - a game-overlay-style HUD strip docked to the top of the
+     screen. It's always visible and, unlike the rest of this transparent
+     window, becomes clickable whenever the cursor is over it (see
+     overlay.js) so the pilot never has to leave the game to use it. */
+  #topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: rgba(11, 18, 32, 0.88);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.35);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 18px;
+    -webkit-app-region: no-drag;
+  }
+  .bar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .bar-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    color: #06202f;
+    font-size: 0.62em;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bar-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8ea0c0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .bar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #8ea0c0;
+    flex-shrink: 0;
+  }
+  .bar-dot.good { background: #34d399; box-shadow: 0 0 6px #34d399; }
+  .bar-dot.warn { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
+  .bar-sep { color: #334160; }
+  .bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .bar-actions button {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #e6ebf5;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 0.85em;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .bar-actions button:hover { background: rgba(56, 189, 248, 0.25); }
+  .bar-actions button.armed {
+    background: rgba(248, 113, 113, 0.18);
+    border-color: rgba(248, 113, 113, 0.5);
   }
 </style>
 </head>
 <body>
-  <div id="banner"></div>
   <canvas id="hud"></canvas>
+
+  <div id="topbar">
+    <div class="bar-brand">
+      <span class="bar-mark">ATC</span>
+      <span>AutoATC</span>
+    </div>
+    <div class="bar-status">
+      <span class="bar-dot" id="barDotFix"></span><span id="barFixText">No fix</span>
+      <span class="bar-sep">|</span>
+      <span class="bar-dot" id="barDotTracking"></span><span id="barTrackingText">Stopped</span>
+    </div>
+    <div class="bar-actions">
+      <button id="barToggleTrackingBtn">Start tracking</button>
+      <button id="barSetupBtn">Setup</button>
+    </div>
+  </div>
+
+  <div id="banner"></div>
   <script src="overlay.js"></script>
 </body>
 </html>

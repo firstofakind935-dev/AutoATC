@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('companion', {
   closeOverlay: () => ipcRenderer.invoke('close-overlay'),
   setOverlayInteractive: (interactive) => ipcRenderer.invoke('set-overlay-interactive', interactive),
   getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
+  focusControlWindow: () => ipcRenderer.invoke('focus-control'),
 
   // Control window <-> overlay window messaging, relayed through main
   // (they're separate renderer processes and can't reach each other
