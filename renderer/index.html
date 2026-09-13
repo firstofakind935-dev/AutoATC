@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AutoATC Companion</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>AutoATC Companion</h1>
+  <p class="hint">
+    Reads your own game window (never anyone else's) to estimate your aircraft's position and
+    reports it to your fleet's monitor service. Nothing here talks to Discord directly.
+  </p>
+
+  <section id="settings">
+    <h2>1. Settings</h2>
+    <label>Callsign <input id="callsign" placeholder="e.g. N42Y"></label>
+    <label>Monitor URL <input id="monitorUrl" placeholder="https://your-monitor.example.com"></label>
+    <label>Monitor API key <input id="monitorApiKey" type="password" placeholder="(optional)"></label>
+    <label>Report interval (sec) <input id="intervalSec" type="number" min="2" max="60" value="5"></label>
+    <button id="saveSettingsBtn">Save settings</button>
+    <span id="settingsStatus"></span>
+  </section>
+
+  <section id="sourcePicker">
+    <h2>2. Pick the game window</h2>
+    <button id="refreshSourcesBtn">Refresh windows</button>
+    <div id="sourceList" class="source-list"></div>
+  </section>
+
+  <section id="preview" hidden>
+    <h2>3. Define regions (once per session/window size)</h2>
+    <p class="hint">
+      Click a "Select" button, then drag a box on the video over the matching part of your HUD.
+      Do this once after picking the window; you don't need to redo it unless you resize the game window.
+    </p>
+    <div class="region-buttons">
+      <button id="selectHeadingBtn">Select heading region</button>
+      <button id="selectInfoBtn">Select info-box region</button>
+      <button id="selectMinimapBtn">Select minimap region</button>
+      <span id="regionStatus"></span>
+    </div>
+    <div class="video-wrap">
+      <video id="video" autoplay muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
+  </section>
+
+  <section id="calibration" hidden>
+    <h2>4. Calibrate the map</h2>
+    <p class="hint">
+      Pick two airports you can currently see on your minimap, then click each one's exact spot on the
+      minimap in order. Re-do this any time you pan or zoom the minimap - the calibration is only valid
+      for the current view.
+    </p>
+    <div class="calib-row">
+      <label>Airport A <select id="airportA"></select></label>
+      <label>Airport B <select id="airportB"></select></label>
+      <button id="calibrateBtn">Calibrate (click A, then B, on the minimap)</button>
+      <span id="calibrationStatus">Not calibrated</span>
+    </div>
+    <div class="calib-row">
+      <button id="setPositionBtn" disabled>Set my position (click your marker on the minimap)</button>
+      <span id="fixStatus">No fix yet</span>
+    </div>
+  </section>
+
+  <section id="tracking" hidden>
+    <h2>5. Track and report</h2>
+    <button id="startTrackingBtn">Start tracking</button>
+    <button id="stopTrackingBtn" disabled>Stop tracking</button>
+    <pre id="trackingStatus"></pre>
+  </section>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
