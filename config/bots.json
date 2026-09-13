@@ -20,5 +20,27 @@
         "model": "qwen2.5:3b"
       }
     }
+  },
+  {
+    "name": "Izolirani Ground",
+    "tokenEnv": "BOT_GROUND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": "REPLACE_WITH_GROUND_VOICE_CHANNEL_ID",
+    "logChannelId": null,
+    "commandPrefix": "!ground",
+    "persona": {
+      "position": "Ground",
+      "callsign": "Izolirani Ground",
+      "airport": "IZOL",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
   }
 ]
