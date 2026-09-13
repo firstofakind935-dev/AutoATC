@@ -26,7 +26,18 @@ function sendDatalinkMessage({ callsign, kind, fromPosition, facility, frequency
     method: 'POST',
     headers,
     body: JSON.stringify({ callsign, kind, fromPosition, facility, frequency, clearance, text }),
-  }).catch((err) => logger.warn(`Failed to send CPDLC/PDC message for ${callsign}: ${err.message}`));
+  })
+    .then(async (response) => {
+      // fetch() only rejects on a network-level failure - a non-2xx HTTP
+      // response (e.g. 401 from a mismatched MONITOR_API_KEY, 400 from a
+      // bad payload) resolves normally and would otherwise pass through
+      // completely unlogged, silently dropping the message.
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        logger.warn(`CPDLC/PDC message for ${callsign} rejected by monitor (${response.status}): ${body}`);
+      }
+    })
+    .catch((err) => logger.warn(`Failed to send CPDLC/PDC message for ${callsign}: ${err.message}`));
   return true;
 }
 
@@ -48,7 +59,14 @@ function sendBroadcastMessage({ fromPosition, text }) {
     method: 'POST',
     headers,
     body: JSON.stringify({ fromPosition, text }),
-  }).catch((err) => logger.warn(`Failed to send CPDLC broadcast: ${err.message}`));
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        logger.warn(`CPDLC broadcast rejected by monitor (${response.status}): ${body}`);
+      }
+    })
+    .catch((err) => logger.warn(`Failed to send CPDLC broadcast: ${err.message}`));
   return true;
 }
 
