@@ -30,6 +30,7 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  if (process.env.COMPANION_DEVTOOLS) win.webContents.openDevTools();
 }
 
 ipcMain.handle('get-sources', async () => {
@@ -37,7 +38,12 @@ ipcMain.handle('get-sources', async () => {
     types: ['window', 'screen'],
     thumbnailSize: { width: 300, height: 200 },
   });
-  return sources.map((s) => ({ id: s.id, name: s.name, thumbnailDataUrl: s.thumbnail.toDataURL() }));
+  // Windows lists every window with a title, including invisible/utility
+  // windows (0x0 thumbnails). Drop those - they're never a real capture
+  // target and just clutter the picker.
+  return sources
+    .filter((s) => !s.thumbnail.isEmpty())
+    .map((s) => ({ id: s.id, name: s.name, thumbnailDataUrl: s.thumbnail.toDataURL() }));
 });
 
 ipcMain.handle('load-settings', () => loadSettings());

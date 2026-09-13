@@ -47,9 +47,20 @@ document.getElementById('saveSettingsBtn').addEventListener('click', saveSetting
 // ---------- Source picker ----------
 
 async function refreshSources() {
-  const sources = await window.companion.getSources();
   const list = document.getElementById('sourceList');
+  list.innerHTML = '<div class="name">Loading windows...</div>';
+  let sources;
+  try {
+    sources = await window.companion.getSources();
+  } catch (err) {
+    list.innerHTML = `<div class="name">Could not list windows: ${err.message}</div>`;
+    return;
+  }
   list.innerHTML = '';
+  if (sources.length === 0) {
+    list.innerHTML = '<div class="name">No windows found. Make sure Roblox/PTFS is running (not minimized), then click Refresh windows again.</div>';
+    return;
+  }
   for (const source of sources) {
     const item = document.createElement('div');
     item.className = 'source-item' + (source.id === selectedSourceId ? ' selected' : '');
@@ -63,15 +74,21 @@ async function selectSource(id) {
   selectedSourceId = id;
   refreshSources();
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      mandatory: {
-        chromeMediaSource: 'desktop',
-        chromeMediaSourceId: id,
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: id,
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    document.getElementById('regionStatus').textContent = `Could not capture that window: ${err.message}`;
+    return;
+  }
   video.srcObject = stream;
   await video.play();
 
