@@ -16,7 +16,7 @@ const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { getFrequencyContext } = require('../charts/frequencies');
 const { formatStripsContext } = require('../atc/flightStrips');
 const { getPositionsContext } = require('../atc/positions');
-const { sendDatalinkMessage, VALID_KINDS } = require('../atc/datalink');
+const { sendDatalinkMessage, sendBroadcastMessage, VALID_KINDS } = require('../atc/datalink');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -266,13 +266,41 @@ class AtcBot {
       await message.reply(`${this.config.persona.callsign}: AI ATC resumed.`).catch(() => {});
     } else if (subcommand === 'cpdlc') {
       await this._handleCpdlcCommand(message, args.slice(1));
+    } else if (subcommand === 'broadcast') {
+      await this._handleBroadcastCommand(message, args.slice(1));
     } else {
       await message.reply(
-        `Usage: \`${this.config.commandPrefix} pause\`, \`${this.config.commandPrefix} resume\`, or ` +
-          `\`${this.config.commandPrefix} cpdlc <contact|pdc|text> <callsign> ...\` (see ` +
-          `\`${this.config.commandPrefix} cpdlc\` with no further args for details)`
+        `Usage: \`${this.config.commandPrefix} pause\`, \`${this.config.commandPrefix} resume\`, ` +
+          `\`${this.config.commandPrefix} cpdlc <contact|pdc|text> <callsign> ...\`, or ` +
+          `\`${this.config.commandPrefix} broadcast <message>\` (moderator-only - see ` +
+          `\`${this.config.commandPrefix} cpdlc\` with no further args for cpdlc's usage details)`
       ).catch(() => {});
     }
+  }
+
+  /**
+   * Fleet-wide announcement to every pilot currently polling the monitor
+   * for datalink messages, not just this bot's own frequency - e.g. server
+   * news or an update, distinct from an ATC instruction to one aircraft.
+   * Gated behind Administrator rather than the "Manage Server" permission
+   * every other command here uses, since this reaches every pilot on the
+   * server at once and is meant for moderators specifically, not every
+   * regular controller.
+   */
+  async _handleBroadcastCommand(message, args) {
+    if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
+      await message.reply('You need the "Administrator" permission to send a fleet-wide broadcast.').catch(() => {});
+      return;
+    }
+
+    const text = args.join(' ');
+    if (!text) {
+      await message.reply(`Usage: \`${this.config.commandPrefix} broadcast <message>\``).catch(() => {});
+      return;
+    }
+
+    sendBroadcastMessage({ fromPosition: this.config.persona.position, text });
+    await message.reply(`Broadcast sent to all pilots: "${text}"`).catch(() => {});
   }
 
   /**

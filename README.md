@@ -49,6 +49,20 @@ to type themselves. `facility` can contain spaces (frequency is always the
 last word); `pdc`'s clearance and `text`'s message are everything after the
 callsign.
 
+A moderator can also send a fleet-wide announcement - server news or an
+update, not an instruction to one aircraft - which every pilot currently
+polling for datalink messages receives, regardless of which bot's channel
+it's sent from or which frequency they're on:
+
+```
+!tower broadcast Runway 9/27 closed for maintenance until further notice.
+```
+
+This requires the **Administrator** permission specifically, not just
+"Manage Server" like every other command here - it reaches every pilot on
+the server at once, so it's scoped to moderators rather than every regular
+controller.
+
 (`!tower` is whatever `commandPrefix` you set for that bot in
 `config/bots.json`.)
 
@@ -439,8 +453,9 @@ for how a bot's reply triggers this, and the `CPDLC:` output contract in
 `src/ai/systemPrompt.js`.
 
 ```
-POST /api/cpdlc   — an ATC bot sends one message to a callsign
-GET  /api/cpdlc   — companion app polls for its callsign's new messages
+POST /api/cpdlc             — an ATC bot sends one message to a callsign
+POST /api/cpdlc/broadcast   — a moderator sends one message to every pilot
+GET  /api/cpdlc             — companion app polls for its callsign's new messages (direct + broadcast)
 ```
 
 `POST /api/cpdlc` body (`kind` is `"contact"`, `"pdc"`, or `"text"`; only
@@ -456,10 +471,17 @@ the fields that kind uses are required):
 }
 ```
 
-`GET /api/cpdlc?callsign=N42Y&since=<last id seen>` returns only messages
-newer than `since`, so the companion app doesn't re-show ones it already
-displayed. Messages are capped at 20 per callsign and expire after 10
-minutes unpolled, mirroring the position-staleness pattern above.
+`POST /api/cpdlc/broadcast` body is just `{"fromPosition": "...", "text":
+"..."}` - always `kind: "text"`, since a "contact"/"pdc" message only makes
+sense addressed to one aircraft. See the `!tower broadcast` chat command
+above.
+
+`GET /api/cpdlc?callsign=N42Y&since=<last id seen>` returns that callsign's
+direct messages merged with any broadcasts, sorted together (both share one
+id sequence), and only ones newer than `since` - so the companion app never
+re-shows something it already displayed. Direct messages are capped at 20
+per callsign; broadcasts share a separate 20-message cap. Both expire after
+10 minutes unpolled, mirroring the position-staleness pattern above.
 
 This is ATC-to-pilot only for now — there's no way for a pilot to type a
 reply back into the bot's conversation yet. The LLM itself still has no

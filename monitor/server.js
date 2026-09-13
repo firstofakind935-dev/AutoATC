@@ -32,7 +32,8 @@ const logs = []; // ring buffer, oldest first
 const botStatus = new Map(); // bot name -> { lastSeen, lastLevel, lastMessage }
 const positions = new Map(); // normalized callsign -> { callsign, aircraftType, speed, position, receivedAt }
 const cpdlcMessages = new Map(); // normalized callsign -> array of messages, oldest first
-let nextCpdlcId = 1;
+const broadcastMessages = []; // fleet-wide announcements, oldest first - see POST /api/cpdlc/broadcast
+let nextCpdlcId = 1; // shared across per-callsign and broadcast messages, so a single "since" cursor covers both
 
 function normalizeCallsign(raw) {
   return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -192,9 +193,39 @@ app.post('/api/cpdlc', requireIngestAuth, (req, res) => {
   res.status(201).json({ id: message.id });
 });
 
+// Pushed by a moderator (see the !tower broadcast chat command) to reach
+// every pilot currently polling, not just one callsign - server-wide
+// updates/news rather than an ATC instruction to a specific aircraft. Text
+// only; "contact"/"pdc" are inherently addressed to one aircraft and don't
+// make sense broadcast to everyone.
+app.post('/api/cpdlc/broadcast', requireIngestAuth, (req, res) => {
+  const { fromPosition, text } = req.body || {};
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: '"text" is required' });
+
+  const message = {
+    id: nextCpdlcId++,
+    callsign: null,
+    kind: 'text',
+    broadcast: true,
+    fromPosition: typeof fromPosition === 'string' ? fromPosition : null,
+    facility: null,
+    frequency: null,
+    clearance: null,
+    text,
+    createdAt: Date.now(),
+  };
+
+  broadcastMessages.push(message);
+  while (broadcastMessages.length > CPDLC_MAX_PER_CALLSIGN) broadcastMessages.shift();
+
+  res.status(201).json({ id: message.id });
+});
+
 // Polled by the companion app for one callsign. `since` (a message id) lets
 // it ask for only what it hasn't already shown, rather than re-fetching and
-// re-displaying the same messages every poll.
+// re-displaying the same messages every poll. Merges that callsign's direct
+// messages with fleet-wide broadcasts - both share one id sequence, so a
+// single "since" cursor and a sort by id keeps them in order together.
 app.get('/api/cpdlc', requireIngestAuth, (req, res) => {
   const { callsign, since } = req.query;
   if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" query param is required' });
@@ -202,9 +233,11 @@ app.get('/api/cpdlc', requireIngestAuth, (req, res) => {
   const key = normalizeCallsign(callsign);
   const sinceId = Number(since) || 0;
   const now = Date.now();
-  const fresh = (cpdlcMessages.get(key) || [])
-    .filter((m) => now - m.createdAt < CPDLC_TTL_MS && m.id > sinceId);
-  res.json(fresh);
+  const isFresh = (m) => now - m.createdAt < CPDLC_TTL_MS && m.id > sinceId;
+  const merged = [...(cpdlcMessages.get(key) || []).filter(isFresh), ...broadcastMessages.filter(isFresh)].sort(
+    (a, b) => a.id - b.id
+  );
+  res.json(merged);
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));

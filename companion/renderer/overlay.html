@@ -151,9 +151,12 @@
   .message-item:last-child { border-bottom: none; }
   .message-meta { color: #8ea0c0; font-size: 0.72em; margin-bottom: 3px; }
   .message-body { line-height: 1.4; }
+  .message-item.message-broadcast { border-left: 3px solid #38bdf8; padding-left: 9px; }
 
   /* Toast for a newly-arrived message - separate from #banner, which is
-     reserved for setup/calibration prompts. */
+     reserved for setup/calibration prompts. Broadcasts (fleet-wide, not
+     addressed to this pilot specifically) get a distinct color from a
+     targeted contact/PDC message. */
   #toast {
     position: fixed;
     top: 54px;
@@ -167,6 +170,10 @@
     display: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     font-weight: 600;
+  }
+  #toast.broadcast {
+    background: rgba(56, 189, 248, 0.95);
+    color: #04121c;
   }
 </style>
 </head>

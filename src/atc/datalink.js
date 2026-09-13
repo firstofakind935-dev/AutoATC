@@ -26,6 +26,25 @@ function sendDatalinkMessage({ callsign, kind, fromPosition, facility, frequency
 }
 
 /**
+ * Fire-and-forget push to the monitor's /api/cpdlc/broadcast - reaches
+ * every pilot currently polling, not just one callsign. Used for moderator
+ * announcements/news (see the !tower broadcast chat command), never by the
+ * LLM itself - a "contact"/"pdc" message is inherently addressed to one
+ * aircraft, so only free text makes sense to broadcast fleet-wide.
+ */
+function sendBroadcastMessage({ fromPosition, text }) {
+  if (!MONITOR_URL) return;
+  const headers = { 'Content-Type': 'application/json' };
+  if (MONITOR_API_KEY) headers.Authorization = `Bearer ${MONITOR_API_KEY}`;
+
+  fetch(`${MONITOR_URL.replace(/\/+$/, '')}/api/cpdlc/broadcast`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ fromPosition, text }),
+  }).catch((err) => logger.warn(`Failed to send CPDLC broadcast: ${err.message}`));
+}
+
+/**
  * Parses a trailing "CPDLC: {...}" line off a raw model reply (see
  * systemPrompt.js's output contract) and forwards it to the monitor.
  * Returns the reply text with that line removed - like STRIP, it's never
@@ -52,4 +71,4 @@ function applyDatalinkDirective(replyText, fromPosition) {
   return spoken;
 }
 
-module.exports = { applyDatalinkDirective, sendDatalinkMessage, VALID_KINDS };
+module.exports = { applyDatalinkDirective, sendDatalinkMessage, sendBroadcastMessage, VALID_KINDS };

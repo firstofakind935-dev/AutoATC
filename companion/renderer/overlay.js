@@ -153,6 +153,7 @@ document.getElementById('barSetupBtn').addEventListener('click', () => {
 function describeMessage(m) {
   if (m.kind === 'contact') return `Contact ${m.facility || 'ATC'} on ${m.frequency || '(freq unknown)'}`;
   if (m.kind === 'pdc') return `PDC: ${m.clearance}`;
+  if (m.broadcast) return `📢 ${m.text || '(empty message)'}`;
   return m.text || '(empty message)';
 }
 
@@ -168,8 +169,8 @@ function renderMessagePanel() {
   list.innerHTML = messages
     .map(
       (m) => `
-      <div class="message-item">
-        <div class="message-meta">${m.fromPosition || 'ATC'} · ${new Date(m.createdAt).toLocaleTimeString()}</div>
+      <div class="message-item${m.broadcast ? ' message-broadcast' : ''}">
+        <div class="message-meta">${m.broadcast ? 'Broadcast · ' : ''}${m.fromPosition || 'ATC'} · ${new Date(m.createdAt).toLocaleTimeString()}</div>
         <div class="message-body">${describeMessage(m).replace(/</g, '&lt;')}</div>
       </div>`
     )
@@ -190,6 +191,7 @@ messagesBtn.addEventListener('click', () => toggleMessagePanel());
 function showToast(message) {
   clearTimeout(toastTimer);
   toast.textContent = describeMessage(message);
+  toast.classList.toggle('broadcast', !!message.broadcast);
   toast.style.display = 'block';
   toastTimer = setTimeout(() => {
     toast.style.display = 'none';
