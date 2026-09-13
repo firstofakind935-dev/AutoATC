@@ -13,6 +13,17 @@ let inFlight = null;
  * companion app's exact estimate format depends on how the game's minimap
  * turns out to behave - this renders whichever fields are actually present.
  */
+// Position is estimated primarily by dead reckoning (heading/speed
+// integrated since the last minimap correction) - fixAgeSec is how long
+// since that last correction, so a stale estimate can be worded with
+// appropriate (dis)trust instead of stated as flatly as a fresh one.
+function stalenessNote(fixAgeSec) {
+  if (typeof fixAgeSec !== 'number') return null;
+  if (fixAgeSec < 60) return null; // recent enough to not caveat further
+  if (fixAgeSec < 300) return 'estimate a few minutes stale, treat as approximate';
+  return 'estimate is stale (5+ min since last correction) - confirm with the pilot before vectoring off this';
+}
+
 function formatRow(row) {
   if (!row || !row.callsign || !row.position) return null;
   const p = row.position;
@@ -23,8 +34,13 @@ function formatRow(row) {
   } else if (typeof p.lat === 'number' && typeof p.lon === 'number') {
     parts.push(`lat ${p.lat.toFixed(3)}, lon ${p.lon.toFixed(3)}`);
   }
+  if (typeof p.altitudeFt === 'number') parts.push(`${p.altitudeFt}ft`);
+  if (typeof p.headingDeg === 'number') parts.push(`heading ${p.headingDeg}°`);
   if (row.aircraftType) parts.push(row.aircraftType);
-  if (typeof row.speed === 'number') parts.push(`${row.speed} kts`);
+  if (typeof row.speed === 'number') parts.push(`${row.speed}kts`);
+
+  const staleness = stalenessNote(p.fixAgeSec);
+  if (staleness) parts.push(staleness);
 
   if (parts.length === 0) return null;
   return `- ${row.callsign}: ${parts.join(', ')}`;
@@ -50,10 +66,11 @@ async function fetchAndFormat() {
   if (lines.length === 0) return null;
 
   return [
-    `Live reported aircraft positions (from a screen-tracking companion app ` +
-      `some pilots may be running) - treat these as an approximate estimate, ` +
-      `not a confirmed fix. Always defer to what the pilot actually reports ` +
-      `over the radio if it conflicts with this.`,
+    `Live reported aircraft positions (from a companion app some pilots may ` +
+      `be running, which dead-reckons position from heading/speed between ` +
+      `occasional manual map corrections) - treat these as an approximate ` +
+      `estimate, not a confirmed fix. Always defer to what the pilot ` +
+      `actually reports over the radio if it conflicts with this.`,
     ...lines,
   ].join('\n');
 }
