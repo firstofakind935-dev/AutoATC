@@ -51,13 +51,6 @@ function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
     configs.push(validateEntry(entry, index));
   });
 
-  if (configs.length === 0) {
-    throw new Error(
-      `No bot in ${configPath} has its tokenEnv env var set - set at least one Discord bot ` +
-        `token in your .env to run the fleet.`
-    );
-  }
-
   return configs;
 }
 

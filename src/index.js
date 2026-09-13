@@ -13,6 +13,15 @@ function createBot(config) {
 
 async function main() {
   const fleetConfig = loadFleetConfig();
+
+  if (fleetConfig.length === 0) {
+    logger.warn('No bot has its token env var set - staying up idle. Add one in your host\'s env vars and redeploy.');
+    // Node exits once main() resolves and the event loop is empty - hang
+    // here instead, so the process stays up rather than exiting cleanly
+    // and having the host (e.g. Railway) treat that as a crash to restart.
+    await new Promise(() => {});
+  }
+
   logger.info(`Starting ${fleetConfig.length} bot(s): ${fleetConfig.map((c) => c.name).join(', ')}`);
 
   const bots = fleetConfig.map(createBot);
