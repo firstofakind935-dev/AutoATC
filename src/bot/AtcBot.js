@@ -7,7 +7,7 @@ const { HumanHandoff } = require('./HumanHandoff');
 const { pcmToWav, bufferToStream } = require('../utils/audio');
 const { transcribeAudio } = require('../speech/stt');
 const { synthesizeSpeech } = require('../speech/tts');
-const { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory } = require('../ai/llmProvider');
+const { generateAtcReplyWithFallback, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
 const { findBestScenario, formatScenarioHint } = require('../ai/scenarioMatcher');
 const { getFlightPlanContext } = require('../flightplans/store');
@@ -160,14 +160,16 @@ class AtcBot {
 
     let reply;
     try {
-      reply = await generateAtcReply({
-        provider: this.config.ai.provider,
-        apiKey: apiKeyForProvider(this.config.ai.provider),
-        baseUrl: baseUrlForProvider(this.config.ai.provider),
-        model: this.config.ai.model,
-        systemPrompt: this.systemPrompt,
-        history: this.history.toArray({ contextForLastTurn: turnContext }),
-      });
+      reply = await generateAtcReplyWithFallback(
+        {
+          provider: this.config.ai.provider,
+          model: this.config.ai.model,
+          fallback: this.config.ai.fallback,
+          systemPrompt: this.systemPrompt,
+          history: this.history.toArray({ contextForLastTurn: turnContext }),
+        },
+        this.logger
+      );
     } catch (err) {
       // Node's fetch wraps every network-level failure (connection refused,
       // timeout, DNS failure, TLS error...) in a generic "fetch failed"

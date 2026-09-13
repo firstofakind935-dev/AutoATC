@@ -129,6 +129,8 @@ function validateEntry(entry, index) {
     );
   }
 
+  const fallback = validateFallback(ai.fallback, where);
+
   return {
     ...base,
     commandPrefix: entry.commandPrefix || null,
@@ -141,8 +143,38 @@ function validateEntry(entry, index) {
     ai: {
       provider: ai.provider,
       model: ai.model,
+      fallback,
     },
   };
+}
+
+/**
+ * Optional ai.fallback: { provider, model } - used when the primary
+ * provider/model call fails (e.g. an Anthropic key runs out of credits),
+ * so the bot switches to a backup (typically a self-hosted Ollama model)
+ * instead of going silent. Same validation as the primary ai block.
+ */
+function validateFallback(fallback, where) {
+  if (!fallback) return null;
+
+  if (!VALID_PROVIDERS.has(fallback.provider)) {
+    throw new Error(`${where}.ai.fallback.provider must be one of: ${[...VALID_PROVIDERS].join(', ')}`);
+  }
+  if (!fallback.model) {
+    throw new Error(`${where}.ai.fallback.model is required when ai.fallback is set.`);
+  }
+  if (fallback.provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error(`${where}.ai.fallback uses provider "anthropic" but ANTHROPIC_API_KEY is not set.`);
+  }
+  if (fallback.provider === 'openai' && !process.env.OPENAI_BASE_URL && !process.env.OPENAI_API_KEY) {
+    throw new Error(
+      `${where}.ai.fallback uses provider "openai" with no OPENAI_BASE_URL set, so it will call ` +
+        `OpenAI's hosted API, which requires OPENAI_API_KEY to be set. If you meant to use ` +
+        `a self-hosted LLM server, set OPENAI_BASE_URL to its URL.`
+    );
+  }
+
+  return { provider: fallback.provider, model: fallback.model };
 }
 
 module.exports = { loadFleetConfig, DEFAULT_CONFIG_PATH, EXAMPLE_CONFIG_PATH };

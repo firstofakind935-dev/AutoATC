@@ -83,6 +83,41 @@ async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt
   return stripThinkingBlocks(reply);
 }
 
+/**
+ * Same as generateAtcReply, but if the primary provider/model fails for any
+ * reason (out of API credits, invalid key, provider outage, network error)
+ * and a fallback provider/model is configured, retries once against the
+ * fallback instead of leaving the bot silent for that transmission - e.g.
+ * falling back from a paid Anthropic model to a self-hosted Ollama model
+ * once the API key's balance runs out.
+ */
+async function generateAtcReplyWithFallback({ provider, model, fallback, systemPrompt, history }, logger) {
+  try {
+    return await generateAtcReply({
+      provider,
+      apiKey: apiKeyForProvider(provider),
+      baseUrl: baseUrlForProvider(provider),
+      model,
+      systemPrompt,
+      history,
+    });
+  } catch (err) {
+    if (!fallback) throw err;
+    logger?.warn(
+      `Primary AI provider (${provider}/${model}) failed, falling back to ` +
+        `${fallback.provider}/${fallback.model}: ${err.message}`
+    );
+    return generateAtcReply({
+      provider: fallback.provider,
+      apiKey: apiKeyForProvider(fallback.provider),
+      baseUrl: baseUrlForProvider(fallback.provider),
+      model: fallback.model,
+      systemPrompt,
+      history,
+    });
+  }
+}
+
 function apiKeyForProvider(provider) {
   if (provider === 'anthropic') return process.env.ANTHROPIC_API_KEY;
   if (provider === 'openai') return process.env.OPENAI_API_KEY;
@@ -100,4 +135,4 @@ function baseUrlForProvider(provider) {
   return undefined;
 }
 
-module.exports = { generateAtcReply, apiKeyForProvider, baseUrlForProvider, ConversationHistory };
+module.exports = { generateAtcReply, generateAtcReplyWithFallback, apiKeyForProvider, baseUrlForProvider, ConversationHistory };
