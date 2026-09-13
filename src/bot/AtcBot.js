@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
 const { createAudioPlayer, createAudioResource, entersState, StreamType, VoiceConnectionStatus, AudioPlayerStatus } = require('@discordjs/voice');
 
 const { joinVoiceWithRetry, waitForShardReady } = require('./voiceConnect');
@@ -16,7 +16,7 @@ const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { getFrequencyContext } = require('../charts/frequencies');
 const { formatStripsContext } = require('../atc/flightStrips');
 const { getPositionsContext } = require('../atc/positions');
-const { sendDatalinkMessage, sendBroadcastMessage, VALID_KINDS } = require('../atc/datalink');
+const { sendDatalinkMessage, sendBroadcastMessage } = require('../atc/datalink');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -43,16 +43,11 @@ class AtcBot {
     this.logChannel = null;
 
     this.client = new Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-      ],
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
     });
 
     this.client.on('ready', () => this._onReady().catch((err) => this.logger.error('Startup failed:', err)));
-    this.client.on('messageCreate', (message) => this._onMessage(message));
+    this.client.on('interactionCreate', (interaction) => this._onInteraction(interaction));
     this.client.on('error', (err) => this.logger.error('Discord client error:', err));
     this.player.on('error', (err) => this.logger.error('Audio player error:', err));
   }
@@ -65,6 +60,7 @@ class AtcBot {
     this.logger.info(`Logged in as ${this.client.user.tag}`);
 
     const guild = await this.client.guilds.fetch(this.config.guildId);
+    await guild.commands.set(buildSlashCommands()).catch((err) => this.logger.error('Failed to register slash commands:', err.message));
 
     if (this.config.logChannelId) {
       this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
@@ -245,36 +241,19 @@ class AtcBot {
     }
   }
 
-  async _onMessage(message) {
-    if (message.author.bot || !this.config.commandPrefix) return;
-    if (!message.content.startsWith(this.config.commandPrefix)) return;
+  async _onInteraction(interaction) {
+    if (!interaction.isChatInputCommand()) return;
 
-    const args = message.content.trim().split(/\s+/).slice(1);
-    const subcommand = args[0];
-
-    const canControl = message.member?.permissions.has(PermissionsBitField.Flags.ManageGuild);
-    if (!canControl) {
-      await message.reply('You need the "Manage Server" permission to control this bot.').catch(() => {});
-      return;
-    }
-
-    if (subcommand === 'pause') {
+    if (interaction.commandName === 'pause') {
       this.handoff.pause();
-      await message.reply(`${this.config.persona.callsign}: AI ATC paused. Human controller has the position.`).catch(() => {});
-    } else if (subcommand === 'resume') {
+      await interaction.reply(`${this.config.persona.callsign}: AI ATC paused. Human controller has the position.`).catch(() => {});
+    } else if (interaction.commandName === 'resume') {
       this.handoff.resume();
-      await message.reply(`${this.config.persona.callsign}: AI ATC resumed.`).catch(() => {});
-    } else if (subcommand === 'cpdlc') {
-      await this._handleCpdlcCommand(message, args.slice(1));
-    } else if (subcommand === 'broadcast') {
-      await this._handleBroadcastCommand(message, args.slice(1));
-    } else {
-      await message.reply(
-        `Usage: \`${this.config.commandPrefix} pause\`, \`${this.config.commandPrefix} resume\`, ` +
-          `\`${this.config.commandPrefix} cpdlc <contact|pdc|text> <callsign> ...\`, or ` +
-          `\`${this.config.commandPrefix} broadcast <message>\` (moderator-only - see ` +
-          `\`${this.config.commandPrefix} cpdlc\` with no further args for cpdlc's usage details)`
-      ).catch(() => {});
+      await interaction.reply(`${this.config.persona.callsign}: AI ATC resumed.`).catch(() => {});
+    } else if (interaction.commandName === 'cpdlc') {
+      await this._handleCpdlcCommand(interaction);
+    } else if (interaction.commandName === 'broadcast') {
+      await this._handleBroadcastCommand(interaction);
     }
   }
 
@@ -282,25 +261,20 @@ class AtcBot {
    * Fleet-wide announcement to every pilot currently polling the monitor
    * for datalink messages, not just this bot's own frequency - e.g. server
    * news or an update, distinct from an ATC instruction to one aircraft.
-   * Gated behind Administrator rather than the "Manage Server" permission
-   * every other command here uses, since this reaches every pilot on the
-   * server at once and is meant for moderators specifically, not every
-   * regular controller.
+   * The command's default_member_permissions (Administrator, set in
+   * buildSlashCommands below) already keeps regular controllers - who only
+   * have "Manage Server" - from seeing it in Discord's UI at all, but a
+   * server admin can loosen that default, so it's checked again here too.
    */
-  async _handleBroadcastCommand(message, args) {
-    if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      await message.reply('You need the "Administrator" permission to send a fleet-wide broadcast.').catch(() => {});
+  async _handleBroadcastCommand(interaction) {
+    if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+      await interaction.reply({ content: 'You need the "Administrator" permission to send a fleet-wide broadcast.', ephemeral: true }).catch(() => {});
       return;
     }
 
-    const text = args.join(' ');
-    if (!text) {
-      await message.reply(`Usage: \`${this.config.commandPrefix} broadcast <message>\``).catch(() => {});
-      return;
-    }
-
+    const text = interaction.options.getString('message', true);
     sendBroadcastMessage({ fromPosition: this.config.persona.position, text });
-    await message.reply(`Broadcast sent to all pilots: "${text}"`).catch(() => {});
+    await interaction.reply(`Broadcast sent to all pilots: "${text}"`).catch(() => {});
   }
 
   /**
@@ -308,51 +282,78 @@ class AtcBot {
    * the AI) send the same CPDLC/PDC datalink messages the LLM can, by hand -
    * e.g. a "contact me" to an aircraft not on this frequency, or a PDC
    * during heavy traffic. Always sent as this bot's own ATC position
-   * (fromPosition), never something the human has to specify. The free-text
-   * fields (facility, clearance, message) can contain spaces, so each kind
-   * has its own parsing rule for where the fixed fields end and free text
-   * begins - see the usage strings below.
+   * (fromPosition), never something the human has to specify.
    */
-  async _handleCpdlcCommand(message, args) {
-    const usage = [
-      `Usage:`,
-      `\`${this.config.commandPrefix} cpdlc contact <callsign> <facility> <frequency>\` - facility ` +
-        `can have spaces, frequency is always the last word`,
-      `\`${this.config.commandPrefix} cpdlc pdc <callsign> <clearance text...>\``,
-      `\`${this.config.commandPrefix} cpdlc text <callsign> <message...>\``,
-    ].join('\n');
-
-    const [kind, callsign, ...rest] = args;
-    if (!VALID_KINDS.includes(kind) || !callsign) {
-      await message.reply(usage).catch(() => {});
-      return;
-    }
-
+  async _handleCpdlcCommand(interaction) {
+    const kind = interaction.options.getSubcommand();
+    const callsign = interaction.options.getString('callsign', true);
     const directive = { callsign, kind, fromPosition: this.config.persona.position };
+
     if (kind === 'contact') {
-      if (rest.length < 2) {
-        await message.reply(usage).catch(() => {});
-        return;
-      }
-      directive.frequency = rest[rest.length - 1];
-      directive.facility = rest.slice(0, -1).join(' ');
+      directive.facility = interaction.options.getString('facility', true);
+      directive.frequency = interaction.options.getString('frequency', true);
     } else if (kind === 'pdc') {
-      if (rest.length === 0) {
-        await message.reply(usage).catch(() => {});
-        return;
-      }
-      directive.clearance = rest.join(' ');
+      directive.clearance = interaction.options.getString('clearance', true);
     } else {
-      if (rest.length === 0) {
-        await message.reply(usage).catch(() => {});
-        return;
-      }
-      directive.text = rest.join(' ');
+      directive.text = interaction.options.getString('message', true);
     }
 
     sendDatalinkMessage(directive);
-    await message.reply(`Sent ${kind} datalink message to ${callsign}.`).catch(() => {});
+    await interaction.reply(`Sent ${kind} datalink message to ${callsign}.`).catch(() => {});
   }
+}
+
+/**
+ * Slash commands registered per-guild on 'ready' (see _onReady above).
+ * pause/resume/cpdlc default to requiring "Manage Server" (the same tier
+ * every controller-facing command here has always used); broadcast
+ * defaults to "Administrator" since it reaches every pilot on the server
+ * at once, not just one aircraft. These are Discord-enforced defaults
+ * (commands a member lacks the permission for don't even show up for
+ * them), on top of the runtime check in _handleBroadcastCommand.
+ */
+function buildSlashCommands() {
+  return [
+    new SlashCommandBuilder()
+      .setName('pause')
+      .setDescription('Silence the AI - a human controller is taking over this position')
+      .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
+    new SlashCommandBuilder()
+      .setName('resume')
+      .setDescription('Give the position back to the AI')
+      .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
+    new SlashCommandBuilder()
+      .setName('cpdlc')
+      .setDescription('Send a CPDLC/PDC datalink message to one aircraft')
+      .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
+      .addSubcommand((sub) =>
+        sub
+          .setName('contact')
+          .setDescription('Instruct an aircraft not on your frequency to contact another facility')
+          .addStringOption((opt) => opt.setName('callsign').setDescription('Aircraft callsign').setRequired(true))
+          .addStringOption((opt) => opt.setName('facility').setDescription('Facility to contact, e.g. "Barths Center"').setRequired(true))
+          .addStringOption((opt) => opt.setName('frequency').setDescription('Frequency, e.g. "132.550"').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('pdc')
+          .setDescription('Deliver a routine IFR clearance as text instead of over voice')
+          .addStringOption((opt) => opt.setName('callsign').setDescription('Aircraft callsign').setRequired(true))
+          .addStringOption((opt) => opt.setName('clearance').setDescription('Full clearance text, as you would otherwise speak it').setRequired(true))
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('text')
+          .setDescription('Send a free-form text message to one aircraft')
+          .addStringOption((opt) => opt.setName('callsign').setDescription('Aircraft callsign').setRequired(true))
+          .addStringOption((opt) => opt.setName('message').setDescription('Message text').setRequired(true))
+      ),
+    new SlashCommandBuilder()
+      .setName('broadcast')
+      .setDescription('Send a fleet-wide announcement to every pilot (moderator only)')
+      .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+      .addStringOption((opt) => opt.setName('message').setDescription('Announcement text').setRequired(true)),
+  ].map((command) => command.toJSON());
 }
 
 /**

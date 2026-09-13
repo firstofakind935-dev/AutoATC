@@ -5,7 +5,6 @@
     "guildId": "1507182217393340426",
     "voiceChannelId": "1507182218731323515",
     "logChannelId": null,
-    "commandPrefix": "!center",
     "persona": {
       "position": "Center",
       "callsign": "Barths Center",

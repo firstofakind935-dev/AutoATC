@@ -149,7 +149,6 @@ function validateEntry(entry, index) {
 
   return {
     ...base,
-    commandPrefix: entry.commandPrefix || null,
     persona: {
       position: persona.position,
       callsign: persona.callsign,

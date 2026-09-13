@@ -25,46 +25,43 @@ a position — every server's existing ATC/roster system is different, and
 that integration is intentionally left as a stub for you to wire up
 (`src/bot/HumanHandoff.js`, see `isExternalHandoffActive()`).
 
-Until you wire that in, each bot supports a manual override via chat
-commands in any text channel it can see (requires the "Manage Server"
-permission):
+Until you wire that in, each bot registers its own slash commands
+(per-guild, on startup) for a manual override:
 
 ```
-!tower pause    # silence the AI, a human is taking over
-!tower resume   # give the position back to the AI
+/pause     silence the AI, a human is taking over
+/resume    give the position back to the AI
 ```
 
 A human controlling a position - whether or not they've paused the AI -
 can also send the same CPDLC/PDC datalink messages the LLM can (see the
-Monitor section's "Datalink messages" below), by hand, via chat command:
+Monitor section's "Datalink messages" below):
 
 ```
-!tower cpdlc contact N42Y Barths Center 132.550
-!tower cpdlc pdc N42Y Cessna 42Yankee is cleared to Rockford as filed...
-!tower cpdlc text N42Y Traffic alert, expect vectors shortly
+/cpdlc contact callsign:N42Y facility:"Barths Center" frequency:132.550
+/cpdlc pdc callsign:N42Y clearance:"Cessna 42Yankee is cleared to Rockford as filed..."
+/cpdlc text callsign:N42Y message:"Traffic alert, expect vectors shortly"
 ```
 
 Always sent as that bot's own ATC position - never something the human has
-to type themselves. `facility` can contain spaces (frequency is always the
-last word); `pdc`'s clearance and `text`'s message are everything after the
-callsign.
+to specify. `/pause`, `/resume`, and `/cpdlc` all default to requiring the
+**Manage Server** permission (Discord won't even show the command to a
+member without it).
 
 A moderator can also send a fleet-wide announcement - server news or an
 update, not an instruction to one aircraft - which every pilot currently
-polling for datalink messages receives, regardless of which bot's channel
-it's sent from or which frequency they're on:
+polling for datalink messages receives, regardless of which bot's slash
+command it's sent through or which frequency they're on:
 
 ```
-!tower broadcast Runway 9/27 closed for maintenance until further notice.
+/broadcast message:"Runway 9/27 closed for maintenance until further notice."
 ```
 
-This requires the **Administrator** permission specifically, not just
-"Manage Server" like every other command here - it reaches every pilot on
-the server at once, so it's scoped to moderators rather than every regular
-controller.
-
-(`!tower` is whatever `commandPrefix` you set for that bot in
-`config/bots.json`.)
+This defaults to requiring **Administrator** specifically, not just
+"Manage Server" like the other commands - it reaches every pilot on the
+server at once, so it's scoped to moderators rather than every regular
+controller (a server admin can still loosen either default in Discord's
+Integrations settings if you want different roles to have access).
 
 ## Setup
 
@@ -83,9 +80,10 @@ format, so no separate ffmpeg install is required.
 For each ATC position you want, create a separate application/bot at
 https://discord.com/developers/applications, then:
 
-- Under **Bot**, enable the **Message Content Intent**.
-- Invite the bot to your server with the `bot` scope and these permissions:
-  `View Channels`, `Send Messages`, `Connect`, `Speak`, `Use Voice Activity`.
+- Invite the bot to your server with both the `bot` and `applications.commands`
+  scopes (the latter is required for its slash commands to register at all)
+  and these permissions: `View Channels`, `Send Messages`, `Connect`,
+  `Speak`, `Use Voice Activity`.
 - Copy its token.
 
 ### 3. Configure environment variables
@@ -291,7 +289,6 @@ Edit `config/bots.json` — an array with one entry per bot:
   "guildId": "...",                  // the Discord server ID
   "voiceChannelId": "...",           // voice channel this bot joins
   "logChannelId": "...",             // optional text channel for transcripts
-  "commandPrefix": "!tower",         // optional, enables !tower pause/resume
   "persona": {
     "position": "Tower",             // shown to the LLM, shapes phraseology
     "callsign": "Springfield Tower", // what the bot calls itself on comms
@@ -473,8 +470,7 @@ the fields that kind uses are required):
 
 `POST /api/cpdlc/broadcast` body is just `{"fromPosition": "...", "text":
 "..."}` - always `kind: "text"`, since a "contact"/"pdc" message only makes
-sense addressed to one aircraft. See the `!tower broadcast` chat command
-above.
+sense addressed to one aircraft. See the `/broadcast` slash command above.
 
 `GET /api/cpdlc?callsign=N42Y&since=<last id seen>` returns that callsign's
 direct messages merged with any broadcasts, sorted together (both share one
@@ -488,8 +484,8 @@ reply back into the bot's conversation yet. The LLM itself still has no
 scheduled/proactive trigger (it only emits a `CPDLC:` directive as part of
 a reply to some transmission that already triggered its turn), but a human
 controlling that position isn't limited by that — see "How the human
-handoff works today" above for the `!tower cpdlc` chat command, which
-sends one on demand regardless of whether anything just triggered a turn.
+handoff works today" above for the `/cpdlc` slash command, which sends one
+on demand regardless of whether anything just triggered a turn.
 
 ## Known limitations
 

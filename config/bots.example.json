@@ -5,7 +5,6 @@
     "guildId": "REPLACE_WITH_GUILD_ID",
     "voiceChannelId": "REPLACE_WITH_TOWER_VOICE_CHANNEL_ID",
     "logChannelId": "REPLACE_WITH_LOG_TEXT_CHANNEL_ID",
-    "commandPrefix": "!tower",
     "persona": {
       "position": "Tower",
       "callsign": "Izolirani Tower",
@@ -27,7 +26,6 @@
     "guildId": "REPLACE_WITH_GUILD_ID",
     "voiceChannelId": "REPLACE_WITH_GROUND_VOICE_CHANNEL_ID",
     "logChannelId": "REPLACE_WITH_LOG_TEXT_CHANNEL_ID",
-    "commandPrefix": "!ground",
     "persona": {
       "position": "Ground",
       "callsign": "Izolirani Ground",
@@ -45,7 +43,6 @@
     "guildId": "REPLACE_WITH_GUILD_ID",
     "voiceChannelId": "REPLACE_WITH_APRON_VOICE_CHANNEL_ID",
     "logChannelId": "REPLACE_WITH_LOG_TEXT_CHANNEL_ID",
-    "commandPrefix": "!apron",
     "persona": {
       "position": "Apron",
       "callsign": "Sauthemptona Apron",
