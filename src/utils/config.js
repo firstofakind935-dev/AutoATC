@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+const { makeLogger } = require('./logger');
+
+const logger = makeLogger('fleet-config');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.json');
 const EXAMPLE_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.example.json');
@@ -31,7 +34,31 @@ function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
 
   validateSpeechConfig();
 
-  return parsed.map((entry, index) => validateEntry(entry, index));
+  const configs = [];
+  parsed.forEach((entry, index) => {
+    const where = `config/bots.json entry #${index + 1} (${entry && entry.name ? entry.name : 'unnamed'})`;
+    if (!entry || !entry.tokenEnv) {
+      throw new Error(`${where} is missing required field "tokenEnv".`);
+    }
+    if (!process.env[entry.tokenEnv]) {
+      // Not every position needs to be running at once - list every
+      // position the fleet might use in bots.json, and only the ones
+      // whose token env var is actually set in .env come online. Skip
+      // rather than crash the whole fleet over one unconfigured bot.
+      logger.warn(`Skipping ${where}: env var "${entry.tokenEnv}" is not set.`);
+      return;
+    }
+    configs.push(validateEntry(entry, index));
+  });
+
+  if (configs.length === 0) {
+    throw new Error(
+      `No bot in ${configPath} has its tokenEnv env var set - set at least one Discord bot ` +
+        `token in your .env to run the fleet.`
+    );
+  }
+
+  return configs;
 }
 
 function validateSpeechConfig() {
@@ -69,13 +96,9 @@ function validateEntry(entry, index) {
     }
   }
 
+  // Presence of the token itself was already checked by loadFleetConfig
+  // (which skips - rather than fails - an entry with no token configured).
   const token = process.env[entry.tokenEnv];
-  if (!token) {
-    throw new Error(
-      `${where} references env var "${entry.tokenEnv}" for its Discord bot token, ` +
-        `but it is not set. Add it to your .env file.`
-    );
-  }
 
   const { persona } = entry;
 
