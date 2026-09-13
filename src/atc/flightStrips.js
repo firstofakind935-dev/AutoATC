@@ -2,11 +2,41 @@ const { makeLogger } = require('../utils/logger');
 
 const logger = makeLogger('flight-strips');
 
+const MONITOR_URL = process.env.MONITOR_URL || null;
+const MONITOR_API_KEY = process.env.MONITOR_API_KEY || null;
+
 // In-memory only - every bot in the fleet runs in this same Node process
 // (see src/index.js), so a shared Map is enough to pass a strip between
 // positions without a database. Resets on restart, same as each bot's own
 // ConversationHistory.
 const strips = new Map();
+
+/**
+ * Fire-and-forget push of one strip's current state to the monitor's
+ * dashboard (see monitor/server.js's /api/flightstrip), for the Flight
+ * Strips table on the "Radar" tab - a controller watching the board sees
+ * what's being worked without joining the game. Same silent-on-failure
+ * contract as datalink.js's sendDatalinkMessage: a monitor outage should
+ * never affect a bot's own reply.
+ */
+function pushStripToMonitor(strip) {
+  if (!MONITOR_URL) return;
+  const headers = { 'Content-Type': 'application/json' };
+  if (MONITOR_API_KEY) headers.Authorization = `Bearer ${MONITOR_API_KEY}`;
+
+  fetch(`${MONITOR_URL.replace(/\/+$/, '')}/api/flightstrip`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(strip),
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        logger.warn(`Flight strip push for ${strip.callsign} rejected by monitor (${response.status}): ${body}`);
+      }
+    })
+    .catch((err) => logger.warn(`Failed to push flight strip for ${strip.callsign}: ${err.message}`));
+}
 
 function normalizeCallsign(raw) {
   return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -36,6 +66,7 @@ function upsertStrip(callsign, updates = {}) {
     updatedAt: new Date().toISOString(),
   };
   strips.set(key, merged);
+  pushStripToMonitor(merged);
   return merged;
 }
 

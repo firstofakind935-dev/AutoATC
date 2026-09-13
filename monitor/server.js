@@ -14,6 +14,7 @@ const OFFLINE_THRESHOLD_MS = 90_000; // matches the bot fleet's heartbeat interv
 const POSITION_STALE_MS = 30_000; // a position report older than this is dropped from /api/positions - stale beats wrong
 const CPDLC_MAX_PER_CALLSIGN = 20; // ring buffer per callsign - old ones age out via CPDLC_TTL_MS below anyway
 const CPDLC_TTL_MS = 10 * 60_000; // a "contact me"/PDC message nobody's polled for in 10 minutes isn't worth surfacing late
+const FLIGHT_STRIP_TTL_MS = 3 * 60 * 60_000; // hygiene only, not a "staleness" concept - a strip can sit unchanged for a long enroute leg
 
 if (!INGEST_API_KEY) {
   console.warn(
@@ -34,6 +35,7 @@ const positions = new Map(); // normalized callsign -> { callsign, aircraftType,
 const cpdlcMessages = new Map(); // normalized callsign -> array of messages, oldest first
 const broadcastMessages = []; // fleet-wide announcements, oldest first - see POST /api/cpdlc/broadcast
 let nextCpdlcId = 1; // shared across per-callsign and broadcast messages, so a single "since" cursor covers both
+const flightStrips = new Map(); // normalized callsign -> latest strip snapshot (see src/atc/flightStrips.js)
 
 function normalizeCallsign(raw) {
   return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -250,6 +252,50 @@ app.get('/api/cpdlc', requireIngestAuth, (req, res) => {
     (a, b) => a.id - b.id
   );
   res.json(merged);
+});
+
+// Pushed by the bot fleet (see src/atc/flightStrips.js) whenever a strip is
+// created or updated - the dashboard's Flight Strips table (Radar tab)
+// shows what's currently being worked, without needing to join the game.
+// One row per callsign; a later push replaces the earlier one entirely
+// rather than appending, since a strip is mutable state, not a log.
+app.post('/api/flightstrip', requireIngestAuth, (req, res) => {
+  const { callsign, currentPosition, clearance, updatedAt } = req.body || {};
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" is required' });
+
+  const key = normalizeCallsign(callsign);
+  if (!key) return res.status(400).json({ error: '"callsign" has no usable characters' });
+
+  flightStrips.set(key, {
+    callsign,
+    currentPosition: typeof currentPosition === 'string' ? currentPosition : null,
+    clearance: clearance && typeof clearance === 'object' ? clearance : {},
+    updatedAt: typeof updatedAt === 'string' ? updatedAt : new Date().toISOString(),
+    receivedAt: Date.now(),
+  });
+  res.status(204).end();
+});
+
+// Dashboard-facing read of every currently-tracked strip. Cross-references
+// live positions (if any) purely to surface aircraftType, which flight
+// strips don't otherwise carry - everything else comes straight from the
+// strip itself.
+app.get('/api/dashboard/flightstrips', requireDashboardAuth, (req, res) => {
+  const now = Date.now();
+  const result = [...flightStrips.values()]
+    .filter((s) => now - s.receivedAt < FLIGHT_STRIP_TTL_MS)
+    .map((s) => {
+      const pos = positions.get(normalizeCallsign(s.callsign));
+      return {
+        callsign: s.callsign,
+        aircraftType: pos?.aircraftType || null,
+        currentPosition: s.currentPosition,
+        clearance: s.clearance,
+        updatedAt: s.updatedAt,
+      };
+    })
+    .sort((a, b) => a.callsign.localeCompare(b.callsign));
+  res.json(result);
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
