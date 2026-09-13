@@ -74,13 +74,19 @@ function stripThinkingBlocks(text) {
   return cleaned.trim();
 }
 
+// Matches the instruction in systemPrompt.js for a correct readback of an
+// instruction already given - a real controller stays silent rather than
+// re-transmitting it, which otherwise gets read back again and loops.
+const NO_RESPONSE_SENTINEL = 'NO_RESPONSE_NEEDED';
+
 async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt, history }) {
   const impl = PROVIDERS[provider];
   if (!impl) {
     throw new Error(`Unknown AI provider "${provider}". Expected one of: ${Object.keys(PROVIDERS).join(', ')}`);
   }
   const reply = await impl.generateReply({ apiKey, baseUrl, model, systemPrompt, history });
-  return stripThinkingBlocks(reply);
+  const cleaned = stripThinkingBlocks(reply);
+  return cleaned.toUpperCase().includes(NO_RESPONSE_SENTINEL) ? '' : cleaned;
 }
 
 /**

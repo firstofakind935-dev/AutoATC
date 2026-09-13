@@ -245,6 +245,14 @@ function buildAtcSystemPrompt(persona) {
       `only with "Say again" (or similar) - never guess a runway, request ` +
       `type, or clearance from noise like that, and never invent a request ` +
       `that was never actually made.`,
+    `- If the transmission is just the pilot reading back an instruction ` +
+      `you already gave (repeating the callsign, runway, altitude, heading, ` +
+      `or clearance you just issued, with no new request and nothing ` +
+      `incorrect in it), a real controller stays silent - do NOT issue that ` +
+      `instruction again or say anything else. Respond with exactly ` +
+      `NO_RESPONSE_NEEDED and nothing else. Only transmit again if the ` +
+      `readback contains an actual error you need to correct, or the pilot ` +
+      `has added a new request.`,
     `- Never break character, never mention that you are an AI, and never ` +
       `add narration, stage directions, or text that would not actually be spoken.`,
     `- Output only the words to be spoken over the radio. No formatting, no quotes.`,
