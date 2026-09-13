@@ -11,10 +11,14 @@ const VALID_KINDS = ['contact', 'pdc', 'text'];
  * Fire-and-forget push to the monitor's /api/cpdlc, which the pilot's
  * companion app polls and shows in its overlay. Must never throw or block
  * the caller - same contract as logger.js's sendToMonitor, since a monitor
- * outage should never affect the bot's own voice reply.
+ * outage should never affect the bot's own voice reply. Returns whether a
+ * send was actually attempted (MONITOR_URL configured) - not whether it
+ * reached the monitor, which is fire-and-forget and logged separately -
+ * so a caller like the /cpdlc command can tell the human it did nothing
+ * instead of falsely confirming a message that was never sent anywhere.
  */
 function sendDatalinkMessage({ callsign, kind, fromPosition, facility, frequency, clearance, text }) {
-  if (!MONITOR_URL) return;
+  if (!MONITOR_URL) return false;
   const headers = { 'Content-Type': 'application/json' };
   if (MONITOR_API_KEY) headers.Authorization = `Bearer ${MONITOR_API_KEY}`;
 
@@ -23,17 +27,20 @@ function sendDatalinkMessage({ callsign, kind, fromPosition, facility, frequency
     headers,
     body: JSON.stringify({ callsign, kind, fromPosition, facility, frequency, clearance, text }),
   }).catch((err) => logger.warn(`Failed to send CPDLC/PDC message for ${callsign}: ${err.message}`));
+  return true;
 }
 
 /**
  * Fire-and-forget push to the monitor's /api/cpdlc/broadcast - reaches
  * every pilot currently polling, not just one callsign. Used for moderator
- * announcements/news (see the !tower broadcast chat command), never by the
- * LLM itself - a "contact"/"pdc" message is inherently addressed to one
- * aircraft, so only free text makes sense to broadcast fleet-wide.
+ * announcements/news (see the /broadcast slash command), never by the LLM
+ * itself - a "contact"/"pdc" message is inherently addressed to one
+ * aircraft, so only free text makes sense to broadcast fleet-wide. Return
+ * value has the same "attempted, not confirmed" meaning as
+ * sendDatalinkMessage above.
  */
 function sendBroadcastMessage({ fromPosition, text }) {
-  if (!MONITOR_URL) return;
+  if (!MONITOR_URL) return false;
   const headers = { 'Content-Type': 'application/json' };
   if (MONITOR_API_KEY) headers.Authorization = `Bearer ${MONITOR_API_KEY}`;
 
@@ -42,6 +49,7 @@ function sendBroadcastMessage({ fromPosition, text }) {
     headers,
     body: JSON.stringify({ fromPosition, text }),
   }).catch((err) => logger.warn(`Failed to send CPDLC broadcast: ${err.message}`));
+  return true;
 }
 
 /**

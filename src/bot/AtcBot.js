@@ -273,7 +273,11 @@ class AtcBot {
     }
 
     const text = interaction.options.getString('message', true);
-    sendBroadcastMessage({ fromPosition: this.config.persona.position, text });
+    const attempted = sendBroadcastMessage({ fromPosition: this.config.persona.position, text });
+    if (!attempted) {
+      await interaction.reply({ content: 'MONITOR_URL is not set in this bot\'s .env - the broadcast was not sent anywhere.', ephemeral: true }).catch(() => {});
+      return;
+    }
     await interaction.reply(`Broadcast sent to all pilots: "${text}"`).catch(() => {});
   }
 
@@ -298,7 +302,11 @@ class AtcBot {
       directive.text = interaction.options.getString('message', true);
     }
 
-    sendDatalinkMessage(directive);
+    const attempted = sendDatalinkMessage(directive);
+    if (!attempted) {
+      await interaction.reply({ content: 'MONITOR_URL is not set in this bot\'s .env - the message was not sent anywhere.', ephemeral: true }).catch(() => {});
+      return;
+    }
     await interaction.reply(`Sent ${kind} datalink message to ${callsign}.`).catch(() => {});
   }
 }
