@@ -361,7 +361,31 @@ document.getElementById('stopTrackingBtn').addEventListener('click', () => {
 
 // ---------- Init ----------
 
+function showLoadErrors() {
+  const errors = window.companion && window.companion.loadErrors;
+  if (!errors || Object.keys(errors).length === 0) return;
+  const banner = document.createElement('pre');
+  banner.style.cssText = 'background:#fee2e2;color:#991b1b;padding:10px;border-radius:6px;white-space:pre-wrap;';
+  banner.textContent =
+    'Some companion app modules failed to load - the features below that depend on them won\'t work:\n\n' +
+    Object.entries(errors)
+      .map(([name, err]) => `[${name}]\n${err}`)
+      .join('\n\n');
+  document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+}
+
 (async function init() {
+  if (!window.companion) {
+    const banner = document.createElement('pre');
+    banner.style.cssText = 'background:#fee2e2;color:#991b1b;padding:10px;border-radius:6px;white-space:pre-wrap;';
+    banner.textContent =
+      'The companion app failed to initialize (window.companion is missing) - ' +
+      'the preload script did not run. Check the terminal you ran "npm start" ' +
+      'from for an error, or run with COMPANION_DEVTOOLS=1 and check the DevTools console.';
+    document.body.insertBefore(banner, document.body.firstChild.nextSibling);
+    return;
+  }
+  showLoadErrors();
   await loadSettings();
   await populateAirportDropdowns();
   await refreshSources();
