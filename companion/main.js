@@ -27,6 +27,12 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Electron sandboxes preload scripts by default (since v20), which
+      // restricts require() to a small built-in allowlist - our own
+      // lib/*.js modules (and tesseract.js) fail to resolve under that.
+      // The preload still only exposes specific functions via
+      // contextBridge, so the renderer itself stays fully sandboxed.
+      sandbox: false,
     },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
