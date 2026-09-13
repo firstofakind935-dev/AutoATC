@@ -370,6 +370,48 @@ it's ready, so the dashboard's online/offline status stays accurate even
 during long quiet stretches with no radio traffic — a bot is shown
 offline once nothing's been heard from it for 90 seconds.
 
+### Position tracking (companion app)
+
+The monitor also relays live aircraft position estimates from pilots
+running the [companion app](companion/README.md), a local Electron app
+that reads a pilot's own game HUD and minimap. This lets Approach,
+Departure, and Center bots vector traffic using an actual estimated
+position instead of only what the pilot says over the radio.
+
+Two authenticated endpoints, gated by the same `INGEST_API_KEY` as the log
+endpoints:
+
+```
+POST /api/position    — companion app reports one aircraft's estimated fix
+GET  /api/positions    — bots poll this for all currently-fresh fixes
+```
+
+`POST /api/position` body:
+
+```json
+{
+  "callsign": "N42Y",
+  "aircraftType": "A220",
+  "speed": 241,
+  "position": {
+    "distanceNm": 12.4,
+    "bearingDeg": 230.5,
+    "referenceAirport": "IZOL",
+    "altitudeFt": 4400,
+    "headingDeg": 270,
+    "fixAgeSec": 38
+  }
+}
+```
+
+Positions are kept in memory only and expire after 30 seconds without a
+fresh report, so `GET /api/positions` never returns stale traffic — a
+pilot who closes the companion app or loses connectivity simply drops off
+the list. Bots fetch this via `src/atc/positions.js`, which caches the
+poll for 5 seconds and formats each row (distance/bearing from a named
+airport, altitude, heading, and a staleness note once a fix is more than
+a minute past its last minimap correction) into the LLM's context.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this
