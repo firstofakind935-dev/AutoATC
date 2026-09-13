@@ -92,13 +92,25 @@ async function selectSource(id) {
   video.srcObject = stream;
   await video.play();
 
-  overlay.width = video.clientWidth;
-  overlay.height = video.clientHeight;
+  // The preview section must be unhidden (display != none) before reading
+  // clientWidth/clientHeight - both come back 0 on a hidden element, which
+  // used to leave the overlay canvas at 0x0 and unable to receive any
+  // clicks/drags at all, even though the video underneath looked fine.
   document.getElementById('preview').hidden = false;
   document.getElementById('calibration').hidden = false;
   document.getElementById('tracking').hidden = false;
+  resizeOverlay();
+}
+
+function resizeOverlay() {
+  overlay.width = video.clientWidth;
+  overlay.height = video.clientHeight;
   drawSavedRegions();
 }
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('preview').hidden) resizeOverlay();
+});
 
 document.getElementById('refreshSourcesBtn').addEventListener('click', refreshSources);
 
