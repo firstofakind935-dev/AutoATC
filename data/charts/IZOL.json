@@ -39,6 +39,7 @@
       "frequency": "124.300"
     }
   ],
+  "groundLayout": "Runway 10/28 is a single runway with a parallel taxiway system (taxiways D and E, running together) along its full length on the northeast side. Perpendicular connector taxiways link the runway to that D/E spine: E1 and E2 near the Rwy 28 end, down through E6 and E7 near the Rwy 10 end. Taxiway A branches off the D/E spine to East Apron (stands 1-4, 8-9) and the Ground Crew Station. Taxiway B branches off to West Apron (stands 5-7), next to the Terminal and Control Tower. Taxiway C branches off further south (near the D5 area) to Cargo Apron (stands 10-13), the Cargo Terminal, Hangars, Fuel, and the Heli pads. A real taxi route from an apron stand to Rwy 28 goes via A or B to the D/E spine, then a connector near the Rwy 28 end (e.g. E1); to Rwy 10, follow the D/E spine to a connector near that end (e.g. E6 or E7). Always use the real connector nearest the relevant runway end and apron, not just a single taxiway letter.",
   "otherLabels": [
     "10",
     "11",

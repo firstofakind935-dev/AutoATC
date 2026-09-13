@@ -59,6 +59,15 @@ function formatChart(chart) {
   // authoritative frequency source injected into context instead, to
   // avoid handing the LLM two conflicting numbers for the same station.
 
+  if (chart.groundLayout) {
+    // Hand-written from visually reading the actual chart - the raw SVG
+    // extraction below has no connectivity data (it's a flat list of text
+    // labels, not a taxiway graph), so without this the model can only
+    // cite whatever single taxiway the pilot already mentioned instead of
+    // building a real multi-segment route.
+    lines.push(`Ground layout: ${chart.groundLayout}`);
+  }
+
   if (chart.otherLabels.length > 0) {
     lines.push(`Other chart labels (taxiways, aprons, gates, buildings): ${chart.otherLabels.join(', ')}`);
   }
