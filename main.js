@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,37 +19,101 @@ function saveSettings(settings) {
   fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
 }
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1100,
-    height: 800,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      // Electron sandboxes preload scripts by default (since v20), which
-      // restricts require() to a small built-in allowlist - our own
-      // lib/*.js modules (and tesseract.js) fail to resolve under that.
-      // The preload still only exposes specific functions via
-      // contextBridge, so the renderer itself stays fully sandboxed.
-      sandbox: false,
-    },
+const PRELOAD_WEB_PREFS = {
+  preload: path.join(__dirname, 'preload.js'),
+  contextIsolation: true,
+  nodeIntegration: false,
+  // Electron sandboxes preload scripts by default (since v20), which
+  // restricts require() to a small built-in allowlist - our own lib/*.js
+  // modules (and tesseract.js) fail to resolve under that. The preload
+  // still only exposes specific functions via contextBridge, so the
+  // renderer itself stays fully sandboxed regardless.
+  sandbox: false,
+};
+
+let controlWindow = null;
+let overlayWindow = null;
+
+function createControlWindow() {
+  controlWindow = new BrowserWindow({
+    width: 460,
+    height: 780,
+    alwaysOnTop: true,
+    webPreferences: PRELOAD_WEB_PREFS,
   });
-  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  if (process.env.COMPANION_DEVTOOLS) win.webContents.openDevTools();
+  controlWindow.loadFile(path.join(__dirname, 'renderer', 'control.html'));
+  if (process.env.COMPANION_DEVTOOLS) controlWindow.webContents.openDevTools({ mode: 'detach' });
+  controlWindow.on('closed', () => {
+    controlWindow = null;
+    if (overlayWindow) overlayWindow.close();
+  });
 }
 
-ipcMain.handle('get-sources', async () => {
-  const sources = await desktopCapturer.getSources({
-    types: ['window', 'screen'],
-    thumbnailSize: { width: 300, height: 200 },
+// The overlay is a transparent, click-through-by-default window sized to
+// exactly cover one monitor, so region boxes and calibration clicks land on
+// real screen pixels directly over the game instead of a separate scaled
+// preview - and so a single-monitor pilot doesn't need a second display to
+// see both the game and the companion app's UI at once.
+function createOverlayWindow(display) {
+  if (overlayWindow) overlayWindow.close();
+  overlayWindow = new BrowserWindow({
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    transparent: true,
+    frame: false,
+    hasShadow: false,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    focusable: true,
+    webPreferences: PRELOAD_WEB_PREFS,
   });
-  // Windows lists every window with a title, including invisible/utility
-  // windows (0x0 thumbnails). Drop those - they're never a real capture
-  // target and just clutter the picker.
-  return sources
-    .filter((s) => !s.thumbnail.isEmpty())
-    .map((s) => ({ id: s.id, name: s.name, thumbnailDataUrl: s.thumbnail.toDataURL() }));
+  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+  overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+  overlayWindow.loadFile(path.join(__dirname, 'renderer', 'overlay.html'));
+  overlayWindow.on('closed', () => {
+    overlayWindow = null;
+  });
+  return overlayWindow;
+}
+
+ipcMain.handle('get-displays', () =>
+  screen.getAllDisplays().map((d) => ({
+    id: d.id,
+    bounds: d.bounds,
+    scaleFactor: d.scaleFactor,
+    label: `${d.bounds.width}x${d.bounds.height} at (${d.bounds.x}, ${d.bounds.y})`,
+  }))
+);
+
+ipcMain.handle('create-overlay', (event, displayId) => {
+  const display = screen.getAllDisplays().find((d) => d.id === displayId) || screen.getPrimaryDisplay();
+  createOverlayWindow(display);
+  return { id: display.id, bounds: display.bounds, scaleFactor: display.scaleFactor };
+});
+
+ipcMain.handle('close-overlay', () => {
+  if (overlayWindow) overlayWindow.close();
+});
+
+ipcMain.handle('set-overlay-interactive', (event, interactive) => {
+  if (overlayWindow) overlayWindow.setIgnoreMouseEvents(!interactive, { forward: true });
+});
+
+// Relays between the control window and the overlay window - they're
+// separate renderer processes and can't reach each other directly.
+ipcMain.on('control-to-overlay', (event, payload) => {
+  if (overlayWindow) overlayWindow.webContents.send('overlay-command', payload);
+});
+ipcMain.on('overlay-to-control', (event, payload) => {
+  if (controlWindow) controlWindow.webContents.send('overlay-result', payload);
+});
+
+ipcMain.handle('get-screen-sources', async () => {
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1, height: 1 } });
+  return sources.map((s) => ({ id: s.id, name: s.name, display_id: s.display_id }));
 });
 
 ipcMain.handle('load-settings', () => loadSettings());
@@ -61,9 +125,9 @@ ipcMain.handle('save-settings', (event, settings) => {
 ipcMain.handle('get-airports', () => loadAirports());
 
 app.whenReady().then(() => {
-  createWindow();
+  createControlWindow();
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createControlWindow();
   });
 });
 
