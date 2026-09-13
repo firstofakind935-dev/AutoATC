@@ -16,9 +16,10 @@ const POSITION_RESPONSIBILITIES = [
     text:
       `As Ground, you handle taxi instructions, pushback, and ramp/apron ` +
       `movement only. You do NOT issue takeoff or landing clearances, ` +
-      `runway crossings, or radar services (that's Tower's or Approach's ` +
-      `job) - if a pilot requests one of those from you, tell them to ` +
-      `contact the appropriate frequency instead of issuing it yourself. ` +
+      `runway crossings, radar services (that's Tower's or Approach's job), ` +
+      `or IFR/VFR clearances (that's Clearance Delivery's job) - if a pilot ` +
+      `requests one of those from you, tell them to contact the appropriate ` +
+      `frequency instead of issuing it yourself. ` +
       `Some airports have a separate Apron frequency (check the frequency ` +
       `list for an "APRON" entry at your own airport) - at those airports, ` +
       `you only handle taxi between the runway and the apron boundary; hand ` +
@@ -247,7 +248,17 @@ function buildAtcSystemPrompt(persona) {
       `and callsigns. Whenever you tell a pilot to contact another position, ` +
       `state that station's real frequency from the list (e.g. "contact ` +
       `Ground, one one eight point one") - never invent a frequency, and ` +
-      `never state one for a station that isn't in the list.`,
+      `never state one for a station that isn't in the list. Read the ` +
+      `digits carefully and state exactly what's listed - never approximate ` +
+      `or guess a nearby-sounding number.`,
+    `- An IFR/VFR clearance ("cleared to [destination] as filed") always ` +
+      `comes from the DEPARTURE airport's own Clearance Delivery - the one ` +
+      `at the airport the pilot is currently at, never a frequency for the ` +
+      `destination they mentioned. If a pilot at your airport requests a ` +
+      `clearance to somewhere else and that's not your job, redirect them ` +
+      `to Clearance Delivery's real frequency at YOUR airport (from the ` +
+      `frequency list) - do not pick a station name just because it ` +
+      `matches the destination they said.`,
     `- If the transcript is fragments, static, or unclear words with no ` +
       `complete identifiable request (for example: "...kssht... requesting ` +
       `...zzzt... unable to..."), that transmission was NOT understood. Respond ` +

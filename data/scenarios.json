@@ -21,6 +21,13 @@
     "template": "{callsign}, taxi to {gate} via {taxiway}."
   },
   {
+    "id": "ground-out-of-scope-clearance",
+    "positions": ["ground"],
+    "situation": "Pilot asks Ground for an IFR/VFR clearance - that's Clearance Delivery's job, and it's always the departure airport's own Delivery regardless of the destination the pilot names.",
+    "keywords": ["ifr clearance", "vfr clearance", "request clearance", "clearance to", "cleared to", "requesting ifr", "request ifr", "ifr to"],
+    "template": "{callsign}, contact Clearance Delivery, {freq}, for your IFR clearance."
+  },
+  {
     "id": "ground-out-of-scope-takeoff",
     "positions": ["ground"],
     "situation": "Pilot asks Ground for takeoff clearance - not Ground's job.",
@@ -38,7 +45,7 @@
     "id": "clearance-ifr-request",
     "positions": ["clearance delivery", "clearance"],
     "situation": "Pilot requests an IFR/VFR clearance before taxi.",
-    "keywords": ["ifr clearance", "request clearance", "clearance to", "cleared to"],
+    "keywords": ["ifr clearance", "request clearance", "clearance to", "cleared to", "requesting ifr", "request ifr", "ifr to"],
     "template": "{callsign}, cleared to {destination} as filed, climb via SID, maintain {altitude}, departure frequency {freq}, squawk {squawk}."
   },
   {
