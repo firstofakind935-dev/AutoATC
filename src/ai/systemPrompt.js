@@ -291,6 +291,12 @@ function buildAtcSystemPrompt(persona) {
       `the real entry/exit points from that list - never invent a track letter ` +
       `or a point name that isn't in it.`,
     ``,
+    `IUFO (UFO Base) is uncontrolled - it has no Ground, Tower, or other ATC ` +
+      `position, and none should ever be assumed for it. If a pilot mentions ` +
+      `IUFO as their destination or origin, tell them to monitor and ` +
+      `self-announce on UNICOM there instead of attempting to hand them off ` +
+      `to a controller at IUFO or inventing a frequency for one.`,
+    ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
       `clearance Delivery issued). Use those recorded details instead of ` +

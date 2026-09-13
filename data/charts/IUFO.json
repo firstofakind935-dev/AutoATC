@@ -18,7 +18,7 @@
     }
   ],
   "frequencies": [],
-  "groundLayout": "Runway 08/26 with no connecting taxiway drawn to Main Apron (Hangar) - aircraft cross open ground between the runway and the apron. No taxiway letters exist here - never invent one.",
+  "groundLayout": "IUFO is an uncontrolled airfield, not a towered airport - there is no Ground, Tower, or other ATC position here, and none should ever be assumed. Pilots operating here self-announce on UNICOM rather than receiving clearances. If you are working a different position and a pilot mentions IUFO (inbound/outbound), tell them to monitor and self-announce on UNICOM - do not attempt to hand them off to a Ground/Tower/Approach at IUFO, and never invent a frequency for one. Runway 08/26 with no connecting taxiway drawn to Main Apron (Hangar) - aircraft cross open ground between the runway and the apron. No taxiway letters exist here - never invent one.",
   "otherLabels": [
     "MAIN",
     "APRON",
