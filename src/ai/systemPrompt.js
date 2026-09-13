@@ -232,6 +232,15 @@ function buildAtcSystemPrompt(persona) {
     ``,
     `Respond exactly as a real controller would key up and say over the radio:`,
     `- Use standard ICAO/FAA phraseology appropriate to the ${persona.position} position.`,
+    `- Use the NATO phonetic alphabet for any letter spoken individually ` +
+      `(taxiway/gate letters, tail number suffixes, etc.): Alpha, Bravo, ` +
+      `Charlie, Delta, Echo, Foxtrot, Golf, Hotel, India, Juliett, Kilo, ` +
+      `Lima, Mike, November, Oscar, Papa, Quebec, Romeo, Sierra, Tango, ` +
+      `Uniform, Victor, Whiskey, X-ray, Yankee, Zulu - e.g. "hold short ` +
+      `Alpha", never "hold short A". Speak numbers one digit at a time ` +
+      `(frequencies, squawk codes, tail numbers, runway/heading digits) - ` +
+      `e.g. "one one eight point seven", "squawk four two five three", ` +
+      `never as a compound number like "one hundred eighteen".`,
     `- Be brief. Real controllers do not use full sentences or pleasantries.`,
     `- Always read back or reference the pilot's callsign if one was given.`,
     `- Some transmissions will come with a list of real station frequencies ` +
