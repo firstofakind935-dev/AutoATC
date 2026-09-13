@@ -18,8 +18,14 @@
     "lat": 41.645,
     "lon": -0.056666666666666664,
     "runways": [
-      "1",
-      "19"
+      {
+        "designator": "1",
+        "headingDeg": 14
+      },
+      {
+        "designator": "19",
+        "headingDeg": 194
+      }
     ],
     "frequencies": []
   },
@@ -29,8 +35,14 @@
     "lat": 41.928333333333335,
     "lon": -0.006666666666666667,
     "runways": [
-      "8",
-      "26"
+      {
+        "designator": "8",
+        "headingDeg": 80
+      },
+      {
+        "designator": "26",
+        "headingDeg": 260
+      }
     ],
     "frequencies": []
   },
@@ -40,8 +52,14 @@
     "lat": 41.846666666666664,
     "lon": 0.07,
     "runways": [
-      "27",
-      "09"
+      {
+        "designator": "27",
+        "headingDeg": 270
+      },
+      {
+        "designator": "09",
+        "headingDeg": 90
+      }
     ],
     "frequencies": [
       {
@@ -56,8 +74,14 @@
     "lat": 42.05,
     "lon": 0.016666666666666666,
     "runways": [
-      "25",
-      "7"
+      {
+        "designator": "25",
+        "headingDeg": 251
+      },
+      {
+        "designator": "7",
+        "headingDeg": 71
+      }
     ],
     "frequencies": [
       {
@@ -72,8 +96,14 @@
     "lat": 41.531666666666666,
     "lon": 0.115,
     "runways": [
-      "4",
-      "22"
+      {
+        "designator": "4",
+        "headingDeg": 42
+      },
+      {
+        "designator": "22",
+        "headingDeg": 222
+      }
     ],
     "frequencies": []
   },
@@ -83,8 +113,14 @@
     "lat": 41.61666666666667,
     "lon": 0.12666666666666665,
     "runways": [
-      "35",
-      "17"
+      {
+        "designator": "35",
+        "headingDeg": 352
+      },
+      {
+        "designator": "17",
+        "headingDeg": 172
+      }
     ],
     "frequencies": []
   },
@@ -94,10 +130,22 @@
     "lat": 41.531666666666666,
     "lon": 0.115,
     "runways": [
-      "9L",
-      "9R",
-      "27R",
-      "27L"
+      {
+        "designator": "9L",
+        "headingDeg": 95
+      },
+      {
+        "designator": "9R",
+        "headingDeg": 95
+      },
+      {
+        "designator": "27R",
+        "headingDeg": 275
+      },
+      {
+        "designator": "27L",
+        "headingDeg": 275
+      }
     ],
     "frequencies": []
   },
@@ -107,8 +155,14 @@
     "lat": 41.82333333333333,
     "lon": 0.2733333333333333,
     "runways": [
-      "7",
-      "25"
+      {
+        "designator": "7",
+        "headingDeg": 71
+      },
+      {
+        "designator": "25",
+        "headingDeg": 251
+      }
     ],
     "frequencies": [
       {
@@ -135,10 +189,22 @@
     "lat": 41.74166666666667,
     "lon": -0.21833333333333332,
     "runways": [
-      "16",
-      "7",
-      "34",
-      "25"
+      {
+        "designator": "16",
+        "headingDeg": 157
+      },
+      {
+        "designator": "7",
+        "headingDeg": 67
+      },
+      {
+        "designator": "34",
+        "headingDeg": 337
+      },
+      {
+        "designator": "25",
+        "headingDeg": 247
+      }
     ],
     "frequencies": []
   },
@@ -148,8 +214,14 @@
     "lat": 41.65833333333333,
     "lon": 0.14666666666666667,
     "runways": [
-      "6",
-      "24"
+      {
+        "designator": "6",
+        "headingDeg": 64
+      },
+      {
+        "designator": "24",
+        "headingDeg": 244
+      }
     ],
     "frequencies": [
       {
@@ -180,8 +252,14 @@
     "lat": 41.906666666666666,
     "lon": 0.15333333333333332,
     "runways": [
-      "9",
-      "27"
+      {
+        "designator": "9",
+        "headingDeg": 89
+      },
+      {
+        "designator": "27",
+        "headingDeg": 269
+      }
     ],
     "frequencies": [
       {
@@ -196,8 +274,14 @@
     "lat": 41.66,
     "lon": -0.09833333333333334,
     "runways": [
-      "25",
-      "7"
+      {
+        "designator": "25",
+        "headingDeg": 246
+      },
+      {
+        "designator": "7",
+        "headingDeg": 66
+      }
     ],
     "frequencies": [
       {
@@ -224,8 +308,14 @@
     "lat": 41.655,
     "lon": 0.20166666666666666,
     "runways": [
-      "35",
-      "17"
+      {
+        "designator": "35",
+        "headingDeg": 354
+      },
+      {
+        "designator": "17",
+        "headingDeg": 174
+      }
     ],
     "frequencies": [
       {
@@ -252,10 +342,22 @@
     "lat": 41.83166666666666,
     "lon": 0.08666666666666667,
     "runways": [
-      "29",
-      "33",
-      "11",
-      "15"
+      {
+        "designator": "29",
+        "headingDeg": 291
+      },
+      {
+        "designator": "33",
+        "headingDeg": 331
+      },
+      {
+        "designator": "11",
+        "headingDeg": 111
+      },
+      {
+        "designator": "15",
+        "headingDeg": 151
+      }
     ],
     "frequencies": []
   },
@@ -265,12 +367,30 @@
     "lat": 41.62833333333333,
     "lon": -0.013333333333333334,
     "runways": [
-      "25C",
-      "25R",
-      "25L",
-      "7L",
-      "7C",
-      "7R"
+      {
+        "designator": "25C",
+        "headingDeg": 247
+      },
+      {
+        "designator": "25R",
+        "headingDeg": 247
+      },
+      {
+        "designator": "25L",
+        "headingDeg": 247
+      },
+      {
+        "designator": "7L",
+        "headingDeg": 67
+      },
+      {
+        "designator": "7C",
+        "headingDeg": 67
+      },
+      {
+        "designator": "7R",
+        "headingDeg": 67
+      }
     ],
     "frequencies": []
   },
@@ -280,8 +400,14 @@
     "lat": 41.68333333333333,
     "lon": -0.19166666666666668,
     "runways": [
-      "8",
-      "26"
+      {
+        "designator": "8",
+        "headingDeg": 81
+      },
+      {
+        "designator": "26",
+        "headingDeg": 261
+      }
     ],
     "frequencies": [
       {
@@ -308,8 +434,14 @@
     "lat": 41.85166666666667,
     "lon": 0.22166666666666668,
     "runways": [
-      "13",
-      "31"
+      {
+        "designator": "13",
+        "headingDeg": 126
+      },
+      {
+        "designator": "31",
+        "headingDeg": 306
+      }
     ],
     "frequencies": []
   },
@@ -319,8 +451,14 @@
     "lat": 41.75833333333333,
     "lon": 0.16999999999999998,
     "runways": [
-      "23",
-      "5"
+      {
+        "designator": "23",
+        "headingDeg": 231
+      },
+      {
+        "designator": "5",
+        "headingDeg": 51
+      }
     ],
     "frequencies": []
   },
@@ -330,8 +468,14 @@
     "lat": 41.78,
     "lon": -0.20666666666666667,
     "runways": [
-      "31",
-      "13"
+      {
+        "designator": "31",
+        "headingDeg": 313
+      },
+      {
+        "designator": "13",
+        "headingDeg": 133
+      }
     ],
     "frequencies": []
   },
@@ -341,10 +485,22 @@
     "lat": 41.986666666666665,
     "lon": -0.0033333333333333335,
     "runways": [
-      "2",
-      "20",
-      "31",
-      "13"
+      {
+        "designator": "2",
+        "headingDeg": 20
+      },
+      {
+        "designator": "20",
+        "headingDeg": 200
+      },
+      {
+        "designator": "31",
+        "headingDeg": 307
+      },
+      {
+        "designator": "13",
+        "headingDeg": 127
+      }
     ],
     "frequencies": [
       {
@@ -375,8 +531,14 @@
     "lat": 41.58,
     "lon": -0.01,
     "runways": [
-      "36",
-      "18"
+      {
+        "designator": "36",
+        "headingDeg": 360
+      },
+      {
+        "designator": "18",
+        "headingDeg": 180
+      }
     ],
     "frequencies": []
   },
@@ -386,8 +548,14 @@
     "lat": 41.846666666666664,
     "lon": 0.08499999999999999,
     "runways": [
-      "8",
-      "26"
+      {
+        "designator": "8",
+        "headingDeg": 76
+      },
+      {
+        "designator": "26",
+        "headingDeg": 226
+      }
     ],
     "frequencies": []
   },
@@ -397,8 +565,14 @@
     "lat": 41.80166666666667,
     "lon": 0.26833333333333337,
     "runways": [
-      "10",
-      "28"
+      {
+        "designator": "10",
+        "headingDeg": 106
+      },
+      {
+        "designator": "28",
+        "headingDeg": 286
+      }
     ],
     "frequencies": [
       {
@@ -429,7 +603,10 @@
     "lat": 41.928333333333335,
     "lon": 0.15333333333333332,
     "runways": [
-      "4"
+      {
+        "designator": "4",
+        "headingDeg": 43
+      }
     ],
     "frequencies": []
   },

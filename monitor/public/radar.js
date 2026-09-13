@@ -105,7 +105,10 @@
       return;
     }
     const freqText = selectedAirport.frequencies.map((f) => `${f.facility} ${f.frequency}`).join(' · ');
-    const rwyText = selectedAirport.runways.length > 0 ? `RWY ${selectedAirport.runways.join('/')}` : 'no runway data';
+    const rwyText =
+      selectedAirport.runways.length > 0
+        ? `RWY ${selectedAirport.runways.map((r) => r.designator).join('/')}`
+        : 'no runway data';
     stationInfo.textContent = `${selectedAirport.name} — ${rwyText}${freqText ? ' — ' + freqText : ''}`;
   }
 
@@ -125,6 +128,40 @@
   }
   window.addEventListener('resize', resizeCanvas);
 
+  // Schematic runway orientation for the selected station only - not
+  // real surveyed geometry. Chart data has each runway's true heading
+  // (accurate) but no threshold coordinates or length, so this draws a
+  // fixed-length line symmetric around the airport's own reference point
+  // along that heading, correct in *direction* but illustrative in
+  // *position/length*. Only drawn when zoomed into one station - at the
+  // whole-world overview scale these would be sub-pixel anyway.
+  const RUNWAY_HALF_LENGTH_NM = 0.6;
+
+  function drawRunways() {
+    if (!selectedAirport) return;
+    const center = toNm(selectedAirport);
+
+    for (const rwy of selectedAirport.runways) {
+      if (typeof rwy.headingDeg !== 'number' || Number.isNaN(rwy.headingDeg)) continue;
+      const rad = (rwy.headingDeg * Math.PI) / 180;
+      const dNorth = RUNWAY_HALF_LENGTH_NM * Math.cos(rad);
+      const dEast = RUNWAY_HALF_LENGTH_NM * Math.sin(rad);
+      const farEnd = project({ north: center.north + dNorth, east: center.east + dEast });
+      const nearEnd = project({ north: center.north - dNorth, east: center.east - dEast });
+
+      ctx.strokeStyle = '#e4e7ec';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(nearEnd.x, nearEnd.y);
+      ctx.lineTo(farEnd.x, farEnd.y);
+      ctx.stroke();
+
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = '#e4e7ec';
+      ctx.fillText(rwy.designator, farEnd.x + 5, farEnd.y + 3);
+    }
+  }
+
   function draw() {
     if (!origin || !view) return;
     ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
@@ -140,6 +177,8 @@
       ctx.fillStyle = isSelected ? '#4f8cff' : '#8b94a3';
       ctx.fillText(airport.icao, p.x + 6, p.y + 4);
     }
+
+    drawRunways();
 
     for (const ac of aircraft) {
       const airport = airports.find((a) => a.icao === ac.position.referenceAirport);
@@ -322,8 +361,8 @@
       select.innerHTML = '';
       for (const rwy of runways) {
         const opt = document.createElement('option');
-        opt.value = rwy;
-        opt.textContent = rwy;
+        opt.value = rwy.designator;
+        opt.textContent = rwy.designator;
         select.appendChild(opt);
       }
     }

@@ -450,6 +450,18 @@ from its `referenceAirport`, which in turn is projected from a centroid
 origin shared with every airport, so the whole map stays internally
 consistent.
 
+When a station is selected, each of its runways is drawn as a short line
+through the airport's reference point, oriented along that runway's real
+heading and labeled with its designator. This is schematic, not surveyed -
+chart data gives an accurate heading but not a threshold coordinate or
+physical length, so the line is a fixed length centered on the airport
+rather than a true-to-scale runway. A normal reciprocal pair (e.g. `10`/
+`28`) draws the same line twice, once per designator's label; airports
+with no runway data (or unpaired/parallel runway quirks in the source
+chart) just render however their raw designator/heading list dictates -
+no attempt is made to infer a missing reciprocal or deduplicate parallel
+runways sharing a heading.
+
 Airport coordinates, runway designators, and frequencies are vendored into
 `monitor/public/airports.json` (generated from `data/charts/*.json`)
 rather than read live from the repo, since the monitor is typically
@@ -472,7 +484,11 @@ const airports = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) 
     name: chart.name || chart.icao,
     lat: world.lat,
     lon: world.lon,
-    runways: Array.isArray(chart.runways) ? chart.runways.map((r) => r.designator).filter(Boolean) : [],
+    runways: Array.isArray(chart.runways)
+      ? chart.runways
+          .filter((r) => r.designator && r.heading)
+          .map((r) => ({ designator: r.designator, headingDeg: parseFloat(r.heading) }))
+      : [],
     frequencies: Array.isArray(chart.frequencies) ? chart.frequencies : [],
   };
 }).filter(Boolean).sort((a, b) => a.icao.localeCompare(b.icao));
