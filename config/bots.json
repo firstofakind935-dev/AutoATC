@@ -1,14 +1,14 @@
 [
   {
-    "name": "Barths Delivery",
+    "name": "Barths Center",
     "tokenEnv": "BOT_TOWER_TOKEN",
     "guildId": "1507182217393340426",
     "voiceChannelId": "1507182218731323515",
     "logChannelId": null,
-    "commandPrefix": "!delivery",
+    "commandPrefix": "!center",
     "persona": {
-      "position": "Clearance Delivery",
-      "callsign": "Barths Delivery",
+      "position": "Center",
+      "callsign": "Barths Center",
       "airport": "IBTH",
       "ttsVoice": "echo"
     },

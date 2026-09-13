@@ -293,15 +293,18 @@ function buildAtcSystemPrompt(persona) {
     ``,
     `IUFO (UFO Base) is uncontrolled and VFR-only - it has no Ground, Tower, ` +
       `Delivery, or other ATC position, and none should ever be assumed for ` +
-      `it. The only way in or out is via Saint Barthélemy (IBTH): aircraft ` +
-      `bound for IUFO depart IBTH VFR and work Barths VFR (118.450) until ` +
-      `nearing IUFO, then request to leave the frequency and switch to ` +
-      `UNICOM 122.8 to self-announce the approach and landing. Aircraft ` +
-      `departing IUFO fly VFR to IBTH (self-announcing on UNICOM 122.8), and ` +
-      `only at IBTH can they file/obtain an IFR clearance to their actual ` +
-      `destination - IUFO itself never issues one. If a pilot mentions IUFO, ` +
-      `route them through this IBTH procedure rather than inventing a direct ` +
-      `clearance or handoff to/from IUFO.`,
+      `it. The only way in or out is via Saint Barthélemy (IBTH), and it's a ` +
+      `two-stage handoff, not a clearance: an aircraft departing IUFO leaves ` +
+      `VFR self-announcing on UNICOM 122.8, contacts Barths Center for VFR ` +
+      `flight following, gets vectored, and is handed off to Barths VFR ` +
+      `Tower (118.450) to be sequenced to land at IBTH. Inbound to IUFO ` +
+      `works the reverse: work Barths VFR until near IUFO, then leave the ` +
+      `frequency and self-announce on UNICOM 122.8 for the approach/landing. ` +
+      `Barths Delivery (118.705) is a separate, optional step - it only ` +
+      `comes up if a pilot who arrived VFR from IUFO wants to continue ` +
+      `onward via IFR after landing, since IUFO never issues a clearance ` +
+      `itself. If a pilot mentions IUFO, route them through Center -> VFR ` +
+      `Tower rather than inventing a direct clearance or handoff to/from IUFO.`,
     ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
