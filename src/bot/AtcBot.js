@@ -16,6 +16,7 @@ const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { getFrequencyContext } = require('../charts/frequencies');
 const { formatStripsContext } = require('../atc/flightStrips');
 const { getPositionsContext } = require('../atc/positions');
+const { sendDatalinkMessage, VALID_KINDS } = require('../atc/datalink');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -263,9 +264,66 @@ class AtcBot {
     } else if (subcommand === 'resume') {
       this.handoff.resume();
       await message.reply(`${this.config.persona.callsign}: AI ATC resumed.`).catch(() => {});
+    } else if (subcommand === 'cpdlc') {
+      await this._handleCpdlcCommand(message, args.slice(1));
     } else {
-      await message.reply(`Usage: \`${this.config.commandPrefix} pause\` or \`${this.config.commandPrefix} resume\``).catch(() => {});
+      await message.reply(
+        `Usage: \`${this.config.commandPrefix} pause\`, \`${this.config.commandPrefix} resume\`, or ` +
+          `\`${this.config.commandPrefix} cpdlc <contact|pdc|text> <callsign> ...\` (see ` +
+          `\`${this.config.commandPrefix} cpdlc\` with no further args for details)`
+      ).catch(() => {});
     }
+  }
+
+  /**
+   * Lets a human controlling this position (whether or not they've paused
+   * the AI) send the same CPDLC/PDC datalink messages the LLM can, by hand -
+   * e.g. a "contact me" to an aircraft not on this frequency, or a PDC
+   * during heavy traffic. Always sent as this bot's own ATC position
+   * (fromPosition), never something the human has to specify. The free-text
+   * fields (facility, clearance, message) can contain spaces, so each kind
+   * has its own parsing rule for where the fixed fields end and free text
+   * begins - see the usage strings below.
+   */
+  async _handleCpdlcCommand(message, args) {
+    const usage = [
+      `Usage:`,
+      `\`${this.config.commandPrefix} cpdlc contact <callsign> <facility> <frequency>\` - facility ` +
+        `can have spaces, frequency is always the last word`,
+      `\`${this.config.commandPrefix} cpdlc pdc <callsign> <clearance text...>\``,
+      `\`${this.config.commandPrefix} cpdlc text <callsign> <message...>\``,
+    ].join('\n');
+
+    const [kind, callsign, ...rest] = args;
+    if (!VALID_KINDS.includes(kind) || !callsign) {
+      await message.reply(usage).catch(() => {});
+      return;
+    }
+
+    const directive = { callsign, kind, fromPosition: this.config.persona.position };
+    if (kind === 'contact') {
+      if (rest.length < 2) {
+        await message.reply(usage).catch(() => {});
+        return;
+      }
+      directive.frequency = rest[rest.length - 1];
+      directive.facility = rest.slice(0, -1).join(' ');
+    } else if (kind === 'pdc') {
+      if (rest.length === 0) {
+        await message.reply(usage).catch(() => {});
+        return;
+      }
+      directive.clearance = rest.join(' ');
+    } else {
+      if (rest.length === 0) {
+        await message.reply(usage).catch(() => {});
+        return;
+      }
+      directive.text = rest.join(' ');
+    }
+
+    sendDatalinkMessage(directive);
+    await message.reply(`Sent ${kind} datalink message to ${callsign}.`).catch(() => {});
   }
 }
 

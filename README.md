@@ -34,6 +34,21 @@ permission):
 !tower resume   # give the position back to the AI
 ```
 
+A human controlling a position - whether or not they've paused the AI -
+can also send the same CPDLC/PDC datalink messages the LLM can (see the
+Monitor section's "Datalink messages" below), by hand, via chat command:
+
+```
+!tower cpdlc contact N42Y Barths Center 132.550
+!tower cpdlc pdc N42Y Cessna 42Yankee is cleared to Rockford as filed...
+!tower cpdlc text N42Y Traffic alert, expect vectors shortly
+```
+
+Always sent as that bot's own ATC position - never something the human has
+to type themselves. `facility` can contain spaces (frequency is always the
+last word); `pdc`'s clearance and `text`'s message are everything after the
+callsign.
+
 (`!tower` is whatever `commandPrefix` you set for that bot in
 `config/bots.json`.)
 
@@ -447,10 +462,12 @@ displayed. Messages are capped at 20 per callsign and expire after 10
 minutes unpolled, mirroring the position-staleness pattern above.
 
 This is ATC-to-pilot only for now — there's no way for a pilot to type a
-reply back into the bot's conversation yet, and no scheduled/proactive
-trigger that fires a bot with no pilot transmission at all, so a "contact
-me" message today still only goes out as a side effect of some
-transmission triggering that bot's turn.
+reply back into the bot's conversation yet. The LLM itself still has no
+scheduled/proactive trigger (it only emits a `CPDLC:` directive as part of
+a reply to some transmission that already triggered its turn), but a human
+controlling that position isn't limited by that — see "How the human
+handoff works today" above for the `!tower cpdlc` chat command, which
+sends one on demand regardless of whether anything just triggered a turn.
 
 ## Known limitations
 

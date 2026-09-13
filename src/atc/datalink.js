@@ -52,4 +52,4 @@ function applyDatalinkDirective(replyText, fromPosition) {
   return spoken;
 }
 
-module.exports = { applyDatalinkDirective };
+module.exports = { applyDatalinkDirective, sendDatalinkMessage, VALID_KINDS };
