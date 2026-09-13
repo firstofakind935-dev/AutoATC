@@ -1,5 +1,6 @@
 const anthropicProvider = require('./providers/anthropic');
 const openaiProvider = require('./providers/openai');
+const { applyStripDirective } = require('../atc/flightStrips');
 
 const PROVIDERS = {
   anthropic: anthropicProvider,
@@ -85,8 +86,11 @@ async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt
     throw new Error(`Unknown AI provider "${provider}". Expected one of: ${Object.keys(PROVIDERS).join(', ')}`);
   }
   const reply = await impl.generateReply({ apiKey, baseUrl, model, systemPrompt, history });
-  const cleaned = stripThinkingBlocks(reply);
-  return cleaned.toUpperCase().includes(NO_RESPONSE_SENTINEL) ? '' : cleaned;
+  // Order matters: the STRIP directive (if any) is the trailing line, so it
+  // has to come off before checking whether what's left is just the
+  // no-response sentinel.
+  const spoken = applyStripDirective(stripThinkingBlocks(reply));
+  return spoken.toUpperCase().includes(NO_RESPONSE_SENTINEL) ? '' : spoken;
 }
 
 /**

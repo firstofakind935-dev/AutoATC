@@ -14,6 +14,7 @@ const { getFlightPlanContext } = require('../flightplans/store');
 const { getChartContext } = require('../charts/store');
 const { getOceanicTracksContext } = require('../charts/oceanicTracks');
 const { getFrequencyContext } = require('../charts/frequencies');
+const { formatStripsContext } = require('../atc/flightStrips');
 const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
@@ -152,9 +153,17 @@ class AtcBot {
     this.history.addPilotTransmission(transcript);
 
     const flightPlanContext = await getFlightPlanContext();
+    const stripsContext = formatStripsContext(this.config.persona.position);
     const matchedScenario = findBestScenario(transcript, this.config.persona.position);
     const scenarioContext = matchedScenario ? formatScenarioHint(matchedScenario) : null;
-    const turnContext = [this.chartContext, this.oceanicTracksContext, this.frequencyContext, flightPlanContext, scenarioContext]
+    const turnContext = [
+      this.chartContext,
+      this.oceanicTracksContext,
+      this.frequencyContext,
+      flightPlanContext,
+      stripsContext,
+      scenarioContext,
+    ]
       .filter(Boolean)
       .join('\n\n') || undefined;
 

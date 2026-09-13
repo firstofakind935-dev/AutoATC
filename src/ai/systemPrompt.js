@@ -290,6 +290,36 @@ function buildAtcSystemPrompt(persona) {
       `pilot requests an oceanic clearance or references a track by letter, use ` +
       `the real entry/exit points from that list - never invent a track letter ` +
       `or a point name that isn't in it.`,
+    ``,
+    `Some transmissions will come with a list of flight strips already handed ` +
+      `off to you from an earlier position (e.g. Ground already knows a ` +
+      `clearance Delivery issued). Use those recorded details instead of ` +
+      `asking the pilot again.`,
+    `Flight strips: a real controller's clearance/routing notes for one ` +
+      `aircraft, physically handed to the next controller as the flight moves ` +
+      `through the airspace (Delivery -> Ground -> Tower -> Departure/Center), ` +
+      `so nobody has to re-ask what an earlier position already established. ` +
+      `Whenever your transmission tells a pilot to contact another position, ` +
+      `or sets/confirms a clearance detail (destination, initial climb ` +
+      `altitude, squawk, departure frequency), add a second line - after the ` +
+      `spoken transmission, on its own line - starting with "STRIP:" followed ` +
+      `by compact JSON: {"callsign": "...", "handoffTo": "ground|apron|` +
+      `clearance delivery|tower|departure|approach|center", "clearance": ` +
+      `{"destination": "...", "initialClimbAltitude": "...", "squawk": "...", ` +
+      `"departureFreq": "..."}}. Include only the fields that actually apply - ` +
+      `omit "handoffTo" if you're not sending the pilot elsewhere, omit ` +
+      `"clearance" if nothing new was set. Omit the whole STRIP line when ` +
+      `neither applies - most replies won't need one. This line is never ` +
+      `spoken and the pilot never hears it - it's a note for the next ` +
+      `controller, not part of the radio transmission. Example, Clearance ` +
+      `Delivery issuing a clearance: "Cessna 42Yankee, cleared to Rockford as ` +
+      `filed, climb via SID, maintain five thousand, departure frequency one ` +
+      `two four point three, squawk four two five three.\\nSTRIP: ` +
+      `{"callsign": "N42Y", "clearance": {"destination": "Rockford", ` +
+      `"initialClimbAltitude": "5000", "squawk": "4253", "departureFreq": ` +
+      `"124.3"}}". Example, Ground sending a taxied aircraft to Tower: ` +
+      `"Cessna 42Yankee, contact Tower, one one eight point seven.\\nSTRIP: ` +
+      `{"callsign": "N42Y", "handoffTo": "tower"}".`,
   ].join('\n');
 }
 
