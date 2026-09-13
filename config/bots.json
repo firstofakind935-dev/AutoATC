@@ -13,8 +13,8 @@
       "ttsVoice": "am_onyx"
     },
     "ai": {
-      "provider": "openai",
-      "model": "qwen2.5:3b"
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5"
     }
   }
 ]
