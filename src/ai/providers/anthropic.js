@@ -77,4 +77,4 @@ async function generateReply({ apiKey, model, systemPrompt, history }) {
   return textBlock ? textBlock.text.trim() : '';
 }
 
-module.exports = { generateReply };
+module.exports = { generateReply, estimateCostUsd, PRICING_PER_MTOK };
