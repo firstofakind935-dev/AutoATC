@@ -58,9 +58,12 @@ async function generateReply({ apiKey, model, systemPrompt, history }) {
     ],
     messages: history.map((turn) => ({ role: turn.role, content: turn.content })),
     // Same safety net as the openai provider: stop before the model can
-    // hallucinate a second "Pilot transmission:" turn and answer itself,
-    // or ramble into a second paragraph.
-    stop_sequences: ['\n\n', 'Pilot transmission:'],
+    // hallucinate a second "Pilot transmission:" turn and answer itself.
+    // A blank-line stop sequence would cover rambling into a second
+    // paragraph too, but Anthropic rejects a stop sequence that's entirely
+    // whitespace ("each stop sequence must contain non-whitespace") - that
+    // case is instead trimmed client-side below.
+    stop_sequences: ['Pilot transmission:'],
   });
 
   const cost = estimateCostUsd(model, response.usage);
@@ -74,7 +77,11 @@ async function generateReply({ apiKey, model, systemPrompt, history }) {
   }
 
   const textBlock = response.content.find((block) => block.type === 'text');
-  return textBlock ? textBlock.text.trim() : '';
+  if (!textBlock) return '';
+  // Cut off at the first blank line, in place of the whitespace-only stop
+  // sequence the API won't accept (see above) - stops a rambled second
+  // paragraph from being spoken aloud.
+  return textBlock.text.trim().split(/\n\s*\n/)[0].trim();
 }
 
 module.exports = { generateReply, estimateCostUsd, PRICING_PER_MTOK };
