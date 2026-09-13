@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parseCoordinates } = require('./coords');
+const { parseCoordinates, distanceBearingNm } = require('./coords');
 
 const CHARTS_DIR = path.join(__dirname, '..', '..', 'data', 'charts');
 
@@ -29,4 +29,23 @@ function loadAirports() {
   return airports;
 }
 
-module.exports = { loadAirports };
+/**
+ * Finds the closest airport to `world` from `airports` (as returned by
+ * loadAirports()), so a corrected/estimated position can always be reported
+ * relative to whichever known field is actually nearby right now - not
+ * whatever airport happened to be used for the last calibration.
+ */
+function nearestAirport(airports, world) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const airport of airports) {
+    const { distanceNm, bearingDeg } = distanceBearingNm(airport.world, world);
+    if (distanceNm < bestDistance) {
+      bestDistance = distanceNm;
+      best = { icao: airport.icao, distanceNm, bearingDeg };
+    }
+  }
+  return best;
+}
+
+module.exports = { loadAirports, nearestAirport };
