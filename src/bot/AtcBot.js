@@ -273,7 +273,16 @@ class AtcBot {
     }
 
     const text = interaction.options.getString('message', true);
-    const attempted = sendBroadcastMessage({ fromPosition: this.config.persona.position, text });
+    // The sender's highest Discord role (Director, Moderator, whatever the
+    // server calls it) - never this bot's own ATC position, since a
+    // broadcast is a server-wide announcement, not an instruction from
+    // whichever position happened to run the command. Falls back to
+    // "Staff" for the one case with no real role name to show: a member
+    // with no roles at all (e.g. the server owner, who has Administrator
+    // implicitly) whose "highest" role is just the @everyone default.
+    const topRole = interaction.member?.roles?.highest?.name;
+    const fromPosition = topRole && topRole !== '@everyone' ? topRole : 'Staff';
+    const attempted = sendBroadcastMessage({ fromPosition, text });
     if (!attempted) {
       await interaction.reply({ content: 'MONITOR_URL is not set in this bot\'s .env - the broadcast was not sent anywhere.', ephemeral: true }).catch(() => {});
       return;
