@@ -47,6 +47,7 @@ function findBestScenario(transcript, position) {
   const transcriptLower = transcript.toLowerCase();
   let best = null;
   let bestScore = 0;
+  let tied = false;
 
   for (const scenario of loadScenarios()) {
     if (!scenarioAppliesToPosition(scenario, position)) continue;
@@ -54,9 +55,18 @@ function findBestScenario(transcript, position) {
     if (score > bestScore) {
       bestScore = score;
       best = scenario;
+      tied = false;
+    } else if (score === bestScore && score > 0) {
+      // Two scenarios equally match (e.g. a transmission mentioning both
+      // "taxi" and "stand") - picking whichever was checked first would be
+      // an arbitrary, potentially wrong steer (observed: a pilot asking to
+      // taxi TO a stand got a "taxi to runway" reply instead). Safer to
+      // give the model no scenario hint at all than a coin-flip one.
+      tied = true;
     }
   }
 
+  if (tied) return null;
   return bestScore >= MIN_MATCH_SCORE ? best : null;
 }
 

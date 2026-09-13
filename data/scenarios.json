@@ -3,7 +3,7 @@
     "id": "ground-taxi-request",
     "positions": ["ground"],
     "situation": "Pilot requests taxi to the active runway.",
-    "keywords": ["taxi", "ready to taxi", "request taxi"],
+    "keywords": ["ready to taxi", "request taxi", "taxi to the runway"],
     "template": "{callsign}, taxi to runway {runway} via {taxiway}, hold short runway {runway}."
   },
   {
