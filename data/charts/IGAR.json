@@ -1,0 +1,44 @@
+{
+  "icao": "IGAR",
+  "iata": "ABG",
+  "name": "Air Base Garry",
+  "location": "Rockford, Rockford",
+  "elevationFt": "138'",
+  "coordinates": "N41 31.9  E000 06.9",
+  "runways": [
+    {
+      "designator": "4",
+      "heading": "042°",
+      "length": {
+        "feet": "2980'",
+        "meters": "908m"
+      }
+    },
+    {
+      "designator": "22",
+      "heading": "222°",
+      "length": null
+    }
+  ],
+  "groundLayout": "Runway 4/22, with a Run Up Area near the Rwy 22 end and a Backtrack Area near the Rwy 4 end. Taxiway A runs the length of the field alongside the runway, from hold point B (near Rwy 22) south through hold point C (near the Spawn Ramp) down to the Hangars near the Rwy 4 end. Along the way A serves the Spawn Ramp, Control Tower, Barracks, Fuel, and Helipads. Only A, B, and C are real taxiway/hold-point letters here.",
+  "otherLabels": [
+    "N",
+    "Backrack",
+    "Area",
+    "Hangars",
+    "Stopway",
+    "Elev 138'",
+    "Helipads",
+    "Barracks",
+    "Control",
+    "Tower",
+    "Fuel",
+    "Run Up",
+    "A",
+    "C",
+    "SPAWN",
+    "RAMP",
+    "B"
+  ],
+  "sourceFile": "Rockford/Air Base Garry/IGAR Ground Chart.svg"
+}

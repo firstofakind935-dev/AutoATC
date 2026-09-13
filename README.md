@@ -36,7 +36,6 @@ this to work.
 ## Setup
 
 ```
-cd companion
 npm install
 npm start
 ```
@@ -90,7 +89,7 @@ installer.)
 
 This is an estimate, not ground truth. It drifts between minimap
 corrections, and OCR occasionally misreads a HUD frame (the app logs and
-skips such ticks rather than uploading garbage). ATC bots are told to treat
-a stale fix (5+ minutes since the last minimap correction) as unreliable
-and confirm with the pilot before vectoring off of it - see
-`stalenessNote()` in `src/atc/positions.js`.
+skips such ticks rather than uploading garbage). The ATC bot fleet (see the
+main AutoATC repo) treats a stale fix (5+ minutes since the last minimap
+correction) as unreliable and confirms with the pilot before vectoring off
+of it.

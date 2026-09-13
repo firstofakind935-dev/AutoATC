@@ -1,0 +1,78 @@
+{
+  "icao": "IIAB",
+  "iata": "MCC",
+  "name": "McConnell AFB",
+  "location": "Girne, Cyprus",
+  "elevationFt": "1'",
+  "coordinates": "N41 31.9  E000 06.9",
+  "runways": [
+    {
+      "designator": "9L",
+      "heading": "095°",
+      "length": null
+    },
+    {
+      "designator": "9R",
+      "heading": "095°",
+      "length": null
+    },
+    {
+      "designator": "27R",
+      "heading": "275°",
+      "length": {
+        "feet": "4329'",
+        "meters": "1319m"
+      }
+    },
+    {
+      "designator": "27L",
+      "heading": "275°",
+      "length": {
+        "feet": "4329'",
+        "meters": "1319m"
+      }
+    }
+  ],
+  "groundLayout": "Two parallel runways: 9L/27R (west) and 9R/27L (east), connected by a central taxiway H running between them, with cross-connectors I1/I2 and J1/J2 linking the two runways via H. Near the Rwy 27 ends, connectors L1/L2 lead to Kilo Ramp (military parking, taxiway K) at the north end. Near the Rwy 9 ends, connectors D1/D2 lead into the main Apron complex at the south end, whose internal rows (taxiways A-G) serve the Hangars, Ground Crew Station, Barracks, Checkpoint, Fuel, Mass Parking, and Control Tower. Note: D1 is a marked hot spot (extra caution/confirm intentions there, not special phraseology).",
+  "otherLabels": [
+    "N",
+    "Ground Crew",
+    "Station",
+    "Control",
+    "Tower",
+    "Mass",
+    "Parking",
+    "Barracks",
+    "Hangars",
+    "H",
+    "K",
+    "L1",
+    "L2",
+    "J1",
+    "I1",
+    "D1",
+    "D",
+    "D2",
+    "I2",
+    "Fuel",
+    "Elev 1'",
+    "Checkpoint",
+    "APRON",
+    "KILO",
+    "RAMP",
+    "Stopways",
+    "J2",
+    "F",
+    "G",
+    "E",
+    "B",
+    "C",
+    "A",
+    "HS1",
+    "HOT SPOT",
+    "ATC instructions.",
+    "holding point D1.",
+    "HS"
+  ],
+  "sourceFile": "Cyprus/McConnell/IIAB Ground Chart.svg"
+}

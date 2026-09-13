@@ -1,0 +1,52 @@
+{
+  "icao": "IJAF",
+  "iata": "NJF",
+  "name": "Al Najaf",
+  "location": "Najaf, Izolirani",
+  "elevationFt": "0'",
+  "coordinates": "N41 49.4  E000 16.4",
+  "runways": [
+    {
+      "designator": "7",
+      "heading": "071°",
+      "length": {
+        "feet": "2278'",
+        "meters": "694m"
+      }
+    },
+    {
+      "designator": "25",
+      "heading": "251°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "123.900"
+    },
+    {
+      "facility": "AL NAJAF Ground",
+      "frequency": "121.700"
+    },
+    {
+      "facility": "AL NAJAF Tower",
+      "frequency": "119.100"
+    },
+    {
+      "facility": "AL NAJAF Approach",
+      "frequency": "120.200"
+    }
+  ],
+  "groundLayout": "Runway 07/25, with a Backtrack Area near the Rwy 25 end. A single taxiway A connects the runway near the Rwy 07 end to the Apron (Hangars, Terminal, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
+  "otherLabels": [
+    "APRON",
+    "Backtrack Area",
+    "Hangars",
+    "Terminal",
+    "Fuel",
+    "A",
+    "N"
+  ],
+  "sourceFile": "Izolirani/AL Najaf/IJAF Ground Chart.svg"
+}
