@@ -6,78 +6,160 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>AutoATC Companion</h1>
-  <p class="hint">
-    Draws a transparent overlay directly on top of your game, so you can line up regions and
-    calibration clicks precisely on real screen pixels - even with a single monitor. Reads only
-    your own screen; nothing here talks to Discord directly.
-  </p>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ATC</div>
+        <div>
+          <div class="brand-title">AutoATC</div>
+          <div class="brand-subtitle">Companion</div>
+        </div>
+      </div>
 
-  <section id="settings">
-    <h2>1. Settings</h2>
-    <label>Callsign <input id="callsign" placeholder="e.g. N42Y"></label>
-    <label>Monitor URL <input id="monitorUrl" placeholder="https://your-monitor.example.com"></label>
-    <label>Monitor API key <input id="monitorApiKey" type="password" placeholder="(optional)"></label>
-    <label>Report interval (sec) <input id="intervalSec" type="number" min="2" max="60" value="5"></label>
-    <button id="saveSettingsBtn">Save settings</button>
-    <span id="settingsStatus"></span>
-  </section>
+      <div class="status-rail">
+        <div class="status-row">
+          <span class="dot" id="dotOverlay"></span>
+          <div class="status-text">
+            <div class="status-label">Overlay</div>
+            <div class="status-value" id="sidebarOverlayText">Not shown</div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="dot" id="dotFix"></span>
+          <div class="status-text">
+            <div class="status-label">Position fix</div>
+            <div class="status-value" id="sidebarFixText">Not set</div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="dot" id="dotTracking"></span>
+          <div class="status-text">
+            <div class="status-label">Tracking</div>
+            <div class="status-value" id="sidebarTrackingText">Stopped</div>
+          </div>
+        </div>
+      </div>
 
-  <section id="displayPicker">
-    <h2>2. Show the overlay</h2>
-    <p class="hint">
-      Pick the monitor your game is on (windowed or borderless - a game in exclusive fullscreen
-      can't be overlaid), then show the overlay. It's transparent and click-through until you
-      arm an action below.
-    </p>
-    <label>Monitor <select id="displaySelect"></select></label>
-    <button id="showOverlayBtn">Show overlay</button>
-    <button id="hideOverlayBtn" disabled>Hide overlay</button>
-    <span id="overlayStatus">Overlay not shown</span>
-  </section>
+      <div class="sidebar-hint">
+        Reads only your own screen. Nothing here talks to Discord directly.
+      </div>
+    </aside>
 
-  <section id="regions" hidden>
-    <h2>3. Define regions (once per game window size/position)</h2>
-    <p class="hint">
-      Click a button, then drag a box directly on your game (through the overlay) over the
-      matching HUD element. Only needs to be redone if you move or resize the game window.
-    </p>
-    <button id="selectHeadingBtn">Select heading region</button>
-    <button id="selectInfoBtn">Select info-box region</button>
-    <button id="selectMinimapBtn">Select minimap region</button>
-    <span id="regionStatus"></span>
-    <div style="margin-top:8px;">
-      <label style="display:inline-flex;flex-direction:row;align-items:center;gap:6px;">
-        <input type="checkbox" id="showHudCheckbox" checked> Show region outlines on the overlay
-      </label>
-    </div>
-  </section>
+    <main class="main">
+      <header class="page-header">
+        <h1>Set up position tracking</h1>
+        <p class="hint">
+          Draws a transparent overlay directly on top of your game, so you can line up regions
+          and calibration clicks precisely on real screen pixels - even with a single monitor.
+        </p>
+      </header>
 
-  <section id="calibration" hidden>
-    <h2>4. Calibrate the map</h2>
-    <p class="hint">
-      Pick two airports you can currently see on your minimap, then click each one's exact spot
-      directly on your game (through the overlay), in order. Re-calibrate any time you pan or
-      zoom the minimap.
-    </p>
-    <div class="calib-row">
-      <label>Airport A <select id="airportA"></select></label>
-      <label>Airport B <select id="airportB"></select></label>
-      <button id="calibrateBtn">Calibrate (click A, then B, on your minimap)</button>
-      <span id="calibrationStatus">Not calibrated</span>
-    </div>
-    <div class="calib-row">
-      <button id="setPositionBtn" disabled>Set my position (click your marker on the minimap)</button>
-      <span id="fixStatus">No fix yet</span>
-    </div>
-  </section>
+      <section class="card" id="settings">
+        <div class="card-header">
+          <span class="step-badge">1</span>
+          <h2>Settings</h2>
+        </div>
+        <div class="card-body">
+          <div class="field-grid">
+            <label>Callsign <input id="callsign" placeholder="e.g. N42Y"></label>
+            <label>Report interval (sec) <input id="intervalSec" type="number" min="2" max="60" value="5"></label>
+            <label class="span-2">Monitor URL <input id="monitorUrl" placeholder="https://your-monitor.example.com"></label>
+            <label class="span-2">Monitor API key <input id="monitorApiKey" type="password" placeholder="(optional)"></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="saveSettingsBtn">Save settings</button>
+            <span class="status-pill" id="settingsStatus"></span>
+          </div>
+        </div>
+      </section>
 
-  <section id="tracking" hidden>
-    <h2>5. Track and report</h2>
-    <button id="startTrackingBtn">Start tracking</button>
-    <button id="stopTrackingBtn" disabled>Stop tracking</button>
-    <pre id="trackingStatus"></pre>
-  </section>
+      <section class="card" id="displayPicker">
+        <div class="card-header">
+          <span class="step-badge">2</span>
+          <h2>Show the overlay</h2>
+        </div>
+        <div class="card-body">
+          <p class="hint">
+            Pick the monitor your game is on (windowed or borderless - a game in exclusive
+            fullscreen can't be overlaid), then show the overlay. It's transparent and
+            click-through until you arm an action below.
+          </p>
+          <div class="field-grid">
+            <label class="span-2">Monitor <select id="displaySelect"></select></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="showOverlayBtn">Show overlay</button>
+            <button class="btn btn-secondary" id="hideOverlayBtn" disabled>Hide overlay</button>
+            <span class="status-pill" id="overlayStatus">Overlay not shown</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="regions" hidden>
+        <div class="card-header">
+          <span class="step-badge">3</span>
+          <h2>Define regions</h2>
+        </div>
+        <div class="card-body">
+          <p class="hint">
+            Click a button, then drag a box directly on your game (through the overlay) over the
+            matching HUD element. Only needs to be redone if you move or resize the game window.
+          </p>
+          <div class="card-actions">
+            <button class="btn btn-secondary" id="selectHeadingBtn">Select heading region</button>
+            <button class="btn btn-secondary" id="selectInfoBtn">Select info-box region</button>
+            <button class="btn btn-secondary" id="selectMinimapBtn">Select minimap region</button>
+          </div>
+          <div class="card-actions">
+            <span class="status-pill" id="regionStatus"></span>
+          </div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="showHudCheckbox" checked> Show region outlines on the overlay
+          </label>
+        </div>
+      </section>
+
+      <section class="card" id="calibration" hidden>
+        <div class="card-header">
+          <span class="step-badge">4</span>
+          <h2>Calibrate the map</h2>
+        </div>
+        <div class="card-body">
+          <p class="hint">
+            Pick two airports you can currently see on your minimap, then click each one's exact
+            spot directly on your game (through the overlay), in order. Re-calibrate any time you
+            pan or zoom the minimap.
+          </p>
+          <div class="field-grid">
+            <label>Airport A <select id="airportA"></select></label>
+            <label>Airport B <select id="airportB"></select></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="calibrateBtn">Calibrate (click A, then B)</button>
+            <span class="status-pill" id="calibrationStatus">Not calibrated</span>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-secondary" id="setPositionBtn" disabled>Set my position</button>
+            <span class="status-pill" id="fixStatus">No fix yet</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="tracking" hidden>
+        <div class="card-header">
+          <span class="step-badge">5</span>
+          <h2>Track and report</h2>
+        </div>
+        <div class="card-body">
+          <div class="card-actions">
+            <button class="btn btn-primary" id="startTrackingBtn">Start tracking</button>
+            <button class="btn btn-secondary" id="stopTrackingBtn" disabled>Stop tracking</button>
+          </div>
+          <pre id="trackingStatus"></pre>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="control.js"></script>
 </body>
