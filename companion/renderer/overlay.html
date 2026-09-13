@@ -31,71 +31,36 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   }
 
-  /* The top bar - a game-overlay-style HUD strip docked to the top of the
-     screen. It's always visible and, unlike the rest of this transparent
-     window, becomes clickable whenever the cursor is over it (see
-     overlay.js) so the pilot never has to leave the game to use it. */
+  /* The top bar container is now fully invisible and never itself
+     intercepts the cursor (pointer-events: none) - only the 3 buttons
+     inside .bar-actions are visible and clickable (they carry
+     ".overlay-ui" individually, not this container - see overlay.js's
+     hit-test). The brand/status elements stay in the DOM so overlay.js's
+     existing element lookups don't break, but are hidden; their data
+     still drives the Messages button's unread badge and the tracking
+     button's label/state. */
   #topbar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     height: 40px;
-    background: rgba(11, 18, 32, 0.35);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.35);
+    background: transparent;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     padding: 0 14px;
     gap: 18px;
+    pointer-events: none;
     -webkit-app-region: no-drag;
   }
-  .bar-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-  .bar-mark {
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
-    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-    color: #06202f;
-    font-size: 0.62em;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .bar-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #8ea0c0;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  .bar-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #8ea0c0;
-    flex-shrink: 0;
-  }
-  .bar-dot.good { background: #34d399; box-shadow: 0 0 6px #34d399; }
-  .bar-dot.warn { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; }
-  .bar-sep { color: #334160; }
+  .bar-brand, .bar-status { display: none; }
   .bar-actions {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+    pointer-events: auto;
   }
   .bar-actions button {
     background: rgba(56, 189, 248, 0.12);
@@ -182,7 +147,7 @@
 <body>
   <canvas id="hud"></canvas>
 
-  <div id="topbar" class="overlay-ui">
+  <div id="topbar">
     <div class="bar-brand">
       <span class="bar-mark">ATC</span>
       <span>AutoATC</span>
@@ -193,9 +158,9 @@
       <span class="bar-dot" id="barDotTracking"></span><span id="barTrackingText">Stopped</span>
     </div>
     <div class="bar-actions">
-      <button id="barMessagesBtn">Messages<span id="messagesBadge" hidden></span></button>
-      <button id="barToggleTrackingBtn">Start tracking</button>
-      <button id="barSetupBtn">Setup</button>
+      <button id="barMessagesBtn" class="overlay-ui">Messages<span id="messagesBadge" hidden></span></button>
+      <button id="barToggleTrackingBtn" class="overlay-ui">Start tracking</button>
+      <button id="barSetupBtn" class="overlay-ui">Setup</button>
     </div>
   </div>
 
