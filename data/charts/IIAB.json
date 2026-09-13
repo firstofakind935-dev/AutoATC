@@ -33,7 +33,7 @@
       }
     }
   ],
-  "frequencies": [],
+  "groundLayout": "Two parallel runways: 9L/27R (west) and 9R/27L (east), connected by a central taxiway H running between them, with cross-connectors I1/I2 and J1/J2 linking the two runways via H. Near the Rwy 27 ends, connectors L1/L2 lead to Kilo Ramp (military parking, taxiway K) at the north end. Near the Rwy 9 ends, connectors D1/D2 lead into the main Apron complex at the south end, whose internal rows (taxiways A-G) serve the Hangars, Ground Crew Station, Barracks, Checkpoint, Fuel, Mass Parking, and Control Tower. Note: D1 is a marked hot spot (extra caution/confirm intentions there, not special phraseology).",
   "otherLabels": [
     "N",
     "Ground Crew",

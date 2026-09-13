@@ -21,6 +21,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "Runway 13/31, encircled by a perimeter taxiway loop (B, C, D, E, F, G, H with numbered connectors) rather than a single parallel taxiway. Near the Rwy 13 end, connectors A1/A2/A3 lead to Spawn Apron (Hangars 1-3, Fuel, Control Tower). Around the rest of the loop are three dispersal areas (military-style aircraft parking): Charlie Dispersal (via F1/F2), Alpha Dispersal (via H1/H2), and Bravo Dispersal (via G1/G2, Hangar 4) near the Rwy 31 end. Real taxiway letters: A, B, C, D, E, F, G, H.",
   "otherLabels": [
     "BRAVO",
     "DISPERSAL",

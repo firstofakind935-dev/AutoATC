@@ -21,6 +21,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "IBLT is a single-runway airfield (Runway 1/19) with no separate taxiway system - the Apron and FBO sit directly alongside the runway near the Runway 19 end, and aircraft taxi on the runway itself to reach them. There's a Backtrack Area near the Runway 1 end for turning around after landing/before departure. No taxiway letters exist here - never invent one.",
   "otherLabels": [
     "APRON",
     "FBO",

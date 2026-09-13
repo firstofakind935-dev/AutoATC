@@ -38,6 +38,7 @@
       "frequency": "118.205"
     }
   ],
+  "groundLayout": "Runway 08/26, with a Backtrack Area at each end. A single taxiway A (connectors A1 near Rwy 26, A2 mid-field) runs alongside the runway and connects it to the Apron, which holds numbered stands, Terminal, Hangars, Fuel, Control Tower, Helipad, and Ground Crew Station. Only one taxiway letter exists here (A) - Ground's job is the runway-to-apron-boundary taxi via A; movement within the apron itself (stand assignment) is Apron's job if that position is staffed here.",
   "otherLabels": [
     "A",
     "A1",

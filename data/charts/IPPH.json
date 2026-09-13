@@ -34,6 +34,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "Two crossing runways: 11/29 (northeast side, taxiway A alongside it, segments A1-A5) and 15/33 (northwest side, taxiway C alongside it, segments C1-C5), crossing near mid-field at a marked hot spot (HS1 - dual runway threshold, converging taxiways/multiple entry points, confirm ATC instruction before crossing). North of the crossing, A and C serve GA Apron and Cargo Apron/Cargo Terminal. South of the crossing, taxiways D (D1/D2), B, E, and the terminal loop taxiways (L1-L4, T) connect to Terminal 1 Apron and Terminal 2 Apron (Terminal 1, Terminal 2, Control Tower, Ground Crew Station). A second hot spot (HS2, near the Rwy 11 threshold) warns taxiing distance between parking and the runway holding point is very short. Real taxiway letters: A, B, C, D, E, L, T.",
   "otherLabels": [
     "HOT SPOT",
     "ATC instructions.",

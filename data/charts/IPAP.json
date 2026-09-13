@@ -38,6 +38,7 @@
       "frequency": "130.625"
     }
   ],
+  "groundLayout": "Runway 17/35, with a Run Up Area near the Rwy 35 end. Taxiway C runs parallel to the runway the full length (connectors C1 near Rwy 35, C4 near Rwy 17). At the north end, taxiway E (E1/E2) loops around North GA Apron (Hangar). At the south end, taxiway D loops around South GA Apron (Hangars, Helipad). Mid-field, taxiways A and B (with A1, B1, B2) connect C to Main Apron (Terminal, Control Tower, Fuel, Ground Crew Station, numbered stands). Real taxiway letters: A, B, C, D, E.",
   "otherLabels": [
     "Hangar",
     "NORTH",

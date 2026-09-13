@@ -33,7 +33,7 @@
       }
     }
   ],
-  "frequencies": [],
+  "groundLayout": "Two crossing runways: 16/34 and 07/25, intersecting near mid-field at a marked hot spot (HS2 - simultaneous runway operations, confirm clearance before crossing). Taxiway B loops the north/west side connecting the Rwy 34 end, Heli 1/2 pads, and the Rwy 16 end (another hot spot, HS1, is here - traffic taxiing east on A may miss the Rwy 16 holding position marking). Taxiway C runs from near the runway crossing south to the Terminal Apron, whose numbered stands are served by taxiways A (segments A1-A4), D, and E. Continuing south/east, taxiways F/F1/F2/G/H/J/K serve the Hot Cargo Apron, Cargo Apron, Maintenance Apron, and the Dispersal revetments. Taxiways N/P near the Rwy 25 end serve East Apron (Control Tower, Hangars, Fuel). Real taxiway letters: A, B, C, D, E, F, G, H, J, K, N, P.",
   "otherLabels": [
     "C",
     "D",

@@ -26,6 +26,7 @@
       "frequency": "118.250"
     }
   ],
+  "groundLayout": "Runway 07/25. A single taxiway A branches off the runway near the Rwy 25 end, curving into Main Apron (Terminal, Ground Crew Station, Fuel, Helipad). Only one taxiway letter exists here (A) - never invent additional ones.",
   "otherLabels": [
     "N",
     "MAIN",

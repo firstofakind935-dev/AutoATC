@@ -38,6 +38,7 @@
       "frequency": "120.200"
     }
   ],
+  "groundLayout": "Runway 07/25, with a Backtrack Area near the Rwy 25 end. A single taxiway A connects the runway near the Rwy 07 end to the Apron (Hangars, Terminal, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
   "otherLabels": [
     "APRON",
     "Backtrack Area",

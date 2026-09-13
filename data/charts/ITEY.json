@@ -18,6 +18,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "Runway 13/31, with a Backtrack Area at each end. A single taxiway A connects the runway near the Rwy 31 end to the Apron (FBO, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
   "otherLabels": [
     "APRON",
     "A",

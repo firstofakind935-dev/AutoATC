@@ -6,6 +6,7 @@
   "elevationFt": "0'",
   "coordinates": "N41 38.0  E000 10.8",
   "runways": [],
+  "groundLayout": "IBAR has no paved runway or taxiway system - it's an unimproved sand beach landing strip (marked \"SAND\" on the chart). Aircraft land and taxi directly across the open sand to the Terminal/Fuel point near the north end. There are no taxiway letters, gate numbers, or a runway designator here - never invent one; give taxi instructions in plain terms (e.g. \"taxi to the terminal/fuel area\") instead of a lettered taxiway route.",
   "frequencies": [
     {
       "facility": "BARRA Information",

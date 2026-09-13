@@ -55,6 +55,7 @@
       "frequency": "119.100"
     }
   ],
+  "groundLayout": "Two runways: 02/20 (shorter, north; note - Runway 2 is marked NOT USABLE FOR LANDING on the chart, arrivals only use Rwy 20) and 13/31 (the main runway, longer). Taxiways A (segments A1-A14) and B (segments B1-B13, plus N/S variants) run parallel to the 13/31 runway serving the Apron (numbered gates), Cargo Area, Terminal, Control Tower, Fuel, Ground Crew Station, and Heli 1-3. Taxiways C, D (D1-D5), E, and F connect across via Bridges to the 02/20 runway area. Real taxiway letters: A, B, C, D, E, F.",
   "otherLabels": [
     "N",
     "APRON",

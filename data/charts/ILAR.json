@@ -42,6 +42,7 @@
       "frequency": "130.200"
     }
   ],
+  "groundLayout": "Runway 06/24, with a Run Up Area near the Rwy 24 end (hot spot HS1 there - converging taxiways/potential runway incursion risk, confirm ATC instruction and wingtip clearance). Taxiway D (segments D1-D7) runs parallel to the runway the full length. Taxiway C (segments C1-C4) branches off D mid-field to serve West Apron (numbered stands) and East Apron (Terminal, Ground Crew Station, Heli 1/2). Taxiway B serves the Cargo Terminal/Fuel area, and taxiway E (E1/E2) serves Aircraft Parking and Hangars near the Rwy 06 end. Real taxiway letters: A, B, C, D, E.",
   "otherLabels": [
     "HOT SPOT",
     "ATC instructions.",

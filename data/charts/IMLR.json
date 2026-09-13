@@ -35,6 +35,7 @@
       "frequency": "125.650"
     }
   ],
+  "groundLayout": "Runway 07/25. Taxiway A runs parallel to the runway the full length, from connector A1 near the Rwy 25 end to connector A2 near the Rwy 07 end, serving the Apron (numbered stands, Terminal, Control Tower, Ground Crew Station, Fuel). Taxiway B (B1/B2) branches off mid-field to the Hangar, and taxiway C (C1/C2) branches off further along to the Helipad. Real taxiway letters: A, B, C.",
   "otherLabels": [
     "Hangar",
     "Helipad",

@@ -38,6 +38,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "Three parallel runways: 7L/25R, 7C/25C, and 7R/25L, each with its own parallel taxiway and numbered connectors (A/A1-A5, G/G1-G3, J/J1-J2, K/K1-K3, M/M1-M2, etc.). A hot spot (HS1) sits where taxiways converge mid-field between the runways - potential incursion risk, confirm ATC instruction and wingtip clearance there. Between the runway complex and the terminal side, taxiways B, C, D, E, F, H, L connect to North Apron and South Apron, serving Terminal 1, Terminal 2, Cargo Terminal, Ground Crew Station, Hangars, Fuel, Engine Test Site, Fire Training, Control Tower, and Heli 1/2. Real taxiway letters: A, B, C, D, E, F, G, H, J, K, L, M.",
   "otherLabels": [
     "A1",
     "A2",

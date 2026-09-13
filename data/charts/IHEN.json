@@ -17,6 +17,7 @@
       "length": null
     }
   ],
+  "groundLayout": "Runway 17/35, with a Backtrack Area near the Rwy 17 end. A single taxiway A connects the runway near the Rwy 35 end to Main Apron (Hangars, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
   "frequencies": [],
   "otherLabels": [
     "N",

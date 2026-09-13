@@ -7,6 +7,7 @@
   "coordinates": "N41 50.2 W000 10.6",
   "runways": [],
   "frequencies": [],
+  "groundLayout": "Tavaro is a seaplane base - a marked water landing lane (04W/21W, the W meaning water) instead of a paved runway. Docks lead from the shore (Hangar, Fuel) out to the water. No taxiway letters/system exist here - never invent one.",
   "otherLabels": [
     "Fuel",
     "N",

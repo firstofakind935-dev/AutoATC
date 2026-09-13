@@ -18,6 +18,7 @@
     }
   ],
   "frequencies": [],
+  "groundLayout": "Runway 05/23 with no separate taxiway system - Hangars and Fuel sit directly alongside the runway near the Rwy 05 end, and aircraft taxi on the runway itself to reach them. No taxiway letters exist here - never invent one.",
   "otherLabels": [
     "Fuel",
     "Hangars",
