@@ -161,50 +161,6 @@ header h1 {
   display: flex;
 }
 
-.radar-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.radar-legend {
-  font-size: 12px;
-  color: var(--text-dim);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.radar-legend-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.radar-legend-dot.stale {
-  background: var(--offline);
-  margin-left: 10px;
-}
-
-#radar-wrap {
-  flex: 1;
-  min-height: 0;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-#radar-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
 .log-controls {
   display: flex;
   align-items: center;
@@ -291,4 +247,278 @@ header h1 {
 
 .log-line.level-error .log-message {
   color: var(--error);
+}
+
+/* ---------- Radar toolbar (workstation controls) ---------- */
+
+#radar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+#radar-time {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.dropdown-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+#radar-airport-select {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#radar-tools {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tool-icon-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tool-icon-btn:hover {
+  border-color: var(--accent);
+}
+
+#radar-station-info {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: 1;
+  min-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radar-legend {
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.radar-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.radar-legend-dot.stale {
+  background: var(--offline);
+  margin-left: 10px;
+}
+
+#radar-wrap {
+  flex: 1;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#radar-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Overlays (modal-ish panels for the workstation tools) ---------- */
+
+.overlay {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  min-width: 320px;
+  max-width: min(90vw, 480px);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.overlay.show {
+  display: block;
+}
+
+.overlay.overlay-wide {
+  max-width: min(90vw, 760px);
+}
+
+.overlay h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.overlay .hint {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--error);
+  color: #2a0a0a;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#notepad-input {
+  width: 100%;
+  min-height: 200px;
+  background: #0b0d11;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.overlay label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.overlay input[type="number"],
+.overlay input[type="text"],
+.overlay select {
+  background: #0b0d11;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.overlay select[multiple] {
+  min-height: 70px;
+}
+
+.overlay button:not(.close-btn):not(.tool-icon-btn) {
+  background: var(--accent);
+  color: #08101f;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.atis-layout {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.atis-inputs {
+  flex: 1;
+  min-width: 200px;
+}
+
+#atis-output {
+  flex: 1;
+  min-width: 200px;
+  background: #0b0d11;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.copied-hint {
+  color: var(--ok);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.vector-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.vector-row label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+#strips-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+#strips-table th,
+#strips-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+
+#strips-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }

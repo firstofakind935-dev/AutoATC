@@ -450,12 +450,13 @@ from its `referenceAirport`, which in turn is projected from a centroid
 origin shared with every airport, so the whole map stays internally
 consistent.
 
-Airport coordinates are vendored into `monitor/public/airports.json`
-(generated from `data/charts/*.json`) rather than read live from the repo,
-since the monitor is typically deployed as its own service with a
-different root directory and shouldn't depend on filesystem access
-outside itself. **Regenerate this file if you add an airport or change a
-chart's `coordinates` field** — from the repo root:
+Airport coordinates, runway designators, and frequencies are vendored into
+`monitor/public/airports.json` (generated from `data/charts/*.json`)
+rather than read live from the repo, since the monitor is typically
+deployed as its own service with a different root directory and
+shouldn't depend on filesystem access outside itself. **Regenerate this
+file if you add an airport or change a chart's `coordinates`, `runways`,
+or `frequencies` field** — from the repo root:
 
 ```
 node -e "
@@ -465,7 +466,15 @@ const dir = path.join(__dirname, 'data', 'charts');
 const airports = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => {
   const chart = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const world = parseCoordinates(chart.coordinates);
-  return world && { icao: chart.icao, name: chart.name || chart.icao, lat: world.lat, lon: world.lon };
+  if (!world) return null;
+  return {
+    icao: chart.icao,
+    name: chart.name || chart.icao,
+    lat: world.lat,
+    lon: world.lon,
+    runways: Array.isArray(chart.runways) ? chart.runways.map((r) => r.designator).filter(Boolean) : [],
+    frequencies: Array.isArray(chart.frequencies) ? chart.frequencies : [],
+  };
 }).filter(Boolean).sort((a, b) => a.icao.localeCompare(b.icao));
 fs.writeFileSync('monitor/public/airports.json', JSON.stringify(airports, null, 2) + '\n');
 "
@@ -479,6 +488,69 @@ credentials, not the `INGEST_API_KEY` Bearer token bots use:
 ```
 GET /api/dashboard/positions   — same data as /api/positions, gated by dashboard auth instead
 ```
+
+#### Controller workstation tools
+
+Alongside the map, the Radar tab has a toolbar (inspired by community
+ATC24 radar tools like [24Radar](https://github.com/t-arpin/atc24radar))
+with:
+
+- **Station select** — pick one airport to zoom the radar to a tight
+  10nm-radius scope centered on it (the whole game world only spans
+  ~30nm, so this is deliberately tight rather than a token re-center);
+  leave it on "ALL" for the fleet-wide overview. Selecting a station also
+  shows its runways and frequencies next to the dropdown.
+- **📝 Notepad** — a plain scratch pad, saved to that browser's
+  `localStorage` only (not shared between controllers or devices).
+- **🎙️ ATIS Generator** — pick an information letter, QNH, arrival/departure
+  runway(s) (populated from the selected station), and optional remarks;
+  "Copy ATIS text" composes a broadcast in the same phraseology
+  `src/bot/AtisBot.js` uses for the real spoken ATIS, and copies it to the
+  clipboard. Purely a text-composition convenience - it doesn't talk to
+  the bot fleet or change any bot's actual behavior.
+- **📐 Vectoring Tool** — click twice on the radar to draw a heading/
+  distance vector (stays armed for the next one until you click "Stop
+  drawing"); vectors are stored in the same NM coordinate space as
+  everything else on the map, so they stay correctly placed across
+  different stations' zoomed views. "Copy as JSON"/"Paste JSON" round-trip
+  the current vector set through the clipboard for sharing between
+  controllers - there's no server-side storage for these, they're local
+  to each browser tab.
+- **📋 Flight Strips** — every aircraft an ATC bot currently has a strip
+  for, fleet-wide. See below for where this data comes from and why it
+  isn't split into per-airport Departures/Arrivals tables.
+
+Verified end-to-end with a real headless Chromium session (not just
+static analysis): every overlay opens/closes correctly, the station
+selector correctly re-zooms and updates the info line, the ATIS generator
+produces well-formed text and copies it, a drawn vector actually renders,
+and switching to the Radar tab and back doesn't throw any console errors.
+
+#### Flight strips
+
+The bot fleet pushes each flight strip's current state to the monitor
+whenever it's created or updated (`src/atc/flightStrips.js`'s
+`upsertStrip()`), mirroring the CPDLC push pattern - fire-and-forget, logs
+a warning on an HTTP error response, never blocks a bot's own reply on a
+monitor outage:
+
+```
+POST /api/flightstrip              — bot fleet pushes one strip's current state
+GET  /api/dashboard/flightstrips   — dashboard reads every currently-tracked strip
+```
+
+One row per callsign (a strip is mutable controller state, not a message
+log, so a later push replaces the earlier one rather than appending). The
+dashboard's read joins in `aircraftType` from any live position report for
+that callsign, since strips don't otherwise carry it.
+
+**This is deliberately one unified table, not per-airport Departures/
+Arrivals tables** like the community tool that inspired this feature. A
+flight strip here records which ATC position currently holds it and its
+destination - not an origin airport - so a real per-field split isn't
+something we can honestly derive from the data this project actually
+tracks. SIDs/STARs and named departure/arrival procedures aren't modeled
+at all yet either.
 
 ### Datalink messages (CPDLC/PDC)
 
