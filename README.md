@@ -378,6 +378,23 @@ optional — omit them and the service just logs a startup warning and runs
 open — but skipping them means anyone who finds the URL can either post
 fake bot logs or read live pilot transcripts, so set them.
 
+#### Public radar page
+
+`https://your-monitor-service.up.railway.app/radar` is a second,
+unauthenticated page — the same live traffic map and controller tools
+(station select, ATIS generator, vectoring, flight strips) as the
+dashboard's Radar tab, at its own URL, with no Basic-auth prompt. Share
+this link freely; it's meant for it. It deliberately does **not** include
+the Logs tab, bot health, or anything gated by
+`DASHBOARD_USERNAME`/`PASSWORD` - those still require the dashboard
+login at `/`. The split is enforced server-side (`monitor/server.js`):
+`/radar` itself, the chart/world-map data files it needs, and the live
+position/flight-strip endpoints it polls are registered as explicitly
+public routes ahead of the `requireDashboardAuth`-gated static
+middleware that guards everything else (`index.html`, `app.js`, `/api/logs`,
+`/api/status`) - adding a new sensitive endpoint later means remembering
+to gate it, not the other way around.
+
 Then, in the **bot fleet's** `.env` (not the monitor's):
 
 ```

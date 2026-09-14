@@ -139,10 +139,14 @@
   }
 
   async function loadAirports() {
+    // Absolute paths - this script is shared between the dashboard
+    // (served at /) and the public radar-only page (served at /radar),
+    // and these particular assets are deliberately exempt from dashboard
+    // auth (see server.js) so both pages can fetch them the same way.
     const [airportsRes, groundLayoutsRes, worldMapRes] = await Promise.all([
-      fetch('airports.json'),
-      fetch('groundlayouts.json'),
-      fetch('worldmap.json'),
+      fetch('/airports.json'),
+      fetch('/groundlayouts.json'),
+      fetch('/worldmap.json'),
     ]);
     airports = await airportsRes.json();
     groundLayouts = groundLayoutsRes.ok ? await groundLayoutsRes.json() : {};
@@ -151,7 +155,7 @@
       worldMapTransform = worldMap.transform;
       worldMapImage = new Image();
       worldMapImage.onload = draw;
-      worldMapImage.src = 'worldmap.png';
+      worldMapImage.src = '/worldmap.png';
     }
     if (airports.length === 0) return;
 
@@ -628,6 +632,13 @@
       if (tab.dataset.view === 'radar') resizeCanvas(); // canvas has no size while its panel was display:none
     });
   });
+
+  // The dashboard's radar panel starts display:none (behind the Logs tab)
+  // until clicked, which is what the tab-switch handler's resizeCanvas()
+  // call above is for. The standalone public radar page has no tabs and
+  // shows this panel immediately, so size the canvas unconditionally here
+  // too rather than relying on a click that will never come.
+  resizeCanvas();
 
   loadAirports().then(() => {
     populateAtisRunways();

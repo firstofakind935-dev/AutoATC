@@ -157,12 +157,14 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
   res.json(freshPositions());
 });
 
-// Same data, for the dashboard's radar view (see public/radar.js) - a
-// separate route rather than reusing /api/positions above because the
-// dashboard authenticates with Basic auth (a browser session) while that
-// one expects a Bearer token (a server-to-server credential); the two
-// schemes can't cleanly share one route.
-app.get('/api/dashboard/positions', requireDashboardAuth, (req, res) => {
+// Same data, for the radar view (see public/radar.js), used by both the
+// password-gated dashboard and the public radar-only page at /radar - a
+// separate route rather than reusing /api/positions above because that
+// one expects a Bearer token (a server-to-server credential) rather than
+// a browser request. Deliberately not gated by requireDashboardAuth:
+// live traffic position is the whole point of the public page, not
+// something worth protecting the way logs/pilot transcripts are.
+app.get('/api/dashboard/positions', (req, res) => {
   res.json(freshPositions());
 });
 
@@ -276,11 +278,13 @@ app.post('/api/flightstrip', requireIngestAuth, (req, res) => {
   res.status(204).end();
 });
 
-// Dashboard-facing read of every currently-tracked strip. Cross-references
-// live positions (if any) purely to surface aircraftType, which flight
-// strips don't otherwise carry - everything else comes straight from the
-// strip itself.
-app.get('/api/dashboard/flightstrips', requireDashboardAuth, (req, res) => {
+// Radar-facing read of every currently-tracked strip - used by both the
+// dashboard and the public /radar page, same reasoning as
+// /api/dashboard/positions above for why this isn't behind
+// requireDashboardAuth. Cross-references live positions (if any) purely
+// to surface aircraftType, which flight strips don't otherwise carry -
+// everything else comes straight from the strip itself.
+app.get('/api/dashboard/flightstrips', (req, res) => {
   const now = Date.now();
   const result = [...flightStrips.values()]
     .filter((s) => now - s.receivedAt < FLIGHT_STRIP_TTL_MS)
@@ -297,6 +301,25 @@ app.get('/api/dashboard/flightstrips', requireDashboardAuth, (req, res) => {
     .sort((a, b) => a.callsign.localeCompare(b.callsign));
   res.json(result);
 });
+
+// Public radar page (e.g. https://your-monitor.up.railway.app/radar) -
+// live traffic on a map for anyone with the link, without the dashboard's
+// Basic-auth login and without exposing the Logs tab or bot health
+// (those stay behind requireDashboardAuth below). Registered before that
+// gate, and before express.static claims '/', so these specific routes
+// are reachable with no credentials regardless of dashboard auth config.
+app.get(['/radar', '/radar/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'radar-view.html')));
+
+// The handful of static assets the radar view needs (chart data, the
+// world-map image, and the radar script/styles themselves) are plain
+// reference data or code, not sensitive - unlike index.html/app.js
+// (which pull in the Logs UI) or the API routes above, so these are
+// exempted from dashboard auth by name rather than opening the whole
+// public/ directory.
+const PUBLIC_STATIC_FILES = ['radar.js', 'style.css', 'airports.json', 'groundlayouts.json', 'worldmap.json', 'worldmap.png'];
+for (const file of PUBLIC_STATIC_FILES) {
+  app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
+}
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
 

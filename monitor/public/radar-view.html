@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutoATC Radar</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>AutoATC Radar</h1>
+  </header>
+
+  <section id="radar-panel" class="view-panel active" aria-label="Live traffic radar">
+    <div id="radar-toolbar">
+      <div id="radar-time">--:--:--Z</div>
+
+      <label class="dropdown-label" for="radar-airport-select">STATION</label>
+      <select id="radar-airport-select"></select>
+      <button type="button" id="ground-zoom-btn" class="tool-icon-btn" title="Zoom to ground layout (runways/taxiways)" disabled>GND</button>
+
+      <div id="radar-tools">
+        <button type="button" class="tool-icon-btn" id="notepad-btn" title="Notepad">📝</button>
+        <button type="button" class="tool-icon-btn" id="atis-btn" title="ATIS Generator">🎙️</button>
+        <button type="button" class="tool-icon-btn" id="vector-btn" title="Vectoring Tool">📐</button>
+        <button type="button" class="tool-icon-btn" id="strips-btn" title="Flight Strips">📋</button>
+      </div>
+
+      <div id="radar-station-info"></div>
+
+      <div class="radar-legend">
+        <span class="radar-legend-dot fresh"></span> fresh
+        <span class="radar-legend-dot stale"></span> stale (2m+)
+      </div>
+      <span id="radar-count" class="log-count"></span>
+    </div>
+    <div id="radar-wrap">
+      <canvas id="radar-canvas"></canvas>
+    </div>
+  </section>
+
+  <!-- Overlays: click-outside-to-nothing modal panels, closed via the red X. -->
+
+  <div id="notepad-overlay" class="overlay">
+    <button type="button" class="close-btn" aria-label="Close">✕</button>
+    <h2>Notepad</h2>
+    <textarea id="notepad-input" placeholder="Type here... (saved automatically on this device)"></textarea>
+  </div>
+
+  <div id="atis-overlay" class="overlay">
+    <button type="button" class="close-btn" aria-label="Close">✕</button>
+    <h2>ATIS Generator</h2>
+    <div class="atis-layout">
+      <div class="atis-inputs">
+        <label>Information letter
+          <select id="atis-letter"></select>
+        </label>
+        <label>QNH
+          <input type="number" id="atis-qnh" value="1013" />
+        </label>
+        <label>Arrival runway(s)
+          <select id="atis-arr-rwy" multiple></select>
+        </label>
+        <label>Departure runway(s)
+          <select id="atis-dep-rwy" multiple></select>
+        </label>
+        <label>Remarks (optional)
+          <input type="text" id="atis-remarks" placeholder="e.g. VFR traffic advise on initial contact" />
+        </label>
+        <button type="button" id="atis-copy-btn">Copy ATIS text</button>
+        <span id="atis-copied" class="copied-hint"></span>
+      </div>
+      <pre id="atis-output"></pre>
+    </div>
+  </div>
+
+  <div id="vector-overlay" class="overlay">
+    <button type="button" class="close-btn" aria-label="Close">✕</button>
+    <h2>Vectoring Tool</h2>
+    <p class="hint">Click twice on the radar to draw one vector - stays armed for the next one until you stop.</p>
+    <div class="vector-row">
+      <button type="button" id="vector-start-btn">Start drawing</button>
+      <button type="button" id="vector-clear-btn">Clear all</button>
+    </div>
+    <div class="vector-row">
+      <label>Color <input type="color" id="vector-color" value="#22c55e" /></label>
+    </div>
+    <div class="vector-row">
+      <label><input type="checkbox" id="vector-show-distance" checked /> Show distance</label>
+      <label><input type="checkbox" id="vector-direction-only" /> Direction only</label>
+    </div>
+    <div class="vector-row">
+      <button type="button" id="vector-export-btn">Copy as JSON</button>
+      <button type="button" id="vector-import-btn">Paste JSON</button>
+    </div>
+  </div>
+
+  <div id="strips-overlay" class="overlay overlay-wide">
+    <button type="button" class="close-btn" aria-label="Close">✕</button>
+    <h2>Flight Strips</h2>
+    <p class="hint">
+      Every aircraft an ATC bot currently has a strip for, fleet-wide - not split by airport, since a strip only
+      records which position is working it and its destination, not an origin field.
+    </p>
+    <table id="strips-table">
+      <thead>
+        <tr>
+          <th>Callsign</th>
+          <th>Type</th>
+          <th>Position</th>
+          <th>Destination</th>
+          <th>Climb</th>
+          <th>Squawk</th>
+          <th>Dep freq</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody id="strips-tbody"></tbody>
+    </table>
+  </div>
+
+  <script src="/radar.js"></script>
+</body>
+</html>
