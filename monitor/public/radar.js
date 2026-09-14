@@ -183,27 +183,28 @@
   function drawCalibratedLayout(airport, layout) {
     const center = toNm(airport);
 
+    // The chart's own real line art - taxiway centerlines, apron/pavement
+    // outlines, buildings, hold markings, the runway's own drawn shape -
+    // traced directly from the source SVG and rotated/scaled into this
+    // view by scripts/build-ground-layouts.js. Stroke-only (no fill), so
+    // what were solid black/gray chart fills come out as outlines - close
+    // to how a real ATC ground radar overlay looks.
     ctx.strokeStyle = '#5a6270';
-    ctx.lineWidth = 1.5;
-    for (const seg of layout.segments) {
-      const a = toScreen(center, seg.a);
-      const b = toScreen(center, seg.b);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const sub of layout.tracedPaths || []) {
+      if (sub.length < 2) continue;
+      const p0 = toScreen(center, sub[0]);
+      ctx.moveTo(p0.x, p0.y);
+      for (let i = 1; i < sub.length; i++) {
+        const p = toScreen(center, sub[i]);
+        ctx.lineTo(p.x, p.y);
+      }
     }
-
-    ctx.font = '9px -apple-system, sans-serif';
-    ctx.fillStyle = '#9aa3b2';
-    for (const [label, offset] of Object.entries(layout.points)) {
-      if (label.startsWith('RWY_')) continue;
-      const p = toScreen(center, offset);
-      ctx.fillText(label, p.x + 3, p.y - 3);
-    }
+    ctx.stroke();
 
     ctx.strokeStyle = '#e4e7ec';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.font = '10px -apple-system, sans-serif';
     ctx.fillStyle = '#e4e7ec';
     for (const [designatorA, designatorB] of layout.runwayLines) {
@@ -212,10 +213,6 @@
       if (!a || !b) continue;
       const pa = toScreen(center, a);
       const pb = toScreen(center, b);
-      ctx.beginPath();
-      ctx.moveTo(pa.x, pa.y);
-      ctx.lineTo(pb.x, pb.y);
-      ctx.stroke();
       ctx.fillText(designatorA, pa.x + 5, pa.y + 3);
       ctx.fillText(designatorB, pb.x + 5, pb.y + 3);
     }

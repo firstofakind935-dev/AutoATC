@@ -1,40 +1,42 @@
 #!/usr/bin/env node
 /**
- * Builds a real, chart-derived ground-layout (runway threshold points +
- * taxiway polylines, correctly labeled and correctly oriented to true
- * north) for every airport, from the actual Treelon/ptfs-charts SVGs -
- * not guessed or invented.
+ * Builds a real, chart-derived ground-layout (actual runway/taxiway/apron/
+ * building line art, correctly oriented to true north) for every airport,
+ * traced directly from the real Ground Chart SVGs (Treelon/ptfs-charts) -
+ * not reconstructed from text label positions, and not invented.
+ *
+ * v1 of this tool reconstructed taxiway shapes by connecting text label
+ * positions (nearest-neighbor chains between repeated "D"/"E1"/etc.
+ * labels). That produced a topology guess, not the real chart shape - it
+ * got connections wrong (e.g. straight-lining a taxiway to the runway when
+ * it actually only reaches an adjacent taxiway) and could never draw the
+ * real curves, loops, or apron/building outlines. This version instead
+ * traces the chart's own vector line art directly.
  *
  * Method:
- * 1. Pull every text label's exact (x,y) position out of the chart SVG
- *    (resolving nested Inkscape <g transform> chains), in the chart's own
- *    local coordinate space.
- * 2. For each runway designator we already trust (data/charts/<ICAO>.json),
- *    find its heading-degree label (e.g. "106°") and the designator-text
- *    occurrence closest to it - that pairing is spatial, not order-based,
- *    so it survives charts with repeated/ambiguous plain-number labels
- *    (e.g. apron stand "10" vs. runway designator "10").
- * 3. Calibrate rotation+scale from the two resolved runway-threshold
- *    points against the REAL heading of the first designator, so every
- *    other label's position rotates into true-compass space correctly -
- *    this is what "correct orientation" is checked against, not the raw
- *    SVG's own (often rotated, non-north-up) drawing orientation.
- * 4. Group same-text taxiway labels (e.g. every "E" or every "D1") and
- *    chain them nearest-neighbor into a polyline - this is how a single
- *    taxiway repeatedly labeled along its length becomes one drawn line,
- *    and how a two-ended branch (labeled once at each end) becomes a stub.
- * 5. Connect each numbered connector label (E1, D2, L1, ...) to the
- *    nearest point on the reference runway centerline, since that's what
- *    a connector actually is.
+ * 1. Find the chart's main content border rect (the largest fill:none
+ *    rect - every one of these charts draws one bordering the airport
+ *    diagram, below the header/frequency-table strip) and use it to crop
+ *    out header/table clutter.
+ * 2. Extract every <path>/<rect>/<circle>/<ellipse> inside that border,
+ *    flattening curves (C/S/Q/T bezier, A arcs) into point sequences, in
+ *    the chart's own local coordinate space (resolving nested Inkscape
+ *    <g transform> chains).
+ * 3. Extract every text label's exact position the same way (as v1 did),
+ *    and use runway designator/heading label pairs to calibrate rotation
+ *    and scale against that runway's real known heading - this is what
+ *    makes the orientation correct regardless of which way the original
+ *    chart happened to be drawn (these are generally *not* north-up).
+ * 4. Apply that same calibration transform to every traced shape, so the
+ *    real line art - taxiway centerlines, apron/pavement outlines,
+ *    buildings, hold markings, the runway's own drawn shape - ends up
+ *    correctly rotated and positioned relative to the airport's real
+ *    lat/lon, uniformly rescaled to a fixed on-screen diagram size (the
+ *    real airports are all much smaller than the radar's per-station
+ *    zoom, so true-to-scale would be sub-pixel).
  *
- * This is schematic (uniformly rescaled to a fixed on-screen diagram
- * size, same spirit as the existing runway-heading-line rendering) not
- * survey-accurate, but the letters/numbers and their relative arrangement
- * are the real ones from the real chart.
- *
- * Requires the `@xmldom/xmldom` package (not a runtime dependency of the
- * bot fleet - install it ad hoc, e.g. `npm install --no-save @xmldom/xmldom`
- * from a scratch directory, before running this).
+ * Requires the `@xmldom/xmldom` package (a devDependency - `npm install`
+ * from the repo root pulls it in).
  *
  * Usage: node scripts/build-ground-layouts.js <path-to-cloned-ptfs-charts-repo>
  */
@@ -53,7 +55,7 @@ if (!SOURCE_ROOT) {
 
 const RUNWAY_HALF_LENGTH_NM = 0.6; // must match monitor/public/radar.js
 
-// ---------- SVG parsing (same approach as extract-labels.js) ----------
+// ---------- 2D affine transform helpers (SVG matrix convention) ----------
 
 function parseTransform(str) {
   let m = [1, 0, 0, 1, 0, 0];
@@ -99,15 +101,148 @@ function applyMatrix(m, x, y) {
   return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
 }
 
-function extractLabels(svgPath) {
+// ---------- SVG path "d" parsing, flattened into polylines ----------
+// Supports M/L/H/V/C/S/Q/T/Z (upper+lower). Arcs (A) are approximated as a
+// straight line to the endpoint - rare in this hand-drawn chart line art
+// (bends are drawn as cubic beziers), and a flattened chord is a harmless
+// simplification if one does show up.
+
+function parsePathD(d) {
+  const tokens = d.match(/[MLHVCSQTAZmlhvcsqtaz]|-?\d*\.?\d+(?:e-?\d+)?/g) || [];
+  let i = 0;
+  const next = () => parseFloat(tokens[i++]);
+  const subpaths = [];
+  let cur = null;
+  let cx = 0, cy = 0, startX = 0, startY = 0;
+  let prevCtrl = null; // reflection control point for S/T
+  let cmd = null;
+
+  const BEZIER_STEPS = 8;
+
+  function pushPoint(x, y) {
+    cur.push({ x, y });
+    cx = x;
+    cy = y;
+  }
+
+  function cubicBezier(p0, p1, p2, p3) {
+    for (let s = 1; s <= BEZIER_STEPS; s++) {
+      const t = s / BEZIER_STEPS;
+      const mt = 1 - t;
+      const x = mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x;
+      const y = mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y;
+      cur.push({ x, y });
+    }
+    cx = p3.x;
+    cy = p3.y;
+  }
+
+  function quadBezier(p0, p1, p2) {
+    for (let s = 1; s <= BEZIER_STEPS; s++) {
+      const t = s / BEZIER_STEPS;
+      const mt = 1 - t;
+      const x = mt * mt * p0.x + 2 * mt * t * p1.x + t * t * p2.x;
+      const y = mt * mt * p0.y + 2 * mt * t * p1.y + t * t * p2.y;
+      cur.push({ x, y });
+    }
+    cx = p2.x;
+    cy = p2.y;
+  }
+
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (/[MLHVCSQTAZmlhvcsqtaz]/.test(tok)) {
+      cmd = tok;
+      i++;
+    }
+    const rel = cmd === cmd.toLowerCase();
+    const C = cmd.toUpperCase();
+
+    if (C === 'M') {
+      if (cur) subpaths.push(cur);
+      cur = [];
+      const x = next(), y = next();
+      const px = rel ? cx + x : x;
+      const py = rel ? cy + y : y;
+      pushPoint(px, py);
+      startX = px;
+      startY = py;
+      prevCtrl = null;
+      cmd = rel ? 'l' : 'L'; // subsequent coordinate pairs are implicit lineto
+    } else if (C === 'L') {
+      const x = next(), y = next();
+      pushPoint(rel ? cx + x : x, rel ? cy + y : y);
+      prevCtrl = null;
+    } else if (C === 'H') {
+      const x = next();
+      pushPoint(rel ? cx + x : x, cy);
+      prevCtrl = null;
+    } else if (C === 'V') {
+      const y = next();
+      pushPoint(cx, rel ? cy + y : y);
+      prevCtrl = null;
+    } else if (C === 'C') {
+      const x1 = next(), y1 = next(), x2 = next(), y2 = next(), x = next(), y = next();
+      const p0 = { x: cx, y: cy };
+      const p1 = { x: rel ? cx + x1 : x1, y: rel ? cy + y1 : y1 };
+      const p2 = { x: rel ? cx + x2 : x2, y: rel ? cy + y2 : y2 };
+      const p3 = { x: rel ? cx + x : x, y: rel ? cy + y : y };
+      cubicBezier(p0, p1, p2, p3);
+      prevCtrl = p2;
+    } else if (C === 'S') {
+      const x2 = next(), y2 = next(), x = next(), y = next();
+      const p0 = { x: cx, y: cy };
+      const p1 = prevCtrl ? { x: 2 * cx - prevCtrl.x, y: 2 * cy - prevCtrl.y } : p0;
+      const p2 = { x: rel ? cx + x2 : x2, y: rel ? cy + y2 : y2 };
+      const p3 = { x: rel ? cx + x : x, y: rel ? cy + y : y };
+      cubicBezier(p0, p1, p2, p3);
+      prevCtrl = p2;
+    } else if (C === 'Q') {
+      const x1 = next(), y1 = next(), x = next(), y = next();
+      const p0 = { x: cx, y: cy };
+      const p1 = { x: rel ? cx + x1 : x1, y: rel ? cy + y1 : y1 };
+      const p2 = { x: rel ? cx + x : x, y: rel ? cy + y : y };
+      quadBezier(p0, p1, p2);
+      prevCtrl = p1;
+    } else if (C === 'T') {
+      const x = next(), y = next();
+      const p0 = { x: cx, y: cy };
+      const p1 = prevCtrl ? { x: 2 * cx - prevCtrl.x, y: 2 * cy - prevCtrl.y } : p0;
+      const p2 = { x: rel ? cx + x : x, y: rel ? cy + y : y };
+      quadBezier(p0, p1, p2);
+      prevCtrl = p1;
+    } else if (C === 'A') {
+      next(); next(); next(); next(); next(); // rx, ry, x-axis-rotation, large-arc, sweep
+      const x = next(), y = next();
+      pushPoint(rel ? cx + x : x, rel ? cy + y : y);
+      prevCtrl = null;
+    } else if (C === 'Z') {
+      pushPoint(startX, startY);
+      prevCtrl = null;
+    } else {
+      i++; // unknown token - skip defensively rather than infinite-loop
+    }
+  }
+  if (cur && cur.length) subpaths.push(cur);
+  return subpaths;
+}
+
+// ---------- SVG walk: collect labels, shapes, and named rects ----------
+
+function extractChart(svgPath) {
   let xml = fs.readFileSync(svgPath, 'utf8');
   xml = xml.replace(/<image[\s\S]*?\/>/g, '<!-- image stripped -->');
   const doc = new DOMParser({ onError: () => {} }).parseFromString(xml, 'image/svg+xml');
-  const out = [];
+
+  const labels = [];
+  const shapes = []; // { subpaths: [[{x,y},...], ...] }
+  const rects = []; // { x, y, width, height } in document space (axis-aligned, transform-free rects only)
+
   (function walk(node, parentMatrix) {
     if (!node || node.nodeType !== 1) return;
     const tag = node.tagName;
     const matrix = multiply(parentMatrix, parseTransform(node.getAttribute && node.getAttribute('transform')));
+
     if (tag === 'text' || tag === 'tspan') {
       const xAttr = node.getAttribute('x');
       const yAttr = node.getAttribute('y');
@@ -122,13 +257,65 @@ function extractLabels(svgPath) {
         text = text.trim();
         if (text && !Number.isNaN(x) && !Number.isNaN(y)) {
           const [ax, ay] = applyMatrix(matrix, x, y);
-          out.push({ text, x: ax, y: ay });
+          labels.push({ text, x: ax, y: ay });
         }
       }
+    } else if (tag === 'path') {
+      const d = node.getAttribute('d');
+      if (d) {
+        const subpaths = parsePathD(d).map((pts) => pts.map((p) => {
+          const [ax, ay] = applyMatrix(matrix, p.x, p.y);
+          return { x: ax, y: ay };
+        }));
+        shapes.push({ subpaths });
+      }
+    } else if (tag === 'rect') {
+      const x = parseFloat(node.getAttribute('x') || '0');
+      const y = parseFloat(node.getAttribute('y') || '0');
+      const w = parseFloat(node.getAttribute('width') || '0');
+      const h = parseFloat(node.getAttribute('height') || '0');
+      const corners = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]].map(([px, py]) => {
+        const [ax, ay] = applyMatrix(matrix, px, py);
+        return { x: ax, y: ay };
+      });
+      shapes.push({ subpaths: [corners] });
+      // Only axis-aligned (unrotated) rects are candidates for the content
+      // border - a transformed one (Inkscape uses these for small building
+      // icons) isn't the page-level frame we're looking for.
+      if (/^matrix\(1,0,0,1|^translate|^$/.test((node.getAttribute('transform') || '').trim()) || !node.getAttribute('transform')) {
+        rects.push({ x: corners[0].x, y: corners[0].y, width: Math.abs(corners[2].x - corners[0].x), height: Math.abs(corners[2].y - corners[0].y), style: node.getAttribute('style') || '' });
+      }
+    } else if (tag === 'circle') {
+      const cx = parseFloat(node.getAttribute('cx') || '0');
+      const cy = parseFloat(node.getAttribute('cy') || '0');
+      const r = parseFloat(node.getAttribute('r') || '0');
+      const pts = [];
+      const STEPS = 16;
+      for (let s = 0; s <= STEPS; s++) {
+        const a = (s / STEPS) * Math.PI * 2;
+        const [ax, ay] = applyMatrix(matrix, cx + r * Math.cos(a), cy + r * Math.sin(a));
+        pts.push({ x: ax, y: ay });
+      }
+      shapes.push({ subpaths: [pts] });
+    } else if (tag === 'ellipse') {
+      const cx = parseFloat(node.getAttribute('cx') || '0');
+      const cy = parseFloat(node.getAttribute('cy') || '0');
+      const rx = parseFloat(node.getAttribute('rx') || '0');
+      const ry = parseFloat(node.getAttribute('ry') || '0');
+      const pts = [];
+      const STEPS = 16;
+      for (let s = 0; s <= STEPS; s++) {
+        const a = (s / STEPS) * Math.PI * 2;
+        const [ax, ay] = applyMatrix(matrix, cx + rx * Math.cos(a), cy + ry * Math.sin(a));
+        pts.push({ x: ax, y: ay });
+      }
+      shapes.push({ subpaths: [pts] });
     }
+
     for (let i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i], matrix);
   })(doc.documentElement, [1, 0, 0, 1, 0, 0]);
-  return out;
+
+  return { labels, shapes, rects };
 }
 
 // ---------- geometry helpers ----------
@@ -137,8 +324,6 @@ function dist(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-// Local "clock bearing": 0 = local up (-y), 90 = local right (+x), matching
-// how compass bearings work (clockwise), just in the SVG's own frame.
 function localBearing(from, to) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -153,40 +338,16 @@ function norm360(deg) {
   return d;
 }
 
-// Real-world runway naming flips L<->R (and keeps C<->C) between reciprocal
-// ends of the same physical strip - used to disambiguate parallel runways
-// that share a heading pair (25L/25C/25R vs. 7L/7C/7R) where heading alone
-// can't tell which pair is actually the same strip.
 const RECIPROCAL_SUFFIX = { L: 'R', R: 'L', C: 'C', '': '' };
 function splitDesignator(designator) {
   const m = /^(\d+)([LCR]?)$/.exec(designator);
   return m ? { num: m[1], suffix: m[2] } : { num: designator, suffix: '' };
 }
 
-// ---------- non-taxiway label noise to ignore ----------
-
-const NON_TAXIWAY = new Set([
-  'HS', 'N', 'HOT', 'SPOT', 'ATC', 'instructions.', 'clearance.',
-]);
-
-function isHotspotCode(text) {
-  return /^HS\d*$/.test(text);
-}
-
-function isTaxiwayLabel(text) {
-  if (isHotspotCode(text)) return false;
-  if (NON_TAXIWAY.has(text)) return false;
-  // Taxiway letters (A, B, ... single or double), optionally with a
-  // connector number (D1, E12, L2). Excludes plain numbers (stand
-  // numbers / runway designators, handled separately) and degree/length
-  // tokens.
-  return /^[A-Z]{1,2}\d{0,2}$/.test(text) && text.length <= 4;
-}
-
 // ---------- main per-airport processing ----------
 
 function processAirport(icao, chart, svgPath) {
-  const labels = extractLabels(svgPath);
+  const { labels, shapes, rects } = extractChart(svgPath);
   const runways = Array.isArray(chart.runways) ? chart.runways : [];
 
   // Resolve each runway designator to a real (x,y): find its heading text,
@@ -208,22 +369,15 @@ function processAirport(icao, chart, svgPath) {
         }
       }
     }
-    // A real threshold marker has its designator text right next to its
-    // heading text on the chart; anything far away is a coincidental
-    // same-text label elsewhere (e.g. an apron stand number).
     if (best && bestDist < 20) {
       resolved.push({ designator: rwy.designator, headingDeg: parseFloat(rwy.heading), point: best });
     }
   }
 
   if (resolved.length < 2) {
-    return { icao, calibrated: false, reason: `only ${resolved.length} runway threshold(s) resolved`, points: {}, segments: [] };
+    return { icao, calibrated: false, reason: `only ${resolved.length} runway threshold(s) resolved` };
   }
 
-  // Pick the first genuinely reciprocal pair (headings ~180° apart) as the
-  // calibration reference - NOT just the first two resolved thresholds,
-  // since parallel runways (9L/9R, 25L/25C/25R) share the same heading and
-  // would give a cross-track vector instead of an along-runway one.
   let ref1 = null;
   let ref2 = null;
   let refSuffixMatch = false;
@@ -243,16 +397,16 @@ function processAirport(icao, chart, svgPath) {
     }
   }
   if (!ref1) {
-    return { icao, calibrated: false, reason: 'no reciprocal runway-threshold pair resolved', points: {}, segments: [] };
+    return { icao, calibrated: false, reason: 'no reciprocal runway-threshold pair resolved' };
   }
   const localHalf = dist(ref1.point, ref2.point) / 2;
   if (localHalf < 1e-6) {
-    return { icao, calibrated: false, reason: 'degenerate runway threshold distance', points: {}, segments: [] };
+    return { icao, calibrated: false, reason: 'degenerate runway threshold distance' };
   }
   const midpoint = { x: (ref1.point.x + ref2.point.x) / 2, y: (ref1.point.y + ref2.point.y) / 2 };
   const bearingLocal = localBearing(ref1.point, ref2.point);
   const rotationOffset = norm360(ref1.headingDeg - bearingLocal);
-  const diagramScale = RUNWAY_HALF_LENGTH_NM / localHalf; // NM per local unit
+  const diagramScale = RUNWAY_HALF_LENGTH_NM / localHalf;
 
   function toNmOffset(pt) {
     const dx = pt.x - midpoint.x;
@@ -265,16 +419,12 @@ function processAirport(icao, chart, svgPath) {
     return { north: nm * Math.cos(rad), east: nm * Math.sin(rad) };
   }
 
-  // Runway threshold points (for every resolved designator, not just the
-  // calibration pair - useful for multi-runway airports like IIAB).
   const points = {};
-  for (const r of resolved) {
-    points[`RWY_${r.designator}`] = toNmOffset(r.point);
-  }
+  for (const r of resolved) points[`RWY_${r.designator}`] = toNmOffset(r.point);
 
-  // Pair every resolved designator with its best reciprocal match (headings
-  // ~180° apart) so the frontend can draw each physical runway as a real
-  // threshold-to-threshold line instead of a fixed schematic length.
+  // Runway pairing for drawing threshold-to-threshold reference lines
+  // (used as a fallback label anchor only now - the real runway shape
+  // comes from the traced paths below).
   const runwayLines = [];
   const usedInLine = new Set();
   for (let i = 0; i < resolved.length; i++) {
@@ -290,8 +440,6 @@ function processAirport(icao, chart, svgPath) {
       if (wrapped >= 10) continue;
       const jParts = splitDesignator(resolved[j].designator);
       const suffixMatch = RECIPROCAL_SUFFIX[iParts.suffix] === jParts.suffix;
-      // Prefer a correct suffix match; among those (or if none match at
-      // all), fall back to smallest heading deviation.
       if (suffixMatch && !bestSuffixMatch) {
         bestJ = j;
         bestDiff = wrapped;
@@ -308,106 +456,47 @@ function processAirport(icao, chart, svgPath) {
     }
   }
 
-  // Group taxiway-ish labels by exact text, keep local points for chaining.
-  const groups = new Map();
-  for (const l of labels) {
-    if (!isTaxiwayLabel(l.text)) continue;
-    if (!groups.has(l.text)) groups.set(l.text, []);
-    groups.get(l.text).push(l);
+  // Find the main content border - the largest fill:none rect (every one
+  // of these charts frames the airport diagram this way, below the
+  // header/frequency-table strip) - and use it to crop out header clutter.
+  const borderCandidates = rects
+    .filter((r) => /fill:\s*none/.test(r.style) && r.width > 20 && r.height > 20)
+    .sort((a, b) => b.width * b.height - a.width * a.height);
+  const border = borderCandidates[0] || null;
+  const margin = 2; // local units of slack around the border
+  const bbox = border
+    ? { minX: border.x - margin, minY: border.y - margin, maxX: border.x + border.width + margin, maxY: border.y + border.height + margin }
+    : null;
+
+  function insideBbox(pt) {
+    if (!bbox) return true;
+    return pt.x >= bbox.minX && pt.x <= bbox.maxX && pt.y >= bbox.minY && pt.y <= bbox.maxY;
   }
 
-  // First pass: build each taxiway's own chain (its repeated-label
-  // centerline) without connecting it to anything else yet.
-  const segments = [];
-  const chains = []; // { text, chain: [{x,y}, ...] }
-  for (const [text, occurrences] of groups) {
-    // De-duplicate near-identical duplicate label glyphs (Inkscape often
-    // stacks a text node and an outline copy at ~the same spot).
-    const dedup = [];
-    for (const occ of occurrences) {
-      if (!dedup.some((d) => dist(d, occ) < 1)) dedup.push(occ);
-    }
-    let chain;
-    if (dedup.length === 1) {
-      chain = dedup;
-    } else {
-      // Nearest-neighbor chain through all occurrences of this label -
-      // approximates the real taxiway centerline through its repeated labels.
-      const remaining = dedup.slice();
-      chain = [remaining.shift()];
-      while (remaining.length) {
-        const last = chain[chain.length - 1];
-        let bestIdx = 0;
-        let bestD = Infinity;
-        remaining.forEach((p, i) => {
-          const d = dist(last, p);
-          if (d < bestD) {
-            bestD = d;
-            bestIdx = i;
-          }
-        });
-        chain.push(remaining.splice(bestIdx, 1)[0]);
+  // Trace every shape whose points fall inside the content border (minus
+  // the border rect itself, which would otherwise draw a big frame).
+  const tracedPaths = [];
+  for (const shape of shapes) {
+    for (const sub of shape.subpaths) {
+      if (sub.length < 2) continue;
+      const allInside = sub.every(insideBbox);
+      if (!allInside) continue;
+      // Skip anything that's essentially the border rect itself (same
+      // bounding box, 4-5 points, axis aligned).
+      if (border) {
+        const minX = Math.min(...sub.map((p) => p.x));
+        const maxX = Math.max(...sub.map((p) => p.x));
+        const minY = Math.min(...sub.map((p) => p.y));
+        const maxY = Math.max(...sub.map((p) => p.y));
+        const isBorderItself =
+          sub.length <= 5 &&
+          Math.abs(minX - border.x) < 1 &&
+          Math.abs(maxX - (border.x + border.width)) < 1 &&
+          Math.abs(minY - border.y) < 1 &&
+          Math.abs(maxY - (border.y + border.height)) < 1;
+        if (isBorderItself) continue;
       }
-      for (let i = 0; i + 1 < chain.length; i++) {
-        segments.push({ label: text, a: toNmOffset(chain[i]), b: toNmOffset(chain[i + 1]) });
-      }
-    }
-    points[text] = toNmOffset(chain[0]);
-    chains.push({ text, chain });
-  }
-
-  // Second pass: connect each taxiway's free ends to whatever it's
-  // actually nearest to - the runway centerline, OR another taxiway's
-  // chain. Earlier this always projected onto the runway, which drew a
-  // false direct connection for taxiways that in the real chart only
-  // reach an *adjacent* taxiway (e.g. an outer parallel taxiway that
-  // connects to an inner one, which is what actually touches the
-  // runway) - real airports commonly have exactly this nested-parallel
-  // shape, so picking the true nearest neighbor here matters.
-  for (const { text, chain } of chains) {
-    const ends = chain.length > 1 ? [chain[0], chain[chain.length - 1]] : [chain[0]];
-    for (const end of ends) {
-      let best = null;
-      let bestDist = Infinity;
-      let bestKind = null;
-
-      const rwyProj = projectOntoSegment(end, ref1.point, ref2.point);
-      if (rwyProj) {
-        const d = dist(end, rwyProj);
-        if (d < bestDist) {
-          bestDist = d;
-          best = rwyProj;
-          bestKind = 'rwy';
-        }
-      }
-
-      for (const other of chains) {
-        if (other.text === text) continue;
-        for (let i = 0; i + 1 < other.chain.length; i++) {
-          const proj = projectOntoSegment(end, other.chain[i], other.chain[i + 1]);
-          if (!proj) continue;
-          const d = dist(end, proj);
-          if (d < bestDist) {
-            bestDist = d;
-            best = proj;
-            bestKind = other.text;
-          }
-        }
-        if (other.chain.length === 1) {
-          const d = dist(end, other.chain[0]);
-          if (d < bestDist) {
-            bestDist = d;
-            best = other.chain[0];
-            bestKind = other.text;
-          }
-        }
-      }
-
-      // Skip if the nearest thing is implausibly far - not actually
-      // connected to anything on this chart, just a coincidental label.
-      if (best && bestDist < localHalf * 0.3) {
-        segments.push({ label: `${text}-${bestKind}`, a: toNmOffset(end), b: toNmOffset(best) });
-      }
+      tracedPaths.push(sub.map(toNmOffset));
     }
   }
 
@@ -417,18 +506,9 @@ function processAirport(icao, chart, svgPath) {
     rotationOffsetDeg: rotationOffset,
     referenceRunway: [ref1.designator, ref2.designator],
     points,
-    segments,
     runwayLines,
+    tracedPaths,
   };
-}
-
-function projectOntoSegment(p, a, b) {
-  const abx = b.x - a.x, aby = b.y - a.y;
-  const len2 = abx * abx + aby * aby;
-  if (len2 < 1e-9) return null;
-  let t = ((p.x - a.x) * abx + (p.y - a.y) * aby) / len2;
-  t = Math.max(0, Math.min(1, t));
-  return { x: a.x + t * abx, y: a.y + t * aby };
 }
 
 // ---------- driver ----------
@@ -448,9 +528,9 @@ function main() {
     try {
       const layout = processAirport(chart.icao, chart, svgPath);
       results[chart.icao] = layout;
-      summary.push(`${chart.icao}: ${layout.calibrated ? `ok (${layout.segments.length} segments, ${Object.keys(layout.points).length} points, ref ${layout.referenceRunway.join('/')})` : `SKIPPED - ${layout.reason}`}`);
+      summary.push(`${chart.icao}: ${layout.calibrated ? `ok (${layout.tracedPaths.length} traced shapes, ref ${layout.referenceRunway.join('/')})` : `SKIPPED - ${layout.reason}`}`);
     } catch (err) {
-      summary.push(`${chart.icao}: ERROR ${err.message}`);
+      summary.push(`${chart.icao}: ERROR ${err.stack || err.message}`);
     }
   }
   fs.writeFileSync(OUT_PATH, JSON.stringify(results) + '\n');
