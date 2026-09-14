@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { fork } = require('child_process');
 
 const { loadAirports } = require('./lib/airports');
-const { recognizeText } = require('./lib/ocr');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 
@@ -137,14 +137,51 @@ ipcMain.handle('save-settings', (event, settings) => {
 ipcMain.handle('get-airports', () => loadAirports());
 
 // tesseract.js's createWorker() spins up a real Node worker_threads Worker,
-// which the preload script's V8 context can't do ("The V8 platform used by
-// this instance of Node does not support creating Worker") even with
-// sandbox:false - preload runs in a separate, more restricted isolated
-// context than a normal Node process. The main process doesn't have that
-// restriction, so OCR runs here instead and reaches the renderer over IPC.
+// which throws "The V8 platform used by this instance of Node does not
+// support creating Worker" if called directly in this (Electron main)
+// process - Electron's own V8 platform initialization doesn't support
+// creating one, in main OR preload, unlike a genuine Node.js process. The
+// fix is to run OCR in an actually-separate, non-Electron Node process:
+// fork lib/ocrProcess.js with ELECTRON_RUN_AS_NODE=1, which makes
+// Electron's own binary behave as real Node instead (Electron's own
+// documented mechanism for exactly this situation), and relay each
+// recognize-text call to it over the child process's own IPC channel.
+let ocrProcess = null;
+let ocrRequestId = 0;
+const ocrPending = new Map();
+
+function getOcrProcess() {
+  if (ocrProcess) return ocrProcess;
+  ocrProcess = fork(path.join(__dirname, 'lib', 'ocrProcess.js'), [], {
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+  });
+  ocrProcess.on('message', ({ id, text, error }) => {
+    const pending = ocrPending.get(id);
+    if (!pending) return;
+    ocrPending.delete(id);
+    if (error) pending.reject(new Error(error));
+    else pending.resolve(text);
+  });
+  ocrProcess.on('exit', (code) => {
+    console.error(`[companion] OCR process exited unexpectedly (code ${code}) - restarting on next call.`);
+    ocrProcess = null;
+    for (const pending of ocrPending.values()) pending.reject(new Error(`OCR process exited (code ${code})`));
+    ocrPending.clear();
+  });
+  return ocrProcess;
+}
+
 // image is a data URL (tesseract.js also accepts a Buffer/canvas, but only
-// a string survives structured-clone across contextBridge/IPC).
-ipcMain.handle('recognize-text', (event, image) => recognizeText(image));
+// a string survives structured-clone across contextBridge/IPC, and child
+// process IPC serializes the same way).
+ipcMain.handle('recognize-text', (event, image) => {
+  const proc = getOcrProcess();
+  const id = ocrRequestId++;
+  return new Promise((resolve, reject) => {
+    ocrPending.set(id, { resolve, reject });
+    proc.send({ id, image });
+  });
+});
 
 app.whenReady().then(() => {
   createControlWindow();
@@ -155,4 +192,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (ocrProcess) ocrProcess.kill();
 });
