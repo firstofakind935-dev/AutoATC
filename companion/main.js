@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { loadAirports } = require('./lib/airports');
+const { recognizeText } = require('./lib/ocr');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 
@@ -134,6 +135,16 @@ ipcMain.handle('save-settings', (event, settings) => {
 });
 
 ipcMain.handle('get-airports', () => loadAirports());
+
+// tesseract.js's createWorker() spins up a real Node worker_threads Worker,
+// which the preload script's V8 context can't do ("The V8 platform used by
+// this instance of Node does not support creating Worker") even with
+// sandbox:false - preload runs in a separate, more restricted isolated
+// context than a normal Node process. The main process doesn't have that
+// restriction, so OCR runs here instead and reaches the renderer over IPC.
+// image is a data URL (tesseract.js also accepts a Buffer/canvas, but only
+// a string survives structured-clone across contextBridge/IPC).
+ipcMain.handle('recognize-text', (event, image) => recognizeText(image));
 
 app.whenReady().then(() => {
   createControlWindow();
