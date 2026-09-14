@@ -28,6 +28,15 @@
   let aircraft = [];
   let groundZoom = false; // tight zoom for reading runway/taxiway labels, vs. the normal approach-scope
 
+  // Colored world-map background (water/islands) for the fleet-wide
+  // overview only - see worldmap.json's comment in
+  // scripts/build-worldmap.js for how it's calibrated. Only sensible at
+  // the overview scale: the source chart is explicitly "NOT TO SCALE",
+  // so at a station's tight zoom the few-NM fit error would dwarf the
+  // whole visible viewport.
+  let worldMapImage = null;
+  let worldMapTransform = null; // { a, b, c, d, e, f } - see build-worldmap.js
+
   const groundZoomBtn = document.getElementById('ground-zoom-btn');
   groundZoomBtn.addEventListener('click', () => {
     groundZoom = !groundZoom;
@@ -95,9 +104,20 @@
   }
 
   async function loadAirports() {
-    const [airportsRes, groundLayoutsRes] = await Promise.all([fetch('airports.json'), fetch('groundlayouts.json')]);
+    const [airportsRes, groundLayoutsRes, worldMapRes] = await Promise.all([
+      fetch('airports.json'),
+      fetch('groundlayouts.json'),
+      fetch('worldmap.json'),
+    ]);
     airports = await airportsRes.json();
     groundLayouts = groundLayoutsRes.ok ? await groundLayoutsRes.json() : {};
+    if (worldMapRes.ok) {
+      const worldMap = await worldMapRes.json();
+      worldMapTransform = worldMap.transform;
+      worldMapImage = new Image();
+      worldMapImage.onload = draw;
+      worldMapImage.src = 'worldmap.png';
+    }
     if (airports.length === 0) return;
 
     origin = {
@@ -252,9 +272,33 @@
     }
   }
 
+  // Draws the calibrated world-map PNG under everything else, only for
+  // the fleet-wide overview (see the `worldMapImage` comment above for
+  // why not at a station's tight zoom). The composed transform maps the
+  // image's own pixel space directly to canvas pixels in one step: the
+  // fitted (pixel -> NM) affine from build-worldmap.js, chained with
+  // project()'s (NM -> canvas pixel) similarity transform, worked out
+  // algebraically so this is a single ctx.transform() call rather than
+  // per-pixel math.
+  function drawWorldMap() {
+    if (selectedAirport || !worldMapImage || !worldMapImage.complete || !worldMapTransform) return;
+    const t = worldMapTransform;
+    const scale = Math.min(canvas.clientWidth, canvas.clientHeight) / (view.radiusNm * 2);
+    ctx.save();
+    ctx.transform(
+      scale * t.c, -scale * t.a,
+      scale * t.d, -scale * t.b,
+      canvas.clientWidth / 2 + scale * (t.f - view.centerEast),
+      canvas.clientHeight / 2 + scale * (view.centerNorth - t.e)
+    );
+    ctx.drawImage(worldMapImage, 0, 0);
+    ctx.restore();
+  }
+
   function draw() {
     if (!origin || !view) return;
     ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+    drawWorldMap();
 
     ctx.font = '11px -apple-system, sans-serif';
     for (const airport of airports) {
