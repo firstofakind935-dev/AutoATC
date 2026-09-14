@@ -137,6 +137,19 @@ app.post('/api/position', requireIngestAuth, (req, res) => {
   res.status(204).end();
 });
 
+// A bot-assigned radar vector (see flightStrips.js's clearance.assignedHeadingDeg
+// comment) is LLM-produced JSON that ends up feeding SVG math on the radar
+// (monitor/public/radar24/src/main.js) - validate it here rather than trust
+// it, since a stray string or out-of-range value would otherwise draw a
+// garbage line instead of just... not drawing one.
+function activeVectorFor(callsign) {
+  const strip = flightStrips.get(normalizeCallsign(callsign));
+  const heading = strip?.clearance?.assignedHeadingDeg;
+  if (typeof heading !== 'number' || !Number.isFinite(heading) || heading < 0 || heading >= 360) return null;
+  const reason = strip.clearance.vectorReason;
+  return { assignedHeadingDeg: heading, vectorReason: typeof reason === 'string' ? reason : null };
+}
+
 function freshPositions() {
   const now = Date.now();
   return [...positions.values()]
@@ -147,6 +160,7 @@ function freshPositions() {
       speed,
       position,
       ageMs: now - receivedAt,
+      ...activeVectorFor(callsign),
     }));
 }
 

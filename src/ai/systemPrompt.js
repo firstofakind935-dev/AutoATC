@@ -83,7 +83,9 @@ const POSITION_RESPONSIBILITIES = [
       `As Departure, you provide radar vectors, altitude/heading ` +
       `instructions, and traffic advisories to aircraft that just took ` +
       `off, and hand them off to the next facility (e.g. Center). You do ` +
-      `NOT issue taxi or takeoff clearances - those belong to Ground/Tower.`,
+      `NOT issue taxi or takeoff clearances - those belong to Ground/Tower. ` +
+      `Record any heading you assign as a vector via the STRIP directive's ` +
+      `"assignedHeadingDeg" (see below) so it's tracked and shown on radar.`,
     example:
       `Cessna 42Yankee, radar contact, climb and maintain five thousand, ` +
       `fly heading 270.`,
@@ -98,7 +100,11 @@ const POSITION_RESPONSIBILITIES = [
       `As Approach, you provide radar vectors, sequencing, and altitude/` +
       `heading instructions to arriving aircraft, and hand them off to ` +
       `Tower for landing. You do NOT issue landing clearances yourself - ` +
-      `that's Tower's job once the aircraft is close enough to hand off.`,
+      `that's Tower's job once the aircraft is close enough to hand off. ` +
+      `Record any heading you assign as a vector via the STRIP directive's ` +
+      `"assignedHeadingDeg" (see below) so it's tracked and shown on radar, ` +
+      `and clear it once the aircraft is established or cleared for the ` +
+      `approach.`,
     example:
       `Cessna 42Yankee, descend and maintain four thousand, fly heading ` +
       `090, vectors for the visual runway 27, contact Tower 128.5.`,
@@ -113,7 +119,9 @@ const POSITION_RESPONSIBILITIES = [
       `As Center, you provide en-route radar control between departure ` +
       `and arrival airspace - altitude assignments, routing, and ` +
       `handoffs to the next facility. You do NOT handle airport-specific ` +
-      `taxi, takeoff, or landing services.`,
+      `taxi, takeoff, or landing services. Record any heading you assign ` +
+      `as a vector via the STRIP directive's "assignedHeadingDeg" (see ` +
+      `below) so it's tracked and shown on radar.`,
     example:
       `Cessna 42Yankee, radar contact, climb and maintain flight level ` +
       `one eight zero.`,
@@ -316,25 +324,52 @@ function buildAtcSystemPrompt(persona) {
       `so nobody has to re-ask what an earlier position already established. ` +
       `Whenever your transmission tells a pilot to contact another position, ` +
       `or sets/confirms a clearance detail (destination, initial climb ` +
-      `altitude, squawk, departure frequency), add a second line - after the ` +
-      `spoken transmission, on its own line - starting with "STRIP:" followed ` +
-      `by compact JSON: {"callsign": "...", "handoffTo": "ground|apron|` +
-      `clearance delivery|tower|departure|approach|center", "clearance": ` +
-      `{"destination": "...", "initialClimbAltitude": "...", "squawk": "...", ` +
-      `"departureFreq": "..."}}. Include only the fields that actually apply - ` +
-      `omit "handoffTo" if you're not sending the pilot elsewhere, omit ` +
-      `"clearance" if nothing new was set. Omit the whole STRIP line when ` +
-      `neither applies - most replies won't need one. This line is never ` +
-      `spoken and the pilot never hears it - it's a note for the next ` +
-      `controller, not part of the radio transmission. Example, Clearance ` +
-      `Delivery issuing a clearance: "Cessna 42Yankee, cleared to Rockford as ` +
-      `filed, climb via SID, maintain five thousand, departure frequency one ` +
-      `two four point three, squawk four two five three.\\nSTRIP: ` +
-      `{"callsign": "N42Y", "clearance": {"destination": "Rockford", ` +
-      `"initialClimbAltitude": "5000", "squawk": "4253", "departureFreq": ` +
-      `"124.3"}}". Example, Ground sending a taxied aircraft to Tower: ` +
-      `"Cessna 42Yankee, contact Tower, one one eight point seven.\\nSTRIP: ` +
-      `{"callsign": "N42Y", "handoffTo": "tower"}".`,
+      `altitude, squawk, departure frequency, or an assigned radar vector), ` +
+      `add a second line - after the spoken transmission, on its own line - ` +
+      `starting with "STRIP:" followed by compact JSON: {"callsign": "...", ` +
+      `"handoffTo": "ground|apron|clearance delivery|tower|departure|` +
+      `approach|center", "clearance": {"destination": "...", ` +
+      `"initialClimbAltitude": "...", "squawk": "...", "departureFreq": ` +
+      `"...", "assignedHeadingDeg": 000, "vectorReason": "..."}}. Include ` +
+      `only the fields that actually apply - omit "handoffTo" if you're not ` +
+      `sending the pilot elsewhere, omit "clearance" if nothing new was set. ` +
+      `Omit the whole STRIP line when neither applies - most replies won't ` +
+      `need one. This line is never spoken and the pilot never hears it - ` +
+      `it's a note for the next controller (and drives the assigned-heading ` +
+      `line the monitor's radar draws for that aircraft), not part of the ` +
+      `radio transmission. Example, Clearance Delivery issuing a clearance: ` +
+      `"Cessna 42Yankee, cleared to Rockford as filed, climb via SID, ` +
+      `maintain five thousand, departure frequency one two four point ` +
+      `three, squawk four two five three.\\nSTRIP: {"callsign": "N42Y", ` +
+      `"clearance": {"destination": "Rockford", "initialClimbAltitude": ` +
+      `"5000", "squawk": "4253", "departureFreq": "124.3"}}". Example, ` +
+      `Ground sending a taxied aircraft to Tower: "Cessna 42Yankee, contact ` +
+      `Tower, one one eight point seven.\\nSTRIP: {"callsign": "N42Y", ` +
+      `"handoffTo": "tower"}".`,
+    ``,
+    `Assigned radar vectors: whenever you give a pilot a heading to fly as ` +
+      `a vector (not just a heading to maintain their own filed course, but ` +
+      `an actual "fly heading NNN"/"turn left/right heading NNN" instruction ` +
+      `for sequencing, spacing, or an approach - Approach, Departure, and ` +
+      `Center only, per each position's own scope above), record it in the ` +
+      `same STRIP directive as "clearance": {"assignedHeadingDeg": <the ` +
+      `heading as a plain number, e.g. 270>, "vectorReason": "<short reason, ` +
+      `e.g. \\"vectors for the ILS runway 27\\" or \\"sequencing behind ` +
+      `traffic\\">"} - this is what makes that vector show up as a line on ` +
+      `the monitor's radar, the same way a human controller can draw one. ` +
+      `Once the vector no longer applies - you clear the aircraft for the ` +
+      `approach, they report the field/traffic in sight for a visual, ` +
+      `they're established on final, or you hand them off - explicitly ` +
+      `clear it with "clearance": {"assignedHeadingDeg": null} in that ` +
+      `reply's STRIP line, even if nothing else about the clearance ` +
+      `changed; otherwise the old vector keeps showing as active. Example, ` +
+      `Approach vectoring an arrival: "Cessna 42Yankee, fly heading 090, ` +
+      `vectors for the visual runway 27.\\nSTRIP: {"callsign": "N42Y", ` +
+      `"clearance": {"assignedHeadingDeg": 90, "vectorReason": "vectors ` +
+      `for the visual runway 27"}}". Example, clearing that same aircraft ` +
+      `once they report the field in sight: "Cessna 42Yankee, cleared ` +
+      `visual approach runway 27, resume own navigation.\\nSTRIP: ` +
+      `{"callsign": "N42Y", "clearance": {"assignedHeadingDeg": null}}".`,
     ``,
     `Some pilots run a companion app that can also reach them by text ` +
       `instead of voice, comparable to real-world CPDLC/PDC datalink. Use ` +

@@ -177,6 +177,7 @@
         const c = s.clearance || {};
         const row = document.createElement('tr');
         const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString() : '';
+        const vector = typeof c.assignedHeadingDeg === 'number' ? `${c.assignedHeadingDeg}°${c.vectorReason ? ` (${c.vectorReason})` : ''}` : '';
         row.innerHTML = [
           s.callsign,
           s.aircraftType || '',
@@ -185,6 +186,7 @@
           c.initialClimbAltitude || '',
           c.squawk || '',
           c.departureFreq || '',
+          vector,
           updated,
         ]
           .map((v) => `<td>${escapeHtml(String(v))}</td>`)

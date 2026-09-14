@@ -71,10 +71,65 @@ function adaptPositionsToAircraftData(rows) {
             isTaxiing: false,
             groundSpeed: typeof row.speed === 'number' ? row.speed : 0,
             flightPlan: null,
-            flightStatus: 'inFlight'
+            flightStatus: 'inFlight',
+            // An ATC bot's currently-assigned radar vector for this aircraft
+            // (see monitor/server.js's activeVectorFor()) - not an upstream
+            // 24radar field. Drawn by updateAssignedVectorLayer() below,
+            // separately from the user-drawn vectors in #vector-container.
+            assignedHeadingDeg: typeof row.assignedHeadingDeg === 'number' ? row.assignedHeadingDeg : null,
+            vectorReason: row.vectorReason || null
         };
     }
     return result;
+}
+
+// Draws a dashed heading line from each aircraft's current position for any
+// ATC-bot-assigned vector (adaptPositionsToAircraftData()'s
+// assignedHeadingDeg/vectorReason, sourced from a flight strip's clearance -
+// see systemPrompt.js and monitor/server.js's activeVectorFor()). This is
+// new rendering, not an upstream 24radar feature: upstream's own vector
+// tool draws a fixed line a human placed by hand; this instead redraws
+// every poll from whatever heading a bot most recently assigned, so it
+// tracks the aircraft as it moves and disappears once the bot clears it
+// (assignedHeadingDeg back to null). Deliberately a separate layer/function
+// from the human-drawn tool so a poll cycle never touches a controller's
+// own vectors.
+const ASSIGNED_VECTOR_LENGTH_NM = 5;
+function updateAssignedVectorLayer(data) {
+    const layer = document.getElementById('assigned-vector-container');
+    if (!layer) return;
+    layer.innerHTML = '';
+
+    const lengthSvgUnits = (ASSIGNED_VECTOR_LENGTH_NM * STUDS_PER_NM) / 100;
+
+    for (const info of Object.values(data)) {
+        if (typeof info.assignedHeadingDeg !== 'number') continue;
+
+        const x1 = info.position.x / 100;
+        const y1 = info.position.y / 100;
+        const rad = (info.assignedHeadingDeg * Math.PI) / 180;
+        const x2 = x1 + lengthSvgUnits * Math.sin(rad);
+        const y2 = y1 - lengthSvgUnits * Math.cos(rad);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#ffb300');
+        line.setAttribute('stroke-width', 1 * currentZoom);
+        line.setAttribute('stroke-dasharray', `${4 * currentZoom},${3 * currentZoom}`);
+        layer.appendChild(line);
+
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', x2);
+        label.setAttribute('y', y2);
+        label.setAttribute('fill', '#ffb300');
+        label.setAttribute('font-size', 10 * currentZoom);
+        label.setAttribute('text-anchor', 'middle');
+        label.textContent = `${Math.round(info.assignedHeadingDeg)}°${info.vectorReason ? ` – ${info.vectorReason}` : ''}`;
+        layer.appendChild(label);
+    }
 }
 // --- end AutoATC data adapter ---------------------------------------------
 
@@ -1376,6 +1431,7 @@ async function fetchData() {
         const enrichedAircraftMap = adaptPositionsToAircraftData(rows);
         aircraftData = enrichedAircraftMap;
         updateAircraftLayer(enrichedAircraftMap);
+        updateAssignedVectorLayer(enrichedAircraftMap);
         document.querySelectorAll('#ground-container').forEach(cont => {
             updateGroundAircraftLayer(enrichedAircraftMap, cont);
         });
@@ -2994,6 +3050,14 @@ function fetchMapLayer(container) {
                     const fixLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     fixLayer.setAttribute('id', 'fix-container');
                     svg.appendChild(fixLayer);
+
+                    // AutoATC adapter: layer for ATC-bot-assigned vectors
+                    // (see updateAssignedVectorLayer()) - separate from the
+                    // human-drawn #vector-container above so a poll cycle
+                    // never touches/clears a controller's own drawn vectors.
+                    const assignedVectorLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    assignedVectorLayer.setAttribute('id', 'assigned-vector-container');
+                    svg.appendChild(assignedVectorLayer);
                 })
                 .catch(err => {
                     console.error(err);

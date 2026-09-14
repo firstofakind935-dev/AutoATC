@@ -601,6 +601,35 @@ something we can honestly derive from the data this project actually
 tracks. SIDs/STARs and named departure/arrival procedures aren't modeled
 at all yet either.
 
+#### Radar vectoring (both AI and human)
+
+Humans already had a way to vector traffic (the manual double-click tool
+on the radar - see "Radar view" above). ATC bots can too, not just as
+prose in the system prompt telling the model "you provide vectors" with
+nothing behind it: whenever Approach, Departure, or Center gives a pilot
+an actual heading-to-fly instruction (not just confirming their own filed
+course), the model records it as `clearance.assignedHeadingDeg` (plus an
+optional `clearance.vectorReason`) in the same `STRIP:` directive it
+already uses for destination/climb/squawk/departure-freq (see
+`src/ai/systemPrompt.js`) - no new output contract, it's just another
+clearance field. The model is expected to explicitly clear it back to
+`null` once the vector no longer applies (cleared for the approach,
+established on final, handed off) - merge semantics won't drop a field on
+their own, so a forgotten vector would otherwise look permanently active.
+
+The monitor validates it server-side before using it for anything
+(`activeVectorFor()` in `monitor/server.js` - a finite number in
+`[0, 360)` or it's dropped) and joins it into `/api/positions`/
+`/api/dashboard/positions` alongside that aircraft's own position. The
+radar (`monitor/public/radar24/src/main.js`'s `updateAssignedVectorLayer()`
+- an AutoATC addition, not upstream 24radar code) draws it as a dashed
+amber line from the aircraft's current position, redrawn every poll so it
+tracks the aircraft as it moves and disappears the moment a bot clears it.
+It's deliberately a separate SVG layer from the human-drawn vector tool,
+so a poll cycle never touches a controller's own manually-drawn vectors.
+The Strips tab's **Vector** column shows the same data as plain text for
+anyone not looking at the map.
+
 ### Datalink messages (CPDLC/PDC)
 
 The monitor also relays one-directional text messages from an ATC bot to a

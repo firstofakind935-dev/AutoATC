@@ -51,7 +51,13 @@ function getStrip(callsign) {
  * moves the strip to whichever position it was just handed off to;
  * `updates.clearance` fields are merged in (never dropped) so a detail set
  * by one position (e.g. Delivery's initial climb altitude) is still there
- * when Departure reads the strip later.
+ * when Departure reads the strip later. `clearance.assignedHeadingDeg` is
+ * the one clearance field meant to be short-lived rather than accumulated -
+ * Approach/Departure/Center set it whenever they vector an aircraft (see
+ * systemPrompt.js) and are expected to explicitly send it back as `null`
+ * once the vector no longer applies, since merge semantics won't clear a
+ * field on their own. It's what the monitor's radar draws as a heading
+ * line for that aircraft (see monitor/server.js's freshPositions()).
  */
 function upsertStrip(callsign, updates = {}) {
   const key = normalizeCallsign(callsign);
@@ -92,6 +98,9 @@ function formatStripsContext(position) {
     if (c.initialClimbAltitude) parts.push(`initial climb ${c.initialClimbAltitude}`);
     if (c.squawk) parts.push(`squawk ${c.squawk}`);
     if (c.departureFreq) parts.push(`departure freq ${c.departureFreq}`);
+    if (typeof c.assignedHeadingDeg === 'number') {
+      parts.push(`currently on an assigned vector, heading ${c.assignedHeadingDeg}${c.vectorReason ? ` (${c.vectorReason})` : ''} - clear it (STRIP "assignedHeadingDeg": null) once it no longer applies`);
+    }
     return `- ${s.callsign}${parts.length ? `: ${parts.join(', ')}` : ' (no clearance details recorded)'}`;
   });
 
