@@ -26,6 +26,14 @@
   let selectedAirport = null; // one entry from `airports`, or null for the fleet-wide overview
   let view = null; // { centerNorth, centerEast, radiusNm } - current viewport in NM space
   let aircraft = [];
+  let groundZoom = false; // tight zoom for reading runway/taxiway labels, vs. the normal approach-scope
+
+  const groundZoomBtn = document.getElementById('ground-zoom-btn');
+  groundZoomBtn.addEventListener('click', () => {
+    groundZoom = !groundZoom;
+    groundZoomBtn.classList.toggle('active', groundZoom);
+    recomputeView();
+  });
 
   function toNm(point) {
     return {
@@ -38,13 +46,20 @@
   // station is selected, or the whole known world fit to the canvas
   // otherwise. Both are expressed the same way - a center + radius in NM -
   // so project()/unproject() don't need to know which mode is active.
+  //
+  // The station scope itself has two zoom levels: the normal 10nm approach
+  // scope (this whole game world only spans ~30nm across, so even that
+  // needs to be tight to read as "zoomed in" rather than a token re-center)
+  // and a much tighter "GND" zoom for actually reading runway/taxiway
+  // layout - the whole schematic ground diagram is only ~1.2nm across, so
+  // at 10nm radius it's a barely-visible smudge.
+  const STATION_RADIUS_NM = 10;
+  const GROUND_ZOOM_RADIUS_NM = 2;
+
   function recomputeView() {
     if (selectedAirport) {
-      // This whole game world only spans ~30nm across, so a station's own
-      // scope needs to be tight to actually read as "zoomed in" rather
-      // than just re-centering on roughly the same view as the overview.
       const c = toNm(selectedAirport);
-      view = { centerNorth: c.north, centerEast: c.east, radiusNm: 10 };
+      view = { centerNorth: c.north, centerEast: c.east, radiusNm: groundZoom ? GROUND_ZOOM_RADIUS_NM : STATION_RADIUS_NM };
     } else {
       const nmPoints = airports.map(toNm);
       const minNorth = Math.min(...nmPoints.map((p) => p.north));
@@ -116,6 +131,9 @@
 
   airportSelect.addEventListener('change', () => {
     selectedAirport = airports.find((a) => a.icao === airportSelect.value) || null;
+    groundZoomBtn.disabled = !selectedAirport;
+    groundZoom = false;
+    groundZoomBtn.classList.remove('active');
     updateStationInfo();
     populateAtisRunways();
     recomputeView();

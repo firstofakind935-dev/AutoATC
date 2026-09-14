@@ -306,6 +306,25 @@ header h1 {
   border-color: var(--accent);
 }
 
+.tool-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#ground-zoom-btn {
+  width: auto;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+#ground-zoom-btn.active {
+  background: var(--accent);
+  color: #08101f;
+  border-color: var(--accent);
+}
+
 #radar-station-info {
   font-size: 12px;
   color: var(--text-dim);

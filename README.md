@@ -556,6 +556,12 @@ with:
   ~30nm, so this is deliberately tight rather than a token re-center);
   leave it on "ALL" for the fleet-wide overview. Selecting a station also
   shows its runways and frequencies next to the dropdown.
+- **GND button** — appears once a station is selected; toggles a much
+  tighter 2nm-radius zoom for actually reading the runway/taxiway layout.
+  The 10nm approach scope keeps nearby traffic in view, but the ground
+  diagram itself is only ~1.2nm across, so at 10nm it's a barely-visible
+  smudge - GND is the difference between "traffic context" and "can
+  actually read the taxiway labels for a taxi instruction."
 - **📝 Notepad** — a plain scratch pad, saved to that browser's
   `localStorage` only (not shared between controllers or devices).
 - **🎙️ ATIS Generator** — pick an information letter, QNH, arrival/departure
