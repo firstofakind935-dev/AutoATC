@@ -1,4 +1,5 @@
 const BASE_URL = 'https://flightradar365.lovable.app/api/public/bot';
+const TRACK_URL = 'https://flightradar365.lovable.app/api/public/track';
 
 function authHeaders() {
   const key = process.env.FLIGHTRADAR365_BOT_KEY;
@@ -41,6 +42,31 @@ async function writeAction(action, payload = {}) {
   return response.json().catch(() => null);
 }
 
+/**
+ * Reports live aircraft positions to the site's own map (a different
+ * endpoint from the read/write "bot" API above - /api/public/track, not
+ * /api/public/bot/...). `aircraft` is an array of
+ * {callsign, x, y, altitude?, ground_speed?, heading?} in the site's own
+ * map coordinate space - see src/flightradar365/positionSync.js for how
+ * AutoATC's own distanceNm/bearingDeg/referenceAirport positions get
+ * converted into that space. `replace: true` tells the site to drop any
+ * aircraft not in this call (used every sync cycle so an aircraft that
+ * stops being tracked disappears immediately, instead of waiting out the
+ * site's own 3-minute auto-expiry).
+ */
+async function reportPositions(aircraft, { replace = false } = {}) {
+  const response = await fetch(TRACK_URL, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ aircraft, ...(replace ? { replace: true } : {}) }),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`flightradar365 track POST failed (${response.status}): ${body}`);
+  }
+  return response.json().catch(() => null);
+}
+
 async function getAirports() {
   return getResource('airports');
 }
@@ -72,4 +98,5 @@ module.exports = {
   publishAtis,
   updateFlightPlan,
   deleteFlightPlan,
+  reportPositions,
 };

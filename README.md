@@ -475,9 +475,38 @@ only ever grants read access to positions, never the ability to post fake
 logs/positions/CPDLC messages/flight strips the way the ingest key can.
 Both endpoints return the same array shape as `GET /api/positions` above.
 
-There's no equivalent for *pushing* AutoATC's data somewhere on a
-schedule (e.g. a webhook to a third-party site) - only pull, from
-whichever of the two endpoints above you use.
+There's no *generic* way to push AutoATC's data somewhere on a schedule
+(e.g. an arbitrary webhook) - only pull, from whichever of the two
+endpoints above you use. The one exception is a purpose-built push to one
+specific site, below.
+
+#### Pushing positions to flightradar365.lovable.app
+
+`src/flightradar365/positionSync.js` periodically pulls AutoATC's own
+live positions (from the monitor, same as above) and pushes them to
+flightradar365.lovable.app's own map via its `POST /api/public/track`
+endpoint (`x-bot-key: <FLIGHTRADAR365_BOT_KEY>`, body
+`{"aircraft": [{"callsign, x, y, altitude?, ground_speed?, heading?}], "replace": true}`).
+Requires both `MONITOR_URL` (where positions are read from) and
+`FLIGHTRADAR365_BOT_KEY` (auth) set, **plus an explicit
+`FLIGHTRADAR365_TRACK_ENABLED=true`** - it does not start just because a
+bot key happens to be configured.
+
+That third flag exists because of one real gap: AutoATC's own positions
+are polar (`distanceNm`/`bearingDeg` from a named `referenceAirport`, see
+above), not raw `x`/`y` in flightradar365's own map coordinate space, and
+`x`/`y` are what its endpoint requires. `toTrackXY()` in that file
+converts between the two using the same per-airport anchor points and
+studs-per-NM constant this project's own radar
+(`monitor/public/radar24/`) uses - a reasonable guess, since both are
+ATC24/PTFS-specific tools, but **unconfirmed against the real site**.
+Before flipping `FLIGHTRADAR365_TRACK_ENABLED` on, cross-check: does the
+x/y this produces for a known distance/bearing from a well-known airport
+actually land in the right spot on flightradar365's live map? If not,
+`toTrackXY()` is the one thing that needs to change - everything else in
+that file (fetching positions, building the payload, the sync loop, the
+`replace: true` semantics) doesn't depend on which coordinate system
+turns out to be right.
 
 #### Radar view
 

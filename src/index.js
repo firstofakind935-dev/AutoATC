@@ -4,6 +4,7 @@ const { loadFleetConfig } = require('./utils/config');
 const { AtcBot } = require('./bot/AtcBot');
 const { AtisBot } = require('./bot/AtisBot');
 const { makeLogger } = require('./utils/logger');
+const { startPositionSync } = require('./flightradar365/positionSync');
 
 const logger = makeLogger('fleet');
 
@@ -23,6 +24,8 @@ async function main() {
   }
 
   logger.info(`Starting ${fleetConfig.length} bot(s): ${fleetConfig.map((c) => c.name).join(', ')}`);
+
+  startPositionSync();
 
   const bots = fleetConfig.map(createBot);
 
