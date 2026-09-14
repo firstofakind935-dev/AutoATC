@@ -21,6 +21,7 @@
   const timeEl = document.getElementById('radar-time');
 
   let airports = [];
+  let groundLayouts = {}; // icao -> real chart-derived runway/taxiway layout, see groundlayouts.json
   let origin = null; // { lat, lon } - centroid of all airports, NM offsets are relative to this
   let selectedAirport = null; // one entry from `airports`, or null for the fleet-wide overview
   let view = null; // { centerNorth, centerEast, radiusNm } - current viewport in NM space
@@ -79,8 +80,9 @@
   }
 
   async function loadAirports() {
-    const res = await fetch('airports.json');
-    airports = await res.json();
+    const [airportsRes, groundLayoutsRes] = await Promise.all([fetch('airports.json'), fetch('groundlayouts.json')]);
+    airports = await airportsRes.json();
+    groundLayouts = groundLayoutsRes.ok ? await groundLayoutsRes.json() : {};
     if (airports.length === 0) return;
 
     origin = {
@@ -128,20 +130,83 @@
   }
   window.addEventListener('resize', resizeCanvas);
 
-  // Schematic runway orientation for the selected station only - not
-  // real surveyed geometry. Chart data has each runway's true heading
-  // (accurate) but no threshold coordinates or length, so this draws a
-  // fixed-length line symmetric around the airport's own reference point
-  // along that heading, correct in *direction* but illustrative in
-  // *position/length*. Only drawn when zoomed into one station - at the
+  // Runway/taxiway rendering for the selected station only - at the
   // whole-world overview scale these would be sub-pixel anyway.
+  //
+  // Two tiers, depending on what groundlayouts.json has for this airport
+  // (built by scripts/build-ground-layouts.js from the real chart SVGs):
+  //
+  // 1. Calibrated: real threshold-to-threshold runway lines and real,
+  //    correctly-lettered/numbered taxiway polylines, positioned from the
+  //    actual chart artwork and rotated to true north using that airport's
+  //    own real runway heading as the calibration anchor. Still uniformly
+  //    rescaled (not survey-accurate scale/distance) so a small strip's
+  //    taxiways aren't sub-pixel next to a mile-long runway.
+  // 2. Fallback (no chart source resolved cleanly - e.g. IBAR/SHV/TVO/IUFO):
+  //    a fixed-length schematic line through the airport's single reference
+  //    point along the runway's real heading - correct direction, but
+  //    illustrative position/length, and no taxiways.
   const RUNWAY_HALF_LENGTH_NM = 0.6;
 
-  function drawRunways() {
+  function drawGroundLayout() {
     if (!selectedAirport) return;
-    const center = toNm(selectedAirport);
+    const layout = groundLayouts[selectedAirport.icao];
+    if (layout && layout.calibrated) {
+      drawCalibratedLayout(selectedAirport, layout);
+    } else {
+      drawSchematicRunways(selectedAirport);
+    }
+  }
 
-    for (const rwy of selectedAirport.runways) {
+  function toScreen(center, offset) {
+    return project({ north: center.north + offset.north, east: center.east + offset.east });
+  }
+
+  function drawCalibratedLayout(airport, layout) {
+    const center = toNm(airport);
+
+    ctx.strokeStyle = '#5a6270';
+    ctx.lineWidth = 1.5;
+    for (const seg of layout.segments) {
+      const a = toScreen(center, seg.a);
+      const b = toScreen(center, seg.b);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.fillStyle = '#9aa3b2';
+    for (const [label, offset] of Object.entries(layout.points)) {
+      if (label.startsWith('RWY_')) continue;
+      const p = toScreen(center, offset);
+      ctx.fillText(label, p.x + 3, p.y - 3);
+    }
+
+    ctx.strokeStyle = '#e4e7ec';
+    ctx.lineWidth = 3;
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = '#e4e7ec';
+    for (const [designatorA, designatorB] of layout.runwayLines) {
+      const a = layout.points[`RWY_${designatorA}`];
+      const b = layout.points[`RWY_${designatorB}`];
+      if (!a || !b) continue;
+      const pa = toScreen(center, a);
+      const pb = toScreen(center, b);
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+      ctx.fillText(designatorA, pa.x + 5, pa.y + 3);
+      ctx.fillText(designatorB, pb.x + 5, pb.y + 3);
+    }
+  }
+
+  function drawSchematicRunways(airport) {
+    const center = toNm(airport);
+
+    for (const rwy of airport.runways) {
       if (typeof rwy.headingDeg !== 'number' || Number.isNaN(rwy.headingDeg)) continue;
       const rad = (rwy.headingDeg * Math.PI) / 180;
       const dNorth = RUNWAY_HALF_LENGTH_NM * Math.cos(rad);
@@ -178,7 +243,7 @@
       ctx.fillText(airport.icao, p.x + 6, p.y + 4);
     }
 
-    drawRunways();
+    drawGroundLayout();
 
     for (const ac of aircraft) {
       const airport = airports.find((a) => a.icao === ac.position.referenceAirport);
