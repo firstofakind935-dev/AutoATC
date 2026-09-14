@@ -454,6 +454,31 @@ poll for 5 seconds and formats each row (distance/bearing from a named
 airport, altitude, heading, and a staleness note once a fix is more than
 a minute past its last minimap correction) into the LLM's context.
 
+#### Giving an external site (e.g. a companion website) read access
+
+Two ways to let something outside this project - a website you run
+separately, a script, whatever - read AutoATC's live positions:
+
+```
+GET /api/dashboard/positions   — already fully public, no auth at all (this is what the /radar page itself polls)
+GET /api/external/positions    — same data, gated by EXTERNAL_API_KEY if you set one
+```
+
+If you don't care about the URL being fully open, just point the other
+site at `/api/dashboard/positions` and you're done - nothing to configure.
+If you'd rather hand out something revocable/less discoverable, set
+`EXTERNAL_API_KEY` in the monitor's environment (`openssl rand -hex 32`)
+and give the other side that value to send as
+`Authorization: Bearer <key>` against `/api/external/positions` instead.
+This is a **separate credential from `INGEST_API_KEY`** on purpose - it
+only ever grants read access to positions, never the ability to post fake
+logs/positions/CPDLC messages/flight strips the way the ingest key can.
+Both endpoints return the same array shape as `GET /api/positions` above.
+
+There's no equivalent for *pushing* AutoATC's data somewhere on a
+schedule (e.g. a webhook to a third-party site) - only pull, from
+whichever of the two endpoints above you use.
+
 #### Radar view
 
 The dashboard's **Radar** tab (and the public `/radar` page above) is a

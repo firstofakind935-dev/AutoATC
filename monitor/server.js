@@ -8,6 +8,15 @@ const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
 const DASHBOARD_USERNAME = process.env.DASHBOARD_USERNAME || null;
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || null;
+// A read-only credential for external consumers (e.g. a companion website)
+// that should be able to read live positions but must never be able to do
+// anything INGEST_API_KEY can (post fake logs/positions, send CPDLC
+// messages, overwrite flight strips) - a leaked read key is a nuisance, a
+// leaked ingest key is a real problem. Note /api/dashboard/positions below
+// already serves this same data with NO auth at all (it's what the public
+// /radar page itself polls) - only bother handing out this key if you want
+// something less discoverable/more revocable than that open URL.
+const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY || null;
 
 const MAX_LOGS = 5000;
 const OFFLINE_THRESHOLD_MS = 90_000; // matches the bot fleet's heartbeat interval (60s) with margin
@@ -26,6 +35,13 @@ if (!DASHBOARD_USERNAME || !DASHBOARD_PASSWORD) {
   console.warn(
     '[monitor] WARNING: DASHBOARD_USERNAME/DASHBOARD_PASSWORD are not set. The dashboard is ' +
       'open to anyone who finds this URL, including live pilot transcripts. Set both in production.'
+  );
+}
+if (!EXTERNAL_API_KEY) {
+  console.warn(
+    '[monitor] NOTE: EXTERNAL_API_KEY is not set, so /api/external/positions is open to anyone ' +
+      'who finds it (same as /api/dashboard/positions already is). Set EXTERNAL_API_KEY if you ' +
+      'want that endpoint specifically to require a key.'
   );
 }
 
@@ -56,6 +72,14 @@ function requireIngestAuth(req, res, next) {
   const auth = req.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (token !== INGEST_API_KEY) return res.status(401).json({ error: 'unauthorized' });
+  next();
+}
+
+function requireExternalReadAuth(req, res, next) {
+  if (!EXTERNAL_API_KEY) return next();
+  const auth = req.get('authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (token !== EXTERNAL_API_KEY) return res.status(401).json({ error: 'unauthorized' });
   next();
 }
 
@@ -179,6 +203,17 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
 // live traffic position is the whole point of the public page, not
 // something worth protecting the way logs/pilot transcripts are.
 app.get('/api/dashboard/positions', (req, res) => {
+  res.json(freshPositions());
+});
+
+// Same data again, for an external consumer outside the bot fleet/dashboard
+// (e.g. a companion website) that wants to pull live positions server-side
+// without using the fully-public /api/dashboard/positions URL above. Gated
+// by EXTERNAL_API_KEY - a separate credential from INGEST_API_KEY, since
+// this is meant to be handed to a third party and should only ever grant
+// read access, never the ability to post fake data through the ingest
+// endpoints below.
+app.get('/api/external/positions', requireExternalReadAuth, (req, res) => {
   res.json(freshPositions());
 });
 
