@@ -19,7 +19,11 @@ const { distanceBearingNm } = tryRequire('coords', './lib/coords');
 const { nearestAirport } = tryRequire('airports', './lib/airports');
 const { integrate } = tryRequire('deadReckoning', './lib/deadReckoning');
 const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
-const { recognizeText, parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
+// parseFlightInfo/parseHeadingTape are pure regex parsing - safe to run
+// directly here. recognizeText is NOT required directly (see below) - the
+// actual tesseract.js call has to run in the main process instead, since
+// preload's V8 context can't create the worker_threads Worker it needs.
+const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 
@@ -61,7 +65,9 @@ contextBridge.exposeInMainWorld('companion', {
   nearestAirport,
   integrate,
   findMarkerCentroid,
-  recognizeText,
+  // Runs in the main process (see main.js's 'recognize-text' handler) -
+  // not called directly here, unlike the other lib/*.js functions above.
+  recognizeText: (image) => ipcRenderer.invoke('recognize-text', image),
   parseFlightInfo,
   parseHeadingTape,
   uploadPosition,
