@@ -1074,7 +1074,15 @@ const vectorColor = document.getElementById('vector-color');
 const vectorDistance = document.getElementById('vector-distance');
 const vectorDirOnly = document.getElementById('vector-direction-only');
 
-let doVectorDelete = true;
+// AutoATC adapter: upstream defaults this to true, meaning a freshly drawn
+// vector is deleted again the instant the second double-click finishes it,
+// until the user finds and clicks "Start" in the Vector overlay first - a
+// first-time user double-clicking to draw a vector (the obvious thing to
+// try) sees nothing stick and reasonably concludes the tool is broken.
+// Default to persisting instead; "Stop" (see the matching button-label
+// flip in index.html) still toggles the original quick-preview/delete mode
+// for anyone who wants it.
+let doVectorDelete = false;
 
 vectorStart.addEventListener('click', () => {
     vectorStart.innerHTML = vectorStart.innerHTML == 'Start' ? 'Stop' : 'Start';
