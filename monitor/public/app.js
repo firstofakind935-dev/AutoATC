@@ -166,7 +166,48 @@
     ws.onerror = () => ws.close();
   }
 
+  async function refreshStrips() {
+    try {
+      const res = await fetch('/api/dashboard/flightstrips');
+      if (!res.ok) return;
+      const strips = await res.json();
+      const tbody = document.getElementById('strips-tbody');
+      tbody.innerHTML = '';
+      for (const s of strips) {
+        const c = s.clearance || {};
+        const row = document.createElement('tr');
+        const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString() : '';
+        row.innerHTML = [
+          s.callsign,
+          s.aircraftType || '',
+          s.currentPosition || '',
+          c.destination || '',
+          c.initialClimbAltitude || '',
+          c.squawk || '',
+          c.departureFreq || '',
+          updated,
+        ]
+          .map((v) => `<td>${escapeHtml(String(v))}</td>`)
+          .join('');
+        tbody.appendChild(row);
+      }
+    } catch {
+      // table just goes stale until the next successful poll - non-fatal
+    }
+  }
+
   loadInitialLogs().then(connectWebSocket);
   refreshStatus();
   setInterval(refreshStatus, 5000);
+  refreshStrips();
+  setInterval(refreshStrips, 5000);
+
+  // View tab switching (Logs / Radar). Was previously part of radar.js
+  // before the Radar tab became an iframe onto public/radar24/.
+  document.querySelectorAll('.view-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.view-tab').forEach((t) => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.view-panel').forEach((panel) => panel.classList.toggle('active', panel.id === `${tab.dataset.view}-panel`));
+    });
+  });
 })();

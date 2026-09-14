@@ -380,17 +380,16 @@ fake bot logs or read live pilot transcripts, so set them.
 
 #### Public radar page
 
-`https://your-monitor-service.up.railway.app/radar` is a second,
-unauthenticated page — the same live traffic map and controller tools
-(station select, ATIS generator, vectoring, flight strips) as the
-dashboard's Radar tab, at its own URL, with no Basic-auth prompt. Share
-this link freely; it's meant for it. It deliberately does **not** include
-the Logs tab, bot health, or anything gated by
-`DASHBOARD_USERNAME`/`PASSWORD` - those still require the dashboard
-login at `/`. The split is enforced server-side (`monitor/server.js`):
-`/radar` itself, the chart/world-map data files it needs, and the live
-position/flight-strip endpoints it polls are registered as explicitly
-public routes ahead of the `requireDashboardAuth`-gated static
+`https://your-monitor-service.up.railway.app/radar` redirects to
+`/radar24/`, a second, unauthenticated page — the same radar the
+dashboard's Radar tab embeds (see below), at its own URL, with no
+Basic-auth prompt. Share this link freely; it's meant for it. It
+deliberately does **not** include the Logs tab, bot health, or anything
+gated by `DASHBOARD_USERNAME`/`PASSWORD` - those still require the
+dashboard login at `/`. The split is enforced server-side
+(`monitor/server.js`): `/radar`, the whole `monitor/public/radar24/`
+bundle, and the live position endpoint it polls are registered as
+explicitly public routes ahead of the `requireDashboardAuth`-gated static
 middleware that guards everything else (`index.html`, `app.js`, `/api/logs`,
 `/api/status`) - adding a new sensitive endpoint later means remembering
 to gate it, not the other way around.
@@ -457,126 +456,81 @@ a minute past its last minimap correction) into the LLM's context.
 
 #### Radar view
 
-The dashboard (`monitor/public/`) has a **Radar** tab alongside Logs, so a
-human controller can see live traffic on a map without joining the game
-themselves. It plots every airport as a fixed reference point and every
-currently-fresh position as a heading-oriented arrow, using the same
-distance/bearing math as everywhere else in this project - an aircraft's
-absolute position is computed by projecting its `distanceNm`/`bearingDeg`
-from its `referenceAirport`, which in turn is projected from a centroid
-origin shared with every airport, so the whole map stays internally
-consistent.
+The dashboard's **Radar** tab (and the public `/radar` page above) is a
+near-verbatim port of [24Radar](https://github.com/t-arpin/atc24radar), a
+community ATC24/PTFS radar client, licensed GPLv3 (see
+`monitor/public/radar24/LICENSE`) — its actual HTML/CSS/JS and ground-chart
+assets, not a reimplementation, with only the data source swapped:
+AutoATC's own bot-estimated `distanceNm`/`bearingDeg`/`referenceAirport`
+positions (`GET /api/dashboard/positions`) in place of the live PTFS game
+API 24radar.xyz itself polls. Both the dashboard and the public `/radar`
+page load the exact same `monitor/public/radar24/` bundle - the dashboard
+via a same-origin `<iframe>`, so there is one radar implementation, not
+two. The adapter that converts AutoATC's data into the shape this code
+expects lives entirely in `monitor/public/radar24/src/main.js`, clearly
+marked "AutoATC adapter" - everything else in that directory is upstream
+code, copied to keep the port pixel/interaction-faithful.
 
-When a station is selected, its real runways, taxiways, aprons, and
-buildings are drawn from `monitor/public/groundlayouts.json`, generated
-by `scripts/build-ground-layouts.js` directly from the actual Ground
-Chart SVGs in the community
-[ptfs-charts](https://github.com/Treelon/ptfs-charts) repo (the same
-source `data/charts/*.json` comes from) - not invented, and not
-reconstructed from text labels. An earlier version of this tool tried
-the latter (connecting repeated taxiway-letter labels into a guessed
-polyline), which got real topology wrong - e.g. drawing a taxiway
-straight to the runway when it actually only reached an *adjacent*
-taxiway - and could never show the real curves, loops, or apron/building
-shapes. This version traces the chart's own vector line art instead:
+It includes:
 
-1. Finds the chart's main content border (the largest `fill:none` rect -
-   every one of these charts frames the airport diagram this way, below
-   the header/frequency-table strip) and uses it to crop out header
-   clutter.
-2. Extracts every `<path>`/`<rect>`/`<circle>`/`<ellipse>` inside that
-   border, flattening curves (cubic/quadratic bezier) into point
-   sequences, in the chart's own local coordinate space (resolving nested
-   Inkscape `<g transform>` chains) - this is the real taxiway
-   centerlines, apron/pavement outlines, buildings, and hold markings,
-   not a reconstruction.
-3. Extracts every text label's exact position the same way, and resolves
-   each runway designator to a real point by finding its heading-degree
-   label (e.g. `106°`) and the nearest occurrence of the designator text
-   next to it - spatial, not order-based, so it isn't fooled by an
-   unrelated same-text label elsewhere on the chart (e.g. an apron stand
-   numbered "10").
-4. Calibrates rotation and scale from a genuinely reciprocal pair of
-   thresholds (headings ~180° apart; parallel runways sharing a heading -
-   9L/9R, 25L/25C/25R - are matched to their real opposite end via the
-   L↔R/C↔C runway-naming convention, not paired arbitrarily) against that
-   runway's real known heading, then applies that same transform to every
-   traced shape - this is what makes the on-screen orientation correct
-   regardless of which way the original chart happened to be drawn (these
-   charts are generally *not* drawn north-up).
-5. Picks out every taxiway letter/connector label (e.g. "D", "E1") from
-   the same text extraction and keeps every real occurrence, at its real
-   position, for display - a taxiway's letter repeats along its length on
-   the real chart too, so this draws the same way rather than
-   deduplicating to one label per taxiway.
+- A full SVG-based enroute map (pan/zoom, world coastline/boundary
+  background) with per-aircraft labels, trails, and click-for-details.
+- **Ground charts** — the real per-airport `GROUND.svg`/`TAXIWAYS.svg`
+  from the community [ptfs-charts](https://github.com/Treelon/ptfs-charts)
+  repo (24radar's own already-processed copies, vendored under
+  `radar24/public/assets/maps/`), for the 20 airports it has chart data
+  for.
+- **The vectoring tool** — double-click the map to start a heading/
+  distance vector, double-click again to finish it; it stays armed for
+  the next one until "Stop" is clicked. Export/Import round-trip the
+  current vector set through a downloaded JSON file.
+- **ATIS Generator**, **Notepad**, **Approach chart selector**, and
+  **Station (topdown) settings** overlays — all upstream 24radar features.
+- **Station/airport select** covering all of AutoATC's 26 airports, not
+  just the 20 the upstream project itself covers. The 7 AutoATC doesn't
+  share with 24radar (`IBAR`, `IBRD`, `IKFL`, `ITEY`, `IUFO`, `SHV`, `TVO`)
+  are marked "(no chart)" in the dropdown: they have no real ground-chart
+  file, and their position on the enroute map is a best-effort estimate
+  (an affine fit from AutoATC's own airport lat/lon against the airports
+  that *do* have a real reference position — see the comment above those
+  7 entries in `radar24/src/data/GroundOffsets.js`), not a measured value
+  like the other 19.
 
-Rendering is stroke-only (no fill), so what were solid black/gray chart
-fills come out as outlines - close to how a real ATC ground radar overlay
-looks, and it sidesteps having to classify which fill colors mean
-"pavement" vs. "building" vs. "grass island". The whole layout is
-uniformly rescaled to a fixed on-screen size (same spirit as the
-schematic fallback below) so a small strip's taxiways aren't sub-pixel
-next to a mile-long runway - it's schematic in scale, not in shape.
-Airports where calibration fails (no clean reciprocal threshold pair
-found in the chart - e.g. IBAR/TVO have no runway data at all, SHV's
-seaplane lane and IUFO's imprecise heading pair don't yield one) fall
-back to the old schematic treatment: a fixed-length line through the
-airport's reference point along the runway's real heading, labeled with
-its designator but with no taxiways drawn.
+What's genuinely different from upstream, and why:
 
-A handful of small chart decorations (annotation-arrow lines, a legend
-box like IIAB's "HOT SPOT" callout) fall inside the content border too
-and get traced along with everything else - they're real content from
-the real chart, just not airport geometry, so expect the occasional
-stray line or box that isn't a taxiway.
+- **No filed flight plans.** AutoATC's flight strips carry a destination,
+  climb, squawk, and departure frequency - not a filed route, flight
+  rules, or cruise level the way 24radar's `flightPlan` shape does. Every
+  aircraft is synthesized with `flightPlan: null`, which the upstream code
+  already handles gracefully (the Departures/Arrivals tables and
+  flight-plan-based label coloring simply skip aircraft with no plan) -
+  so those tables stay empty rather than showing invented data.
+- **No live wind, ATIS letter, or approach plates.** AutoATC has none of
+  these. Wind is a fixed `000/00` placeholder (upstream would otherwise
+  throw trying to parse a live wind string that doesn't exist); the
+  ATIS-letter auto-fetch and approach-plate listing hit small stub routes
+  (`GET /radar24-api/atis/:icao`, `GET /radar24-api/approaches/:icao`)
+  that report "not available" the same way the real backend would for an
+  airport it has no data for - upstream's own error handling takes it
+  from there.
+- **Callsigns and aircraft types display as-is.** 24radar's `CallsignMap`/
+  `AcftTypeMap` translate PTFS's fictional carrier flavor-text (e.g.
+  "Belta-123") and a curated set of common aircraft types into readable
+  labels; AutoATC's callsigns and types are already realistic strings, so
+  the adapter falls back to displaying them verbatim instead of showing
+  "undefined" when they don't match those upstream lookup tables.
 
-#### World map background
+Verified end-to-end with a real headless Chromium session: a synthesized
+aircraft renders at the correct position/heading/label for a given
+distance/bearing/reference-airport, a ground chart loads and styles
+correctly, the vectoring tool's Start/Stop persistence behaves exactly as
+upstream, and the dashboard's Radar tab loads without console errors.
 
-The fleet-wide overview (the "ALL" view, not a selected station) draws a
-colored water/islands background from
-`monitor/public/worldmap.png`+`worldmap.json`, generated by
-`scripts/build-worldmap.js` from the source repo's own "Enroute Chart
-PTFS.svg" - a real colored chart of the whole game world (this is a
-fictional game world, so there's no real elevation/terrain data to draw
-a genuine topographic map from; this is the closest real, colored,
-geographically-accurate asset that exists for it).
-
-That chart has no machine-readable text - every label was converted to
-path outlines before export - so it can't be calibrated the same way the
-per-airport ground charts are (matching designator/heading text). Instead
-`scripts/build-worldmap.js` uses a fixed set of pixel coordinates for 15
-airports' ICAO labels, read once via OCR (`tesseract`) against a 3200px
-render, and fits a best-fit affine transform (not a rigid rotation+scale,
-since the chart is explicitly labeled "NOT TO SCALE") from those pixel
-positions to the airports' real lat/lon. That transform is applied as a
-single canvas transform when drawing the image, composed with the
-radar's own NM-to-pixel projection.
-
-Because the source chart isn't survey-accurate, expect the drawn
-coastline to drift from where an individual airport's own
-precisely-computed dot lands - a few NM of mismatch is normal, worse far
-from the calibration points. It's a recognizable visual backdrop (which
-island is which, roughly where the water is), not a precise overlay.
-Regenerate it after cloning the source chart repo:
-
-```
-git clone https://github.com/Treelon/ptfs-charts /tmp/ptfs-charts
-node scripts/build-worldmap.js /tmp/ptfs-charts
-```
-
-(Requires `rsvg-convert` - `apt install librsvg2-bin` - on the machine
-running it; redo the OCR calibration in the script's header comment only
-if the source chart image itself changes.)
-
-Regenerate `groundlayouts.json` after cloning the source chart repo (it
-needs the `@xmldom/xmldom` devDependency - `npm install` from the repo
-root pulls it in):
-
-```
-git clone https://github.com/Treelon/ptfs-charts /tmp/ptfs-charts
-npm install
-node scripts/build-ground-layouts.js /tmp/ptfs-charts
-```
+`monitor/public/groundlayouts.json` and `worldmap.png`/`worldmap.json`
+(and the `scripts/build-ground-layouts.js`/`build-worldmap.js` that
+generate them) predate this port and are no longer read by the current
+radar - kept around as-is rather than deleted, in case a future custom
+overlay wants real ground/world geometry again.
 
 Airport coordinates, runway designators, and frequencies are vendored into
 `monitor/public/airports.json` (generated from `data/charts/*.json`)
@@ -620,54 +574,6 @@ credentials, not the `INGEST_API_KEY` Bearer token bots use:
 ```
 GET /api/dashboard/positions   — same data as /api/positions, gated by dashboard auth instead
 ```
-
-#### Controller workstation tools
-
-Alongside the map, the Radar tab has a toolbar (inspired by community
-ATC24 radar tools like [24Radar](https://github.com/t-arpin/atc24radar))
-with:
-
-- **Station select** — pick one airport to zoom the radar to a tight
-  10nm-radius scope centered on it (the whole game world only spans
-  ~30nm, so this is deliberately tight rather than a token re-center);
-  leave it on "ALL" for the fleet-wide overview. Selecting a station also
-  shows its runways and frequencies next to the dropdown.
-- **GND button** — appears once a station is selected; toggles a much
-  tighter 2nm-radius zoom for actually reading the runway/taxiway layout.
-  The 10nm approach scope keeps nearby traffic in view, but the ground
-  diagram itself is only ~1.2nm across, so at 10nm it's a barely-visible
-  smudge - GND is the difference between "traffic context" and "can
-  actually read the taxiway labels for a taxi instruction."
-- **Scroll/pinch to zoom** — free zoom on top of the station-select and
-  GND presets, in both the overview and a selected station's scope.
-  Zooms toward the cursor (the point under it stays under it) rather
-  than re-centering on the station, same as any other map UI. Bounded to
-  0.05nm–60nm so it can't be scrolled into something degenerate.
-- **📝 Notepad** — a plain scratch pad, saved to that browser's
-  `localStorage` only (not shared between controllers or devices).
-- **🎙️ ATIS Generator** — pick an information letter, QNH, arrival/departure
-  runway(s) (populated from the selected station), and optional remarks;
-  "Copy ATIS text" composes a broadcast in the same phraseology
-  `src/bot/AtisBot.js` uses for the real spoken ATIS, and copies it to the
-  clipboard. Purely a text-composition convenience - it doesn't talk to
-  the bot fleet or change any bot's actual behavior.
-- **📐 Vectoring Tool** — click twice on the radar to draw a heading/
-  distance vector (stays armed for the next one until you click "Stop
-  drawing"); vectors are stored in the same NM coordinate space as
-  everything else on the map, so they stay correctly placed across
-  different stations' zoomed views. "Copy as JSON"/"Paste JSON" round-trip
-  the current vector set through the clipboard for sharing between
-  controllers - there's no server-side storage for these, they're local
-  to each browser tab.
-- **📋 Flight Strips** — every aircraft an ATC bot currently has a strip
-  for, fleet-wide. See below for where this data comes from and why it
-  isn't split into per-airport Departures/Arrivals tables.
-
-Verified end-to-end with a real headless Chromium session (not just
-static analysis): every overlay opens/closes correctly, the station
-selector correctly re-zooms and updates the info line, the ATIS generator
-produces well-formed text and copies it, a drawn vector actually renders,
-and switching to the Radar tab and back doesn't throw any console errors.
 
 #### Flight strips
 

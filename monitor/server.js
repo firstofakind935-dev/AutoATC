@@ -157,7 +157,7 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
   res.json(freshPositions());
 });
 
-// Same data, for the radar view (see public/radar.js), used by both the
+// Same data, for the radar view (see public/radar24/src/main.js), used by both the
 // password-gated dashboard and the public radar-only page at /radar - a
 // separate route rather than reusing /api/positions above because that
 // one expects a Bearer token (a server-to-server credential) rather than
@@ -308,18 +308,35 @@ app.get('/api/dashboard/flightstrips', (req, res) => {
 // (those stay behind requireDashboardAuth below). Registered before that
 // gate, and before express.static claims '/', so these specific routes
 // are reachable with no credentials regardless of dashboard auth config.
-app.get(['/radar', '/radar/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'radar-view.html')));
+// This is the "24radar" carbon-copy radar (see public/radar24/) - a
+// near-verbatim port of the GPLv3-licensed t-arpin/atc24radar UI with only
+// its data source swapped for AutoATC's own position feed. The dashboard's
+// Radar tab embeds this same page in an iframe, so there is one radar
+// implementation, not two.
+// Redirect (not sendFile) so the browser's URL actually becomes /radar24/ -
+// radar24/index.html uses relative paths (public/style.css, src/main.js,
+// etc.) that must resolve against that directory, not against /radar.
+app.get(['/radar', '/radar/'], (req, res) => res.redirect('/radar24/'));
 
-// The handful of static assets the radar view needs (chart data, the
-// world-map image, and the radar script/styles themselves) are plain
-// reference data or code, not sensitive - unlike index.html/app.js
-// (which pull in the Logs UI) or the API routes above, so these are
-// exempted from dashboard auth by name rather than opening the whole
-// public/ directory.
-const PUBLIC_STATIC_FILES = ['radar.js', 'style.css', 'airports.json', 'groundlayouts.json', 'worldmap.json', 'worldmap.png'];
-for (const file of PUBLIC_STATIC_FILES) {
-  app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
-}
+// The radar24 bundle (HTML/CSS/JS, ground-chart SVGs, plane icons, static
+// airport/fix reference data) is plain reference data or code, not
+// sensitive - unlike index.html/app.js (which pull in the Logs UI) or the
+// API routes above - so the whole directory is exempted from dashboard
+// auth, mirroring the /radar route above and the /api/dashboard/* routes.
+app.use('/radar24', express.static(path.join(__dirname, 'public', 'radar24')));
+
+// Stand-ins for the two endpoints the ported radar24/src/main.js expects
+// from the upstream 24radar.xyz backend (ATIS-letter auto-fetch and the
+// approach-plate listing) that AutoATC has no equivalent for - AutoATC only
+// has ground charts, not instrument approach plates, and no ATIS-letter
+// tracking. main.js already handles a 404/empty response gracefully (see
+// atisLetter()/loadApproachList()), so these degrade rather than crash.
+app.get('/radar24-api/atis/:icao', (req, res) => {
+  res.status(404).json({ error: 'ATIS letter tracking is not available in AutoATC' });
+});
+app.get('/radar24-api/approaches/:icao', (req, res) => {
+  res.json([]);
+});
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
 
