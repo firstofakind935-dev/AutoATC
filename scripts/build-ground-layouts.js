@@ -316,7 +316,10 @@ function processAirport(icao, chart, svgPath) {
     groups.get(l.text).push(l);
   }
 
+  // First pass: build each taxiway's own chain (its repeated-label
+  // centerline) without connecting it to anything else yet.
   const segments = [];
+  const chains = []; // { text, chain: [{x,y}, ...] }
   for (const [text, occurrences] of groups) {
     // De-duplicate near-identical duplicate label glyphs (Inkscape often
     // stacks a text node and an outline copy at ~the same spot).
@@ -350,27 +353,61 @@ function processAirport(icao, chart, svgPath) {
       }
     }
     points[text] = toNmOffset(chain[0]);
+    chains.push({ text, chain });
+  }
 
-    // Connect whichever end of this taxiway's chain sits closest to the
-    // runway centerline to its projection there - that's the physical link
-    // a connector (or a lone branch taxiway like "A") represents. Skip if
-    // the nearest approach is implausibly far (not actually this runway's
-    // taxiway - e.g. a label that happens to collide with the pattern).
-    let bestEnd = null;
-    let bestProj = null;
-    let bestEndDist = Infinity;
-    for (const end of [chain[0], chain[chain.length - 1]]) {
-      const proj = projectOntoSegment(end, ref1.point, ref2.point);
-      if (!proj) continue;
-      const d = dist(end, proj);
-      if (d < bestEndDist) {
-        bestEndDist = d;
-        bestEnd = end;
-        bestProj = proj;
+  // Second pass: connect each taxiway's free ends to whatever it's
+  // actually nearest to - the runway centerline, OR another taxiway's
+  // chain. Earlier this always projected onto the runway, which drew a
+  // false direct connection for taxiways that in the real chart only
+  // reach an *adjacent* taxiway (e.g. an outer parallel taxiway that
+  // connects to an inner one, which is what actually touches the
+  // runway) - real airports commonly have exactly this nested-parallel
+  // shape, so picking the true nearest neighbor here matters.
+  for (const { text, chain } of chains) {
+    const ends = chain.length > 1 ? [chain[0], chain[chain.length - 1]] : [chain[0]];
+    for (const end of ends) {
+      let best = null;
+      let bestDist = Infinity;
+      let bestKind = null;
+
+      const rwyProj = projectOntoSegment(end, ref1.point, ref2.point);
+      if (rwyProj) {
+        const d = dist(end, rwyProj);
+        if (d < bestDist) {
+          bestDist = d;
+          best = rwyProj;
+          bestKind = 'rwy';
+        }
       }
-    }
-    if (bestEnd && bestEndDist < localHalf * 0.6) {
-      segments.push({ label: `${text}-rwy`, a: toNmOffset(bestEnd), b: toNmOffset(bestProj) });
+
+      for (const other of chains) {
+        if (other.text === text) continue;
+        for (let i = 0; i + 1 < other.chain.length; i++) {
+          const proj = projectOntoSegment(end, other.chain[i], other.chain[i + 1]);
+          if (!proj) continue;
+          const d = dist(end, proj);
+          if (d < bestDist) {
+            bestDist = d;
+            best = proj;
+            bestKind = other.text;
+          }
+        }
+        if (other.chain.length === 1) {
+          const d = dist(end, other.chain[0]);
+          if (d < bestDist) {
+            bestDist = d;
+            best = other.chain[0];
+            bestKind = other.text;
+          }
+        }
+      }
+
+      // Skip if the nearest thing is implausibly far - not actually
+      // connected to anything on this chart, just a coincidental label.
+      if (best && bestDist < localHalf * 0.3) {
+        segments.push({ label: `${text}-${bestKind}`, a: toNmOffset(end), b: toNmOffset(best) });
+      }
     }
   }
 
