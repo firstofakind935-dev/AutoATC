@@ -621,6 +621,11 @@ with:
   diagram itself is only ~1.2nm across, so at 10nm it's a barely-visible
   smudge - GND is the difference between "traffic context" and "can
   actually read the taxiway labels for a taxi instruction."
+- **Scroll/pinch to zoom** — free zoom on top of the station-select and
+  GND presets, in both the overview and a selected station's scope.
+  Zooms toward the cursor (the point under it stays under it) rather
+  than re-centering on the station, same as any other map UI. Bounded to
+  0.05nm–60nm so it can't be scrolled into something degenerate.
 - **📝 Notepad** — a plain scratch pad, saved to that browser's
   `localStorage` only (not shared between controllers or devices).
 - **🎙️ ATIS Generator** — pick an information letter, QNH, arrival/departure

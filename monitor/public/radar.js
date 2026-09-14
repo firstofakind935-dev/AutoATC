@@ -85,6 +85,41 @@
     draw();
   }
 
+  // Free zoom on top of the preset scopes above - scroll/pinch to zoom in
+  // past the GND preset for a single gate, or out past the overview to
+  // see the whole map smaller. Zooms toward the cursor (the NM point under
+  // the pointer stays under the pointer) rather than re-centering on the
+  // station, since that's what every other map UI does and re-centering
+  // on every scroll tick would make it impossible to pan by zooming.
+  const MIN_RADIUS_NM = 0.05;
+  const MAX_RADIUS_NM = 60;
+
+  function zoomAt(pixel, factor) {
+    if (!view) return;
+    const pivot = unproject(pixel);
+    const newRadius = Math.min(MAX_RADIUS_NM, Math.max(MIN_RADIUS_NM, view.radiusNm * factor));
+    const ratio = newRadius / view.radiusNm;
+    view.centerNorth = pivot.north - (pivot.north - view.centerNorth) * ratio;
+    view.centerEast = pivot.east - (pivot.east - view.centerEast) * ratio;
+    view.radiusNm = newRadius;
+    groundZoomBtn.classList.remove('active'); // no longer necessarily at the GND preset
+    draw();
+  }
+
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      if (!view) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const pixel = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      // deltaY > 0 (scrolling down / pinching out) zooms out.
+      const factor = Math.exp(e.deltaY * 0.0015);
+      zoomAt(pixel, factor);
+    },
+    { passive: false }
+  );
+
   // Square viewport (equal NM per pixel in both directions, so bearings
   // aren't distorted) centered on `view`.
   function project(nm) {
