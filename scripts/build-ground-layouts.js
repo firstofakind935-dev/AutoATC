@@ -344,6 +344,26 @@ function splitDesignator(designator) {
   return m ? { num: m[1], suffix: m[2] } : { num: designator, suffix: '' };
 }
 
+// ---------- taxiway-label filtering ----------
+// Real chart labels are read straight off the chart for display, same as
+// runway designators - this is just picking which text tokens are taxiway
+// letters/connectors (as opposed to stand numbers, degree headings, length
+// callouts, or hot-spot circle codes) to draw on the traced diagram, not a
+// topology guess like the label-position reconstruction this replaced.
+
+function isHotspotCode(text) {
+  return /^HS\d*$/.test(text);
+}
+
+function isTaxiwayLabel(text) {
+  if (isHotspotCode(text)) return false;
+  if (text === 'N') return false; // compass rose marker
+  // Taxiway letters (single or double), optionally with a connector
+  // number (D1, E12, L2). Excludes plain numbers (stand numbers / runway
+  // designators, handled separately) and degree/length tokens.
+  return /^[A-Z]{1,2}\d{0,2}$/.test(text) && text.length <= 4;
+}
+
 // ---------- main per-airport processing ----------
 
 function processAirport(icao, chart, svgPath) {
@@ -473,6 +493,21 @@ function processAirport(icao, chart, svgPath) {
     return pt.x >= bbox.minX && pt.x <= bbox.maxX && pt.y >= bbox.minY && pt.y <= bbox.maxY;
   }
 
+  // Taxiway letter/connector labels, read straight off the chart - kept as
+  // every real occurrence (the real charts repeat a taxiway's letter
+  // periodically along its length so it's identifiable from a glance at
+  // any point), not deduplicated to one label per taxiway. Near-identical
+  // stacked duplicates (Inkscape sometimes doubles a text node with an
+  // outline copy at ~the same spot) are collapsed.
+  const taxiwayLabels = [];
+  const seenTaxiwayPoints = [];
+  for (const l of labels) {
+    if (!isTaxiwayLabel(l.text) || !insideBbox(l)) continue;
+    if (seenTaxiwayPoints.some((s) => s.text === l.text && dist(s, l) < 1)) continue;
+    seenTaxiwayPoints.push({ text: l.text, x: l.x, y: l.y });
+    taxiwayLabels.push({ text: l.text, ...toNmOffset(l) });
+  }
+
   // Trace every shape whose points fall inside the content border (minus
   // the border rect itself, which would otherwise draw a big frame).
   const tracedPaths = [];
@@ -508,6 +543,7 @@ function processAirport(icao, chart, svgPath) {
     points,
     runwayLines,
     tracedPaths,
+    taxiwayLabels,
   };
 }
 
@@ -528,7 +564,7 @@ function main() {
     try {
       const layout = processAirport(chart.icao, chart, svgPath);
       results[chart.icao] = layout;
-      summary.push(`${chart.icao}: ${layout.calibrated ? `ok (${layout.tracedPaths.length} traced shapes, ref ${layout.referenceRunway.join('/')})` : `SKIPPED - ${layout.reason}`}`);
+      summary.push(`${chart.icao}: ${layout.calibrated ? `ok (${layout.tracedPaths.length} traced shapes, ${layout.taxiwayLabels.length} taxiway labels, ref ${layout.referenceRunway.join('/')})` : `SKIPPED - ${layout.reason}`}`);
     } catch (err) {
       summary.push(`${chart.icao}: ERROR ${err.stack || err.message}`);
     }

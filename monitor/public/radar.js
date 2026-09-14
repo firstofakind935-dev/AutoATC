@@ -203,6 +203,16 @@
     }
     ctx.stroke();
 
+    // Taxiway letter/connector labels, read straight off the chart at
+    // their real position (every real occurrence, not deduplicated - a
+    // taxiway's letter repeats along its length on the real chart too).
+    ctx.font = '9px -apple-system, sans-serif';
+    ctx.fillStyle = '#9aa3b2';
+    for (const label of layout.taxiwayLabels || []) {
+      const p = toScreen(center, label);
+      ctx.fillText(label.text, p.x + 3, p.y - 3);
+    }
+
     ctx.strokeStyle = '#e4e7ec';
     ctx.lineWidth = 2;
     ctx.font = '10px -apple-system, sans-serif';

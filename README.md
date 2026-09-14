@@ -487,6 +487,11 @@ shapes. This version traces the chart's own vector line art instead:
    traced shape - this is what makes the on-screen orientation correct
    regardless of which way the original chart happened to be drawn (these
    charts are generally *not* drawn north-up).
+5. Picks out every taxiway letter/connector label (e.g. "D", "E1") from
+   the same text extraction and keeps every real occurrence, at its real
+   position, for display - a taxiway's letter repeats along its length on
+   the real chart too, so this draws the same way rather than
+   deduplicating to one label per taxiway.
 
 Rendering is stroke-only (no fill), so what were solid black/gray chart
 fills come out as outlines - close to how a real ATC ground radar overlay
