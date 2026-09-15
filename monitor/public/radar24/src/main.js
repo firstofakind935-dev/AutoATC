@@ -2274,14 +2274,6 @@ function updateAircraftLayer(data) {
 
             document.addEventListener('mousemove', e => {
                 if (isDraggingLabel.bool == true) labelMove(e, label, svg, group, start);
-                if (isMeasuring == true) {
-
-                    const pt = svg.createSVGPoint();
-                    pt.x = e.clientX;
-                    pt.y = e.clientY;
-                    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
-                    updateMeasuringTool(svgP.x, svgP.y);
-                }
             });
 
             document.addEventListener('mouseup', e => {
@@ -2967,6 +2959,19 @@ function fetchMapLayer(container) {
             });
 
             svg.addEventListener('mousemove', e => {
+                // Live-updates the in-progress vector's free end to follow the
+                // cursor between the anchoring click and the finishing one -
+                // registered here (not per-aircraft rendered, see the label
+                // mousemove handler above) so it works even before any
+                // aircraft has loaded.
+                if (isMeasuring) {
+                    const pt = svg.createSVGPoint();
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+                    updateMeasuringTool(svgP.x, svgP.y);
+                }
+
                 if (!isPanning) return;
 
                 const rect = container.getBoundingClientRect();
