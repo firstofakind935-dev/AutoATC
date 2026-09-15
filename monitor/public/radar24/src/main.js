@@ -1075,9 +1075,9 @@ const vectorDistance = document.getElementById('vector-distance');
 const vectorDirOnly = document.getElementById('vector-direction-only');
 
 // AutoATC adapter: upstream defaults this to true, meaning a freshly drawn
-// vector is deleted again the instant the second click finishes it, until
-// the user finds and clicks "Start" in the Vector overlay first - a
-// first-time user clicking twice to draw a vector (the obvious thing to
+// vector is deleted again the instant the second double-click finishes it,
+// until the user finds and clicks "Start" in the Vector overlay first - a
+// first-time user double-clicking to draw a vector (the obvious thing to
 // try) sees nothing stick and reasonably concludes the tool is broken.
 // Default to persisting instead; "Stop" (see the matching button-label
 // flip in index.html) still toggles the original quick-preview/delete mode
@@ -2850,17 +2850,14 @@ function fetchMapLayer(container) {
             });
 
             //measuring tool
-            // AutoATC adapter: upstream required a double-click to drop each
-            // endpoint (double-click start, double-click end - 4 clicks per
-            // vector). Single click instead, so drawing a vector is just
-            // click-click - see doVectorDelete above for the matching
-            // persist-by-default fix.
-            svg.addEventListener('click', (e) => {
+            // Double-click to anchor the start point, move (the line follows
+            // the cursor live), double-click again to drop the end point.
+            svg.addEventListener('dblclick', (e) => {
                 if (e.target.getAttribute('id') === 'tspan1' || e.target.getAttribute('id') === 'tspan2' || e.target.getAttribute('id') === 'tspan3') return;
-                // Clicking on an already-placed vector shouldn't start a new
-                // one on top of it - see the dblclick handler below (double
-                // click a placed vector to delete it) for what that click is
-                // actually for.
+                // Double-clicking an already-placed vector shouldn't start a
+                // new one on top of it - it deletes it instead, via the
+                // group's own dblclick handler below (which stops this event
+                // from reaching here at all).
                 if (!isMeasuring && e.target.closest('.vector')) return;
                 const pt = svg.createSVGPoint();
                 pt.x = e.clientX;
@@ -2944,8 +2941,13 @@ function fetchMapLayer(container) {
                         }
                     });
 
-                    // Double-click a placed vector to delete it.
+                    // Double-click a placed vector to delete it - but not
+                    // while it's still the in-progress vector being measured
+                    // (the finishing double-click often lands right on the
+                    // live line itself); let that one bubble up to the svg
+                    // handler above to complete the vector instead.
                     group.addEventListener('dblclick', (ev) => {
+                        if (isMeasuring && group.contains(measuringline)) return;
                         ev.stopPropagation();
                         if (hoveredVector === group) hoveredVector = null;
                         group.remove();
