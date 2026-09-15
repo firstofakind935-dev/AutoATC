@@ -1,0 +1,17 @@
+{
+  "icao": "IGCG",
+  "iata": "GCG",
+  "name": "Grindavik Coast Guard Station",
+  "location": "Grindavik, Grindavik",
+  "elevationFt": "0'",
+  "coordinates": "N41 52.3 W000 10.6",
+  "runways": [],
+  "frequencies": [],
+  "groundLayout": "Grindavik Coast Guard Station is a heliport - a single helipad, not a runway. No taxiway letters/system exist here - never invent one.",
+  "otherLabels": [
+    "IGCG/GCG",
+    "Fuel",
+    "Elev 0'"
+  ],
+  "sourceFile": "Grindavik/Grindavik Coast Guard/IGCG Heliport Chart.svg"
+}

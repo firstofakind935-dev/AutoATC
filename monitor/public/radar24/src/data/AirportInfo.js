@@ -332,6 +332,15 @@ const airports = {
         "ChartsLinkPath": null,
         "frequency": { "DEL": null, "GND": null, "TWR": null, "APP": null, "CTR": null }
     },
+    "IGCG": {
+        "name": "Grindavik Coast Guard Station",
+        "runways": [],
+        "noLanding": [],
+        "noTakeoff": [],
+        "canUseOpposite": false,
+        "ChartsLinkPath": null,
+        "frequency": { "DEL": null, "GND": null, "TWR": null, "APP": null, "CTR": null }
+    },
     "ITEY": {
         "name": "Pingeyri Airport",
         "runways": ["31", "13"],

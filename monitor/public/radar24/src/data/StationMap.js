@@ -34,6 +34,7 @@ export default {
   // these (24radar doesn't track them at all), so each defaults to UNICOM
   // self-control rather than guessing a parent facility.
   "IBRD": "UNICOM",
+  "IGCG": "UNICOM",
   "IKFL": "UNICOM",
   "ITEY": "UNICOM",
   "SHV": "UNICOM",

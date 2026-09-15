@@ -28,9 +28,10 @@ export default{
     // map as rough, not precise. zoom/r are placeholder defaults.
     "IBAR": { zoom: 0.01, x: 251.2702, y: 272.0383, r: 0 },
     "IBRD": { zoom: 0.01, x: -61.6464, y: -233.9458, r: 0 },
-    "IKFL": { zoom: 0.08, x: -455.3412, y: 19.1722, r: 0 },
+    "IGCG": { zoom: 0.0535, x: -425.0931, y: -65.7752, r: 0 },
+    "IKFL": { zoom: 0.08, x: -434.0555, y: -28.1906, r: 0 },
     "ITEY": { zoom: 0.0415, x: -431.5499, y: -39.2732, r: 0 },
     "IUFO": { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
     "SHV": { zoom: 0.01, x: 225.4261, y: -201.4141, r: 0 },
-    "TVO": { zoom: 0.0211, x: -373.4975, y: -123.0776, r: 0 }
+    "TVO": { zoom: 0.0211, x: -425.0931, y: -55.6562, r: 0 }
 }

@@ -463,6 +463,14 @@
     "frequencies": []
   },
   {
+    "icao": "IGCG",
+    "name": "Grindavik Coast Guard Station",
+    "lat": 41.87166666666667,
+    "lon": -0.17666666666666667,
+    "runways": [],
+    "frequencies": []
+  },
+  {
     "icao": "ITEY",
     "name": "Pingeyri Airport",
     "lat": 41.78,

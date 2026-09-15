@@ -417,6 +417,32 @@ const SYNTHETIC_RUNWAYS = {
   ],
 };
 
+// Airports with no runway threshold labels to calibrate rotation off of at
+// all (a small heliport with a single pad, not a runway) - no orientation
+// reference exists on the chart, so these fall back to drawing the shapes
+// as-is (chart-local "up" = diagram "up", i.e. an assumed north-up chart),
+// centered on the shapes' own bounding box at the same 0.6 NM half-size
+// fallback every other airport without a known real length already uses.
+const NO_CALIBRATION = new Set(['IGCG']);
+
+function noCalibration(layerShapes) {
+  const allShapes = [...layerShapes.runwaysBuildings, ...layerShapes.taxiwaysRamps, ...layerShapes.taxiwayLines];
+  const pts = allShapes.flat();
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const midpoint = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const localHalf = Math.max(maxX - minX, maxY - minY) / 2;
+  const rotationOffset = 0;
+  function toNmOffset(pt, halfNm) {
+    const dx = pt.x - midpoint.x, dy = pt.y - midpoint.y;
+    const nm = (Math.hypot(dx, dy) / localHalf) * halfNm;
+    if (nm < 1e-9) return { north: 0, east: 0 };
+    // chart-local +y is "down" on the page; treat chart-local up as north.
+    return { north: (-dy / Math.hypot(dx, dy)) * nm, east: (dx / Math.hypot(dx, dy)) * nm };
+  }
+  return { ref1: { designator: '(none)' }, ref2: { designator: '(none)' }, midpoint, rotationOffset, toNmOffset, resolved: [] };
+}
+
 function main() {
   const chart = JSON.parse(fs.readFileSync(path.join(CHARTS_DIR, `${ICAO}.json`), 'utf8'));
   const svgPath = path.join(SOURCE_ROOT, chart.sourceFile);
@@ -440,12 +466,18 @@ function main() {
   // runway pair if the chart data has it, else the build-ground-layouts.js
   // default of 0.6 NM (drawn at a fixed on-screen size rather than true
   // scale, same as every other airport here).
-  const cal = calibrate(labels, runwaysForCalibration);
   let halfNm = 0.6;
-  const ref1Data = runwaysForCalibration.find((r) => r.designator === cal.ref1.designator);
-  if (ref1Data && ref1Data.length && ref1Data.length.meters) {
-    const meters = parseFloat(ref1Data.length.meters);
-    if (!Number.isNaN(meters)) halfNm = (meters / 1852) / 2;
+  let cal;
+  if (NO_CALIBRATION.has(ICAO)) {
+    console.log(`${ICAO} has no runway threshold labels to calibrate off of (heliport/no-runway chart) - falling back to an assumed north-up chart at the 0.6 NM default half-size`);
+    cal = noCalibration(layerShapes);
+  } else {
+    cal = calibrate(labels, runwaysForCalibration);
+    const ref1Data = runwaysForCalibration.find((r) => r.designator === cal.ref1.designator);
+    if (ref1Data && ref1Data.length && ref1Data.length.meters) {
+      const meters = parseFloat(ref1Data.length.meters);
+      if (!Number.isNaN(meters)) halfNm = (meters / 1852) / 2;
+    }
   }
   console.log(`Reference runway ${cal.ref1.designator}/${cal.ref2.designator}, half-length ${halfNm.toFixed(4)} NM, rotation offset ${cal.rotationOffset.toFixed(2)}deg`);
 
