@@ -2857,6 +2857,11 @@ function fetchMapLayer(container) {
             // persist-by-default fix.
             svg.addEventListener('click', (e) => {
                 if (e.target.getAttribute('id') === 'tspan1' || e.target.getAttribute('id') === 'tspan2' || e.target.getAttribute('id') === 'tspan3') return;
+                // Clicking on an already-placed vector shouldn't start a new
+                // one on top of it - see the dblclick handler below (double
+                // click a placed vector to delete it) for what that click is
+                // actually for.
+                if (!isMeasuring && e.target.closest('.vector')) return;
                 const pt = svg.createSVGPoint();
                 pt.x = e.clientX;
                 pt.y = e.clientY;
@@ -2865,6 +2870,11 @@ function fetchMapLayer(container) {
                 const y = svgP.y;
 
                 if (!isMeasuring) {
+                    // Only one vector at a time - starting a new one replaces
+                    // whatever was already placed.
+                    document.getElementById('vector-container').innerHTML = '';
+                    hoveredVector = null;
+
                     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     group.setAttribute('class', 'vector');
 
@@ -2932,6 +2942,13 @@ function fetchMapLayer(container) {
                         if (hoveredVector === group) {
                             hoveredVector = null;
                         }
+                    });
+
+                    // Double-click a placed vector to delete it.
+                    group.addEventListener('dblclick', (ev) => {
+                        ev.stopPropagation();
+                        if (hoveredVector === group) hoveredVector = null;
+                        group.remove();
                     });
 
                     group.appendChild(measuringline);
