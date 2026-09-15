@@ -1075,9 +1075,9 @@ const vectorDistance = document.getElementById('vector-distance');
 const vectorDirOnly = document.getElementById('vector-direction-only');
 
 // AutoATC adapter: upstream defaults this to true, meaning a freshly drawn
-// vector is deleted again the instant the second double-click finishes it,
-// until the user finds and clicks "Start" in the Vector overlay first - a
-// first-time user double-clicking to draw a vector (the obvious thing to
+// vector is deleted again the instant the second click finishes it, until
+// the user finds and clicks "Start" in the Vector overlay first - a
+// first-time user clicking twice to draw a vector (the obvious thing to
 // try) sees nothing stick and reasonably concludes the tool is broken.
 // Default to persisting instead; "Stop" (see the matching button-label
 // flip in index.html) still toggles the original quick-preview/delete mode
@@ -2858,7 +2858,12 @@ function fetchMapLayer(container) {
             });
 
             //measuring tool
-            svg.addEventListener('dblclick', (e) => {
+            // AutoATC adapter: upstream required a double-click to drop each
+            // endpoint (double-click start, double-click end - 4 clicks per
+            // vector). Single click instead, so drawing a vector is just
+            // click-click - see doVectorDelete above for the matching
+            // persist-by-default fix.
+            svg.addEventListener('click', (e) => {
                 if (e.target.getAttribute('id') === 'tspan1' || e.target.getAttribute('id') === 'tspan2' || e.target.getAttribute('id') === 'tspan3') return;
                 const pt = svg.createSVGPoint();
                 pt.x = e.clientX;
@@ -2945,6 +2950,12 @@ function fetchMapLayer(container) {
                     document.getElementById('vector-container').insertAdjacentElement("afterbegin", group);
                     isMeasuring = true;
                 } else {
+                    // Finalize the endpoint here rather than relying solely on
+                    // the mousemove-driven update below (registered per
+                    // aircraft rendered - not yet attached if this is the
+                    // first vector drawn before any aircraft has loaded).
+                    updateMeasuringTool(x, y);
+
                     // Clear all elements and reset state
                     if (doVectorDelete) {
                         document.getElementById('vector-container').querySelector('.vector').remove();
