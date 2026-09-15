@@ -235,7 +235,9 @@ const WANTED_LAYERS = {
   'Taxiway Lines': 'taxiwayLines',
 };
 
-function extractChart(svgPath) {
+const SKIP_LAYERS = new Set(['Labels', 'Guides', 'Screenshot', 'Layout']);
+
+function extractChart(svgPath, flatMode) {
   let xml = fs.readFileSync(svgPath, 'utf8');
   xml = xml.replace(/<image[\s\S]*?\/>/g, '<!-- image stripped -->');
   const doc = new DOMParser({ onError: () => {} }).parseFromString(xml, 'image/svg+xml');
@@ -285,7 +287,14 @@ function extractChart(svgPath) {
     if (tag === 'g') {
       const label = node.getAttribute('inkscape:label');
       if (label && WANTED_LAYERS[label]) layer = WANTED_LAYERS[label];
-      else if (label) layer = null; // entered a named layer we don't want (Screenshot/Layout/Labels/Guides) - don't inherit an outer wanted layer into it
+      else if (label && SKIP_LAYERS.has(label)) layer = null;
+      // Simple charts (e.g. a seaplane base with just docks and a water
+      // lane, no separate taxiway system) sometimes use one flat,
+      // generically-named layer instead of the usual three - flatMode
+      // treats any such unrecognized-but-not-explicitly-skipped layer as
+      // runway/building line art rather than dropping it.
+      else if (label && flatMode) layer = 'runwaysBuildings';
+      else if (label) layer = null;
     }
 
     if (tag === 'text' || tag === 'tspan') {
@@ -329,16 +338,24 @@ function calibrate(labels, runways) {
     const headingText = rwy.heading.replace('°', '');
     const headingLabels = labels.filter((l) => l.text === headingText || l.text === rwy.heading);
     const designatorLabels = labels.filter((l) => l.text === rwy.designator);
-    if (!headingLabels.length || !designatorLabels.length) continue;
-    let best = null, bestDist = Infinity;
-    for (const h of headingLabels) {
-      for (const d of designatorLabels) {
-        const dd = dist(h, d);
-        if (dd < bestDist) { bestDist = dd; best = d; }
+    if (!designatorLabels.length) continue;
+    if (headingLabels.length) {
+      let best = null, bestDist = Infinity;
+      for (const h of headingLabels) {
+        for (const d of designatorLabels) {
+          const dd = dist(h, d);
+          if (dd < bestDist) { bestDist = dd; best = d; }
+        }
       }
-    }
-    if (best && bestDist < 20) {
-      resolved.push({ designator: rwy.designator, headingDeg: parseFloat(headingText), point: best });
+      if (best && bestDist < 20) {
+        resolved.push({ designator: rwy.designator, headingDeg: parseFloat(headingText), point: best });
+      }
+    } else {
+      // No separate heading-number label on the chart (e.g. a water lane
+      // labeled only "4W"/"21W", not annotated with "040"/"220" the way a
+      // real runway threshold is) - use the designator's own label
+      // position directly.
+      resolved.push({ designator: rwy.designator, headingDeg: parseFloat(headingText), point: designatorLabels[0] });
     }
   }
   if (resolved.length < 2) throw new Error(`only ${resolved.length} runway threshold(s) resolved`);
@@ -382,6 +399,24 @@ function serializePath(subpath) {
   return subpath.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(3)} ${p.y.toFixed(3)}`).join('') ;
 }
 
+// Some airports (e.g. a seaplane base with a marked water lane instead of
+// a paved runway) have no chart.runways entries at all to calibrate off
+// of - their lane's two ends are still labeled on the chart (just not as
+// a conventional runway), so this supplies a synthetic designator/heading
+// pair by hand, read directly off the source chart, for calibrate() to
+// use in place of chart.runways.
+const SYNTHETIC_RUNWAYS = {
+  // Tavaro Seabase (TVO): water landing lane "4W/21W" (the W meaning
+  // water) - runway-number convention headings (04 -> ~040deg, reciprocal
+  // 22 -> 220deg; the chart labels it "21W" but the two ends must be an
+  // exact 180deg apart for calibrate()'s reciprocal-pair match, and the
+  // lane's own drawn geometry confirms ~040/~220, not ~040/~210).
+  TVO: [
+    { designator: '4W', heading: '040°', length: { meters: '305' } },
+    { designator: '21W', heading: '220°', length: { meters: '305' } },
+  ],
+};
+
 function main() {
   const chart = JSON.parse(fs.readFileSync(path.join(CHARTS_DIR, `${ICAO}.json`), 'utf8'));
   const svgPath = path.join(SOURCE_ROOT, chart.sourceFile);
@@ -390,16 +425,24 @@ function main() {
     process.exit(1);
   }
 
-  const { labels, layerShapes } = extractChart(svgPath);
+  let { labels, layerShapes } = extractChart(svgPath, false);
+  let totalShapes = layerShapes.runwaysBuildings.length + layerShapes.taxiwaysRamps.length + layerShapes.taxiwayLines.length;
+  if (totalShapes === 0) {
+    console.log('No content found in the usual named layers - retrying in flat mode (simple chart, no Runways/Buildings-Taxiways/Aprons-Taxiway Lines layer split)');
+    ({ labels, layerShapes } = extractChart(svgPath, true));
+  }
   console.log(`Extracted ${labels.length} labels, ${layerShapes.runwaysBuildings.length} runway/building shapes, ${layerShapes.taxiwaysRamps.length} taxiway/apron shapes, ${layerShapes.taxiwayLines.length} taxiway-line shapes`);
+
+  const runwaysForCalibration = chart.runways && chart.runways.length ? chart.runways : (SYNTHETIC_RUNWAYS[ICAO] || []);
+  if (runwaysForCalibration !== chart.runways) console.log(`chart.runways is empty - using this script's hand-supplied SYNTHETIC_RUNWAYS['${ICAO}'] for calibration instead`);
 
   // Runway half-length in NM, from the real known length of the reference
   // runway pair if the chart data has it, else the build-ground-layouts.js
   // default of 0.6 NM (drawn at a fixed on-screen size rather than true
   // scale, same as every other airport here).
-  const cal = calibrate(labels, chart.runways);
+  const cal = calibrate(labels, runwaysForCalibration);
   let halfNm = 0.6;
-  const ref1Data = chart.runways.find((r) => r.designator === cal.ref1.designator);
+  const ref1Data = runwaysForCalibration.find((r) => r.designator === cal.ref1.designator);
   if (ref1Data && ref1Data.length && ref1Data.length.meters) {
     const meters = parseFloat(ref1Data.length.meters);
     if (!Number.isNaN(meters)) halfNm = (meters / 1852) / 2;
