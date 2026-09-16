@@ -459,33 +459,52 @@ function loadAirportData(airportSelector) {
                 loaded.setAttribute('id', 'groundview-svg');
                 loaded.style.display = groundViewVisible ? 'block' : 'none';
 
-                const allShapes = loaded.querySelectorAll('path, rect, circle, polygon, polyline, ellipse');
+                // Style each named layer the same way the dedicated Ground
+                // View side panel's loadGroundChartSVG() does, instead of a
+                // flat black outline for everything - taxiway lines in the
+                // site's established amber accent, ramps/buildings filled
+                // so the facility actually reads as a footprint on the main
+                // map rather than disappearing into the island fill.
+                const getLayer = (label) => Array.from(loaded.querySelectorAll('g')).find(el => el.getAttribute('inkscape:label') === label);
+                const styleLayer = () => {
+                    const taxiwayLines = getLayer('Taxiway Lines');
+                    if (taxiwayLines) {
+                        taxiwayLines.querySelectorAll('path, rect, circle, polygon, polyline, ellipse').forEach(el => {
+                            el.removeAttribute('fill');
+                            el.removeAttribute('style');
+                            el.setAttribute('fill', 'none');
+                            el.setAttribute('stroke', '#927d16');
+                            el.setAttribute('stroke-width', currentZoom * 1);
+                        });
+                    }
+                    const taxiways = getLayer('Taxiways / Ramps');
+                    if (taxiways) {
+                        taxiways.querySelectorAll('path, rect, circle, polygon, polyline, ellipse').forEach(el => {
+                            el.removeAttribute('fill');
+                            el.removeAttribute('style');
+                            el.setAttribute('fill', '#2e2e2eff');
+                            el.setAttribute('stroke', 'none');
+                        });
+                    }
+                    const buildings = getLayer('Runways / Buildings');
+                    if (buildings) {
+                        buildings.querySelectorAll('path, rect, circle, polygon, polyline, ellipse').forEach(el => {
+                            el.removeAttribute('fill');
+                            el.removeAttribute('style');
+                            el.setAttribute('fill', '#0e0e0eff');
+                            el.setAttribute('stroke', 'none');
+                        });
+                    }
+                };
+                styleLayer();
 
-                allShapes.forEach(el => {
-                    // Remove Inkscape-style inline fill and style
-                    el.removeAttribute('fill');
-                    el.removeAttribute('style');
-
-                    // Set a clean white stroke and no fill
-                    el.setAttribute('fill', 'none');
-                    el.setAttribute('stroke', '#000000');
-                    el.setAttribute('stroke-width', currentZoom * 1); // Adjust stroke thickness as needed
-
-                });
-
-                document.addEventListener('wheel', e => {
-                    const allShapes = loaded.querySelectorAll('path, rect, circle, polygon, polyline, ellipse');
-
-                    allShapes.forEach(el => {
-                        // Remove Inkscape-style inline fill and style
-                        el.removeAttribute('fill');
-                        el.removeAttribute('style');
-
-                        // Set a clean white stroke and no fill
-                        el.setAttribute('fill', 'none');
-                        el.setAttribute('stroke', '#000000');
-                        el.setAttribute('stroke-width', currentZoom * 1); // Adjust stroke thickness as needed
-                    });
+                document.addEventListener('wheel', () => {
+                    const taxiwayLines = getLayer('Taxiway Lines');
+                    if (taxiwayLines) {
+                        taxiwayLines.querySelectorAll('path, rect, circle, polygon, polyline, ellipse').forEach(el => {
+                            el.setAttribute('stroke-width', currentZoom * 1);
+                        });
+                    }
                 });
             }, 100);
         })
