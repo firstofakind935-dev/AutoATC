@@ -433,6 +433,32 @@ document.getElementById('airport-dropdown-app').addEventListener('change', () =>
     updateAirportSelector()
 });
 
+// AutoATC fix: upstream injects fetched sub-documents (GROUND.svg,
+// boundaries.svg) as nested <svg> elements. This site's global CSS rule
+// `svg { width: 100%; height: 100% }` (public/style.css) makes every
+// nested <svg> independently fill its parent's full rendered box and
+// compute its OWN scale from its OWN (static) viewBox - completely
+// ignoring the ancestor <svg id="map-svg">'s actual, dynamically-fit
+// viewBox. That's invisible as long as map-svg's auto-fit viewBox stays
+// close to coast.svg's original declared 963.55x920.03 canvas (scale
+// ~1, no visible drift), but any real change to that auto-fit box (e.g.
+// correcting an island's position) throws every nested layer off by a
+// scale-proportional amount - worse the further the content sits from
+// world (0,0). A <g> element doesn't establish a new viewport at all;
+// it just inherits its parent's current coordinate system directly, so
+// swapping the injected <svg> root for a <g> makes it behave as the
+// plain pass-through wrapper it was always meant to be.
+function svgRootToGroup(svgEl) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    for (const attr of svgEl.attributes) {
+        if (attr.name === 'width' || attr.name === 'height' || attr.name === 'viewBox' || attr.name === 'xmlns') continue;
+        g.setAttribute(attr.name, attr.value);
+    }
+    while (svgEl.firstChild) g.appendChild(svgEl.firstChild);
+    svgEl.replaceWith(g);
+    return g;
+}
+
 function loadAirportData(airportSelector) {
     const folder = airportSelector.value;
     const svgPath = `public/assets/maps/${folder}/GROUND.svg`;
@@ -453,8 +479,9 @@ function loadAirportData(airportSelector) {
             setTimeout(() => {
                 mapSvg.innerHTML += svgText;
 
-                const loaded = mapSvg.querySelector('svg:last-of-type');
-                if (!loaded) throw new Error('No <svg> element found in GROUND.svg');
+                const insertedSvg = mapSvg.querySelector('svg:last-of-type');
+                if (!insertedSvg) throw new Error('No <svg> element found in GROUND.svg');
+                const loaded = svgRootToGroup(insertedSvg);
 
                 loaded.setAttribute('id', 'groundview-svg');
                 loaded.style.display = groundViewVisible ? 'block' : 'none';
@@ -3096,8 +3123,9 @@ function fetchMapLayer(container) {
                     const svg = document.getElementById('map-svg')
                     svg.innerHTML += boundariesText;
 
-                    const boundaries = svg.querySelector('svg');
-                    if (!boundaries) throw new Error('No <svg> element found in file');
+                    const insertedBoundaries = svg.querySelector('svg');
+                    if (!insertedBoundaries) throw new Error('No <svg> element found in file');
+                    const boundaries = svgRootToGroup(insertedBoundaries);
 
                     boundaries.setAttribute('id', 'boundaries-svg');
 
