@@ -1,9 +1,11 @@
-// CommonJS copy of monitor/public/radar24/src/data/GroundOffsets.js (a
-// browser ES module, so it can't be require()'d directly from here) - kept
-// in sync by hand. Only the per-airport {x, y} anchor points are used by
-// positionSync.js's coordinate conversion; zoom/r (ground-view zoom level
-// and chart rotation) are irrelevant outside the radar UI and kept here
-// only so this stays a straight copy rather than a divergent subset.
+// Per-airport {x, y} world-coordinate anchor points, in the same raw
+// PTFS/Roblox stud-derived coordinate space AutoATC's now-removed web
+// radar used - kept here because positionSync.js's toTrackXY() still
+// needs them to convert a bot's distanceNm/bearingDeg into flightradar365's
+// x/y. Only x/y are used; zoom/r (ground-view framing) are meaningless
+// outside a radar UI but kept for every entry rather than trimmed down,
+// since this was originally a straight copy of the removed radar's own
+// GroundOffsets.js and there was no reason to diverge the shape.
 module.exports = {
   IBLT: { zoom: 0.00885905028317445, x: -116.75703430175781, y: 171.21368408203125, r: 76.1 },
   IBTH: { zoom: 0.009168518271158612, x: 53.03730392456055, y: -49.046810150146484, r: 0 },

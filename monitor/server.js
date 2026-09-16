@@ -13,9 +13,9 @@ const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || null;
 // anything INGEST_API_KEY can (post fake logs/positions, send CPDLC
 // messages, overwrite flight strips) - a leaked read key is a nuisance, a
 // leaked ingest key is a real problem. Note /api/dashboard/positions below
-// already serves this same data with NO auth at all (it's what the public
-// /radar page itself polls) - only bother handing out this key if you want
-// something less discoverable/more revocable than that open URL.
+// already serves this same data with NO auth at all - only bother handing
+// out this key if you want something less discoverable/more revocable
+// than that open URL.
 const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY || null;
 
 const MAX_LOGS = 5000;
@@ -162,10 +162,10 @@ app.post('/api/position', requireIngestAuth, (req, res) => {
 });
 
 // A bot-assigned radar vector (see flightStrips.js's clearance.assignedHeadingDeg
-// comment) is LLM-produced JSON that ends up feeding SVG math on the radar
-// (monitor/public/radar24/src/main.js) - validate it here rather than trust
-// it, since a stray string or out-of-range value would otherwise draw a
-// garbage line instead of just... not drawing one.
+// comment) is LLM-produced JSON that a radar consuming /api/positions or
+// /api/dashboard/positions below would draw directly - validate it here
+// rather than trust it, since a stray string or out-of-range value would
+// otherwise draw a garbage line instead of just... not drawing one.
 function activeVectorFor(callsign) {
   const strip = flightStrips.get(normalizeCallsign(callsign));
   const heading = strip?.clearance?.assignedHeadingDeg;
@@ -195,13 +195,13 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
   res.json(freshPositions());
 });
 
-// Same data, for the radar view (see public/radar24/src/main.js), used by both the
-// password-gated dashboard and the public radar-only page at /radar - a
-// separate route rather than reusing /api/positions above because that
-// one expects a Bearer token (a server-to-server credential) rather than
-// a browser request. Deliberately not gated by requireDashboardAuth:
-// live traffic position is the whole point of the public page, not
-// something worth protecting the way logs/pilot transcripts are.
+// Same data, for a browser-facing radar to poll directly (no Bearer token
+// required, unlike /api/positions above, which expects a server-to-server
+// credential) - AutoATC's own web radar used to be the only consumer of
+// this; that's been pulled out in favor of a separately-built radar, but
+// the route stays as its integration point. Deliberately not gated by
+// requireDashboardAuth: live traffic position isn't worth protecting the
+// way logs/pilot transcripts are.
 app.get('/api/dashboard/positions', (req, res) => {
   res.json(freshPositions());
 });
@@ -327,10 +327,10 @@ app.post('/api/flightstrip', requireIngestAuth, (req, res) => {
   res.status(204).end();
 });
 
-// Radar-facing read of every currently-tracked strip - used by both the
-// dashboard and the public /radar page, same reasoning as
-// /api/dashboard/positions above for why this isn't behind
-// requireDashboardAuth. Cross-references live positions (if any) purely
+// Radar-facing read of every currently-tracked strip - used by the
+// dashboard's own Strips panel, same reasoning as /api/dashboard/positions
+// above for why this isn't behind requireDashboardAuth. Cross-references
+// live positions (if any) purely
 // to surface aircraftType, which flight strips don't otherwise carry -
 // everything else comes straight from the strip itself.
 app.get('/api/dashboard/flightstrips', (req, res) => {
@@ -349,42 +349,6 @@ app.get('/api/dashboard/flightstrips', (req, res) => {
     })
     .sort((a, b) => a.callsign.localeCompare(b.callsign));
   res.json(result);
-});
-
-// Public radar page (e.g. https://your-monitor.up.railway.app/radar) -
-// live traffic on a map for anyone with the link, without the dashboard's
-// Basic-auth login and without exposing the Logs tab or bot health
-// (those stay behind requireDashboardAuth below). Registered before that
-// gate, and before express.static claims '/', so these specific routes
-// are reachable with no credentials regardless of dashboard auth config.
-// This is the "24radar" carbon-copy radar (see public/radar24/) - a
-// near-verbatim port of the GPLv3-licensed t-arpin/atc24radar UI with only
-// its data source swapped for AutoATC's own position feed. The dashboard's
-// Radar tab embeds this same page in an iframe, so there is one radar
-// implementation, not two.
-// Redirect (not sendFile) so the browser's URL actually becomes /radar24/ -
-// radar24/index.html uses relative paths (public/style.css, src/main.js,
-// etc.) that must resolve against that directory, not against /radar.
-app.get(['/radar', '/radar/'], (req, res) => res.redirect('/radar24/'));
-
-// The radar24 bundle (HTML/CSS/JS, ground-chart SVGs, plane icons, static
-// airport/fix reference data) is plain reference data or code, not
-// sensitive - unlike index.html/app.js (which pull in the Logs UI) or the
-// API routes above - so the whole directory is exempted from dashboard
-// auth, mirroring the /radar route above and the /api/dashboard/* routes.
-app.use('/radar24', express.static(path.join(__dirname, 'public', 'radar24')));
-
-// Stand-ins for the two endpoints the ported radar24/src/main.js expects
-// from the upstream 24radar.xyz backend (ATIS-letter auto-fetch and the
-// approach-plate listing) that AutoATC has no equivalent for - AutoATC only
-// has ground charts, not instrument approach plates, and no ATIS-letter
-// tracking. main.js already handles a 404/empty response gracefully (see
-// atisLetter()/loadApproachList()), so these degrade rather than crash.
-app.get('/radar24-api/atis/:icao', (req, res) => {
-  res.status(404).json({ error: 'ATIS letter tracking is not available in AutoATC' });
-});
-app.get('/radar24-api/approaches/:icao', (req, res) => {
-  res.json([]);
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));

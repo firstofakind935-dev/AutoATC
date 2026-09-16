@@ -378,22 +378,6 @@ optional — omit them and the service just logs a startup warning and runs
 open — but skipping them means anyone who finds the URL can either post
 fake bot logs or read live pilot transcripts, so set them.
 
-#### Public radar page
-
-`https://your-monitor-service.up.railway.app/radar` redirects to
-`/radar24/`, a second, unauthenticated page — the same radar the
-dashboard's Radar tab embeds (see below), at its own URL, with no
-Basic-auth prompt. Share this link freely; it's meant for it. It
-deliberately does **not** include the Logs tab, bot health, or anything
-gated by `DASHBOARD_USERNAME`/`PASSWORD` - those still require the
-dashboard login at `/`. The split is enforced server-side
-(`monitor/server.js`): `/radar`, the whole `monitor/public/radar24/`
-bundle, and the live position endpoint it polls are registered as
-explicitly public routes ahead of the `requireDashboardAuth`-gated static
-middleware that guards everything else (`index.html`, `app.js`, `/api/logs`,
-`/api/status`) - adding a new sensitive endpoint later means remembering
-to gate it, not the other way around.
-
 Then, in the **bot fleet's** `.env` (not the monitor's):
 
 ```
@@ -460,7 +444,7 @@ Two ways to let something outside this project - a website you run
 separately, a script, whatever - read AutoATC's live positions:
 
 ```
-GET /api/dashboard/positions   — already fully public, no auth at all (this is what the /radar page itself polls)
+GET /api/dashboard/positions   — already fully public, no auth at all
 GET /api/external/positions    — same data, gated by EXTERNAL_API_KEY if you set one
 ```
 
@@ -497,9 +481,9 @@ are polar (`distanceNm`/`bearingDeg` from a named `referenceAirport`, see
 above), not raw `x`/`y` in flightradar365's own map coordinate space, and
 `x`/`y` are what its endpoint requires. `toTrackXY()` in that file
 converts between the two using the same per-airport anchor points and
-studs-per-NM constant this project's own radar
-(`monitor/public/radar24/`) uses - a reasonable guess, since both are
-ATC24/PTFS-specific tools, but **unconfirmed against the real site**.
+studs-per-NM constant `src/flightradar365/groundOffsets.js` carries - a
+reasonable guess, since both are ATC24/PTFS-specific tools, but
+**unconfirmed against the real site**.
 Before flipping `FLIGHTRADAR365_TRACK_ENABLED` on, cross-check: does the
 x/y this produces for a known distance/bearing from a well-known airport
 actually land in the right spot on flightradar365's live map? If not,
@@ -510,114 +494,17 @@ turns out to be right.
 
 #### Radar view
 
-The dashboard's **Radar** tab (and the public `/radar` page above) is a
-near-verbatim port of [24Radar](https://github.com/t-arpin/atc24radar), a
-community ATC24/PTFS radar client, licensed GPLv3 (see
-`monitor/public/radar24/LICENSE`) — its actual HTML/CSS/JS and ground-chart
-assets, not a reimplementation, with only the data source swapped:
-AutoATC's own bot-estimated `distanceNm`/`bearingDeg`/`referenceAirport`
-positions (`GET /api/dashboard/positions`) in place of the live PTFS game
-API 24radar.xyz itself polls. Both the dashboard and the public `/radar`
-page load the exact same `monitor/public/radar24/` bundle - the dashboard
-via a same-origin `<iframe>`, so there is one radar implementation, not
-two. The adapter that converts AutoATC's data into the shape this code
-expects lives entirely in `monitor/public/radar24/src/main.js`, clearly
-marked "AutoATC adapter" - everything else in that directory is upstream
-code, copied to keep the port pixel/interaction-faithful.
-
-It includes:
-
-- A full SVG-based enroute map (pan/zoom, world coastline/boundary
-  background) with per-aircraft labels, trails, and click-for-details.
-- **Ground charts** — the real per-airport `GROUND.svg`/`TAXIWAYS.svg`
-  from the community [ptfs-charts](https://github.com/Treelon/ptfs-charts)
-  repo (24radar's own already-processed copies, vendored under
-  `radar24/public/assets/maps/`), for the 20 airports it has chart data
-  for.
-- **The vectoring tool** — double-click the map to start a heading/
-  distance vector, double-click again to finish it; it stays armed for
-  the next one until "Stop" is clicked. Export/Import round-trip the
-  current vector set through a downloaded JSON file.
-- **ATIS Generator**, **Notepad**, **Approach chart selector**, and
-  **Station (topdown) settings** overlays — all upstream 24radar features.
-- **Station/airport select** covering all of AutoATC's 26 airports, not
-  just the 20 the upstream project itself covers. The 7 AutoATC doesn't
-  share with 24radar (`IBAR`, `IBRD`, `IKFL`, `ITEY`, `IUFO`, `SHV`, `TVO`)
-  are marked "(no chart)" in the dropdown: they have no real ground-chart
-  file, and their position on the enroute map is a best-effort estimate
-  (an affine fit from AutoATC's own airport lat/lon against the airports
-  that *do* have a real reference position — see the comment above those
-  7 entries in `radar24/src/data/GroundOffsets.js`), not a measured value
-  like the other 19.
-
-What's genuinely different from upstream, and why:
-
-- **No filed flight plans.** AutoATC's flight strips carry a destination,
-  climb, squawk, and departure frequency - not a filed route, flight
-  rules, or cruise level the way 24radar's `flightPlan` shape does. Every
-  aircraft is synthesized with `flightPlan: null`, which the upstream code
-  already handles gracefully (the Departures/Arrivals tables and
-  flight-plan-based label coloring simply skip aircraft with no plan) -
-  so those tables stay empty rather than showing invented data.
-- **No live wind, ATIS letter, or approach plates.** AutoATC has none of
-  these. Wind is a fixed `000/00` placeholder (upstream would otherwise
-  throw trying to parse a live wind string that doesn't exist); the
-  ATIS-letter auto-fetch and approach-plate listing hit small stub routes
-  (`GET /radar24-api/atis/:icao`, `GET /radar24-api/approaches/:icao`)
-  that report "not available" the same way the real backend would for an
-  airport it has no data for - upstream's own error handling takes it
-  from there.
-- **Callsigns and aircraft types display as-is.** 24radar's `CallsignMap`/
-  `AcftTypeMap` translate PTFS's fictional carrier flavor-text (e.g.
-  "Belta-123") and a curated set of common aircraft types into readable
-  labels; AutoATC's callsigns and types are already realistic strings, so
-  the adapter falls back to displaying them verbatim instead of showing
-  "undefined" when they don't match those upstream lookup tables.
-
-Verified end-to-end with a real headless Chromium session: a synthesized
-aircraft renders at the correct position/heading/label for a given
-distance/bearing/reference-airport, a ground chart loads and styles
-correctly, the vectoring tool's Start/Stop persistence behaves exactly as
-upstream, and the dashboard's Radar tab loads without console errors.
-
-`monitor/public/groundlayouts.json` and `worldmap.png`/`worldmap.json`
-(and the `scripts/build-ground-layouts.js`/`build-worldmap.js` that
-generate them) predate this port and are no longer read by the current
-radar - kept around as-is rather than deleted, in case a future custom
-overlay wants real ground/world geometry again.
-
-Airport coordinates, runway designators, and frequencies are vendored into
-`monitor/public/airports.json` (generated from `data/charts/*.json`)
-rather than read live from the repo, since the monitor is typically
-deployed as its own service with a different root directory and
-shouldn't depend on filesystem access outside itself. **Regenerate this
-file if you add an airport or change a chart's `coordinates`, `runways`,
-or `frequencies` field** — from the repo root:
+AutoATC previously vendored a near-verbatim port of
+[24Radar](https://github.com/t-arpin/atc24radar) as its own web radar
+(the dashboard's Radar tab, and a public `/radar` page). That's been
+pulled out in favor of a radar built separately, so neither exists in
+this repo anymore - the dashboard now has just the Logs and Strips
+tabs. What stays, as the integration point for whatever consumes
+positions next:
 
 ```
-node -e "
-const fs = require('fs'), path = require('path');
-const { parseCoordinates } = require('./companion/lib/coords');
-const dir = path.join(__dirname, 'data', 'charts');
-const airports = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => {
-  const chart = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-  const world = parseCoordinates(chart.coordinates);
-  if (!world) return null;
-  return {
-    icao: chart.icao,
-    name: chart.name || chart.icao,
-    lat: world.lat,
-    lon: world.lon,
-    runways: Array.isArray(chart.runways)
-      ? chart.runways
-          .filter((r) => r.designator && r.heading)
-          .map((r) => ({ designator: r.designator, headingDeg: parseFloat(r.heading) }))
-      : [],
-    frequencies: Array.isArray(chart.frequencies) ? chart.frequencies : [],
-  };
-}).filter(Boolean).sort((a, b) => a.icao.localeCompare(b.icao));
-fs.writeFileSync('monitor/public/airports.json', JSON.stringify(airports, null, 2) + '\n');
-"
+GET /api/dashboard/positions    — live aircraft positions, dashboard-auth-free (see below)
+GET /api/dashboard/flightstrips — live flight strips, same auth story
 ```
 
 The map itself is served from a separate dashboard-facing endpoint (not
@@ -674,15 +561,9 @@ their own, so a forgotten vector would otherwise look permanently active.
 The monitor validates it server-side before using it for anything
 (`activeVectorFor()` in `monitor/server.js` - a finite number in
 `[0, 360)` or it's dropped) and joins it into `/api/positions`/
-`/api/dashboard/positions` alongside that aircraft's own position. The
-radar (`monitor/public/radar24/src/main.js`'s `updateAssignedVectorLayer()`
-- an AutoATC addition, not upstream 24radar code) draws it as a dashed
-amber line from the aircraft's current position, redrawn every poll so it
-tracks the aircraft as it moves and disappears the moment a bot clears it.
-It's deliberately a separate SVG layer from the human-drawn vector tool,
-so a poll cycle never touches a controller's own manually-drawn vectors.
-The Strips tab's **Vector** column shows the same data as plain text for
-anyone not looking at the map.
+`/api/dashboard/positions` alongside that aircraft's own position, for
+whatever radar ends up consuming it to draw. The Strips tab's **Vector**
+column shows the same data as plain text for anyone not looking at a map.
 
 ### Datalink messages (CPDLC/PDC)
 

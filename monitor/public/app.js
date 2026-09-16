@@ -204,8 +204,7 @@
   refreshStrips();
   setInterval(refreshStrips, 5000);
 
-  // View tab switching (Logs / Radar). Was previously part of radar.js
-  // before the Radar tab became an iframe onto public/radar24/.
+  // View tab switching (Logs / Strips).
   document.querySelectorAll('.view-tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.view-tab').forEach((t) => t.classList.toggle('active', t === tab));

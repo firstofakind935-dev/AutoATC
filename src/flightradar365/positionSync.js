@@ -5,8 +5,7 @@ const groundOffsets = require('./groundOffsets');
 const logger = makeLogger('flightradar365-track');
 
 const SYNC_INTERVAL_MS = 10_000;
-// Studs per nautical mile - derived from 24radar.xyz's own measuring tool
-// (see monitor/public/radar24/src/main.js's matching constant/comment).
+// Studs per nautical mile - derived from 24radar.xyz's own measuring tool.
 // Only meaningful if flightradar365.lovable.app's map turns out to use
 // that same raw-stud coordinate space - see toTrackXY() below.
 const STUDS_PER_NM = 3307.14286;
@@ -18,8 +17,8 @@ const STUDS_PER_NM = 3307.14286;
  *
  * UNVERIFIED: this assumes the site's map uses the same raw PTFS/Roblox
  * world-stud coordinate space (and the same per-airport anchor points)
- * that 24radar.xyz/monitor/public/radar24 does - plausible, since both are
- * ATC24/PTFS-specific tools, but not confirmed against the live site.
+ * that 24radar.xyz does - plausible, since both are ATC24/PTFS-specific
+ * tools, but not confirmed against the live site.
  * Before relying on this, cross-check: send one aircraft with a known
  * distance/bearing from a well-known airport, and confirm the resulting
  * x/y lands in the right place on the actual flightradar365 map. If it
