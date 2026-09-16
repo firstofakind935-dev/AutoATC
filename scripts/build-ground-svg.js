@@ -473,9 +473,19 @@ function main() {
     cal = noCalibration(layerShapes);
   } else {
     cal = calibrate(labels, runwaysForCalibration);
+    // Real charts often only record a runway's length on one of its two
+    // reciprocal threshold entries (e.g. IKFL's chart has "34" with a
+    // real 1058m length but its reciprocal "16" with length: null) -
+    // check both ends of whichever pair calibrate() picked, not just
+    // ref1, or a real known length silently gets ignored in favor of
+    // the 0.6 NM generic fallback.
     const ref1Data = runwaysForCalibration.find((r) => r.designator === cal.ref1.designator);
-    if (ref1Data && ref1Data.length && ref1Data.length.meters) {
-      const meters = parseFloat(ref1Data.length.meters);
+    const ref2Data = runwaysForCalibration.find((r) => r.designator === cal.ref2.designator);
+    const lengthData = (ref1Data && ref1Data.length && ref1Data.length.meters) ? ref1Data
+      : (ref2Data && ref2Data.length && ref2Data.length.meters) ? ref2Data
+      : null;
+    if (lengthData) {
+      const meters = parseFloat(lengthData.length.meters);
       if (!Number.isNaN(meters)) halfNm = (meters / 1852) / 2;
     }
   }
