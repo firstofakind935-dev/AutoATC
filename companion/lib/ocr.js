@@ -53,13 +53,19 @@ function parseFlightInfo(rawText) {
 }
 
 /**
- * Parses the compass tape above the info box - observed layout has the
- * current heading as a standalone 1-3 digit number (e.g. "066") separate
- * from the compass-point letters (N/NE/E/etc.) around it.
+ * Parses the compass tape above the info box - the real in-game layout
+ * (confirmed against a screenshot) is the current heading as a 1-3 digit
+ * number with its nearest compass-point letters butted directly against
+ * it, no separator - e.g. "039NE", not "039 NE". A trailing
+ * not-followed-by-a-letter lookahead here previously rejected exactly
+ * that number (since a letter always follows it), falling through to
+ * whatever other digits happened to be in the OCR'd text instead - only
+ * guard the left side, so a match isn't grabbed from the middle of some
+ * longer number.
  */
 function parseHeadingTape(rawText) {
   if (!rawText) return null;
-  const match = rawText.match(/(?<![A-Za-z0-9])(\d{1,3})(?![A-Za-z0-9])/);
+  const match = rawText.match(/(?<![A-Za-z0-9])(\d{1,3})/);
   if (!match) return null;
   const heading = Number(match[1]);
   return heading >= 0 && heading <= 360 ? heading : null;
