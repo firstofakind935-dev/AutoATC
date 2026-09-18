@@ -378,7 +378,13 @@ async function trackTick() {
     });
     log(
       `Uploaded: ${nearest.distanceNm.toFixed(1)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}, ` +
-        `${info.altitudeFt}ft, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)`
+        `${info.altitudeFt}ft, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)` +
+        // Temporary diagnostic (see companion/lib/ocr.js's parseHeadingTape) -
+        // a "successful" parse can still read the wrong number if the raw OCR
+        // text isn't what's expected, and that raw text was previously only
+        // logged on an outright failed parse. Remove once heading-reading
+        // accuracy is confirmed solid.
+        ` [heading OCR: "${headingText.replace(/\n/g, ' ')}"]`
     );
   } catch (err) {
     log(`Upload failed: ${err.message}`);
