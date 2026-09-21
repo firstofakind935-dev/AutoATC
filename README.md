@@ -636,10 +636,16 @@ the real Center bot's heartbeat comes back — then tears the fallback down
 automatically. No `CENTER_FALLBACK_TOKEN` configured just means a loud log
 instead of an actual stand-in.
 
-**2. Frequency tuning.** In the companion app, a pilot can type a frequency
-and click **Tune** (see `companion/lib/uploader.js`'s `tuneFrequency()`),
-which posts to the monitor; Bot Manager polls that queue and moves the
-pilot's real Discord voice state to whichever bot owns that frequency
+**2. Frequency tuning.** The companion app has a real flip-flop radio panel —
+VHF1/VHF2/VHF3, each with its own active+standby frequency, a knob to dial
+the standby side, a swap button, and a type-in shortcut (VHF2 starts inop
+until switched on; VHF3 defaults to guard 121.500 and is meant for the
+datalink/CPDLC channel above). Swapping VHF1 specifically (see
+`companion/renderer/control.js`'s `swapRadio()`) calls
+`companion/lib/uploader.js`'s `tuneFrequency()`, which posts to the
+monitor; Bot Manager polls that queue and moves the pilot's real Discord
+voice state to whichever bot owns that frequency — VHF2/VHF3 are tracked
+and displayed but don't trigger a move
 (`src/botmanager/frequencyLookup.js` matches a frequency to a fleet bot
 using `data/frequencies.json` — same heuristic-match, spot-check-it spirit
 as `scripts/extract-charts.js`). This only works for a pilot who has
