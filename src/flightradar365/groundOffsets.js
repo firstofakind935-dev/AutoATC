@@ -1,11 +1,13 @@
 // Per-airport {x, y} world-coordinate anchor points, in the same raw
-// PTFS/Roblox stud-derived coordinate space AutoATC's now-removed web
-// radar used - kept here because positionSync.js's toTrackXY() still
-// needs them to convert a bot's distanceNm/bearingDeg into flightradar365's
-// x/y. Only x/y are used; zoom/r (ground-view framing) are meaningless
-// outside a radar UI but kept for every entry rather than trimmed down,
-// since this was originally a straight copy of the removed radar's own
-// GroundOffsets.js and there was no reason to diverge the shape.
+// PTFS/Roblox stud-derived coordinate space 365Radar
+// (monitor/public/365radar/) uses - this is a CommonJS copy of that
+// module's own src/data/GroundOffsets.js, kept here because
+// positionSync.js's toTrackXY() needs it too, to convert a bot's
+// distanceNm/bearingDeg into flightradar365's x/y. Only x/y are used by
+// toTrackXY(); zoom/r (ground-view framing) are meaningless here but kept
+// for every entry rather than trimmed down, since this is meant to stay a
+// straight copy of 365Radar's own file, not diverge from it - if that file
+// changes, copy the update here too.
 module.exports = {
   IBLT: { zoom: 0.00885905028317445, x: -116.75703430175781, y: 171.21368408203125, r: 76.1 },
   IBTH: { zoom: 0.009168518271158612, x: 53.03730392456055, y: -49.046810150146484, r: 0 },
@@ -33,7 +35,52 @@ module.exports = {
   IBAR: { zoom: 0.01, x: 251.2702, y: 272.0383, r: 0 },
   IBRD: { zoom: 0.01, x: -61.6464, y: -233.9458, r: 0 },
   IGCG: { zoom: 0.0535, x: -349.6831, y: -99.0152, r: 0 },
-  IKFL: { zoom: 0.0369, x: -378.5900, y: -60.2400, r: 0 },
+  // IKFL's zoom is measured, not estimated like its siblings here - the
+  // ground SVGs aren't drawn to a shared real-world scale (confirmed:
+  // IKFL's chart is ~6.7x denser per real nm than IRFD's), so a uniform
+  // zoom across airports makes smaller-chart-scale airports look
+  // over-zoomed relative to others (the original "Keflavik 2x oversized"
+  // bug). Recalibrated against real in-game measurements (IKFL 0.7x0.9nm,
+  // IRFD 6.1x6.8nm - IRFD's own zoom kept as the fixed anchor) so
+  // container-width-in-real-nm is consistent between the two: measured
+  // each SVG's own getBBox() in a real browser, then solved
+  // zoom = (IRFD.zoom * IRFD.realWidthNm) / IKFL.realWidthNm.
+  // x/y: this same pair is ALSO IKFL's world-map anchor point - main.js's
+  // adaptPositionsToAircraftData() (and this file's own positionSync.js
+  // counterpart) use it to convert a bot's distanceNm/bearingDeg from this
+  // airport into a world-map position, so it's not safe to nudge for
+  // ground-view framing reasons alone (an earlier attempt at that here
+  // broke real aircraft placement and was reverted). Y specifically was
+  // genuinely wrong though, independent of the zoom/framing work above -
+  // side-by-side against a correct reference map, IKFL's marker sat up
+  // near the island's neck instead of down in the southern lobe where it
+  // actually is. Confirmed the sign convention (which direction is
+  // "south") empirically first, rather than guessing, by comparing this
+  // file's Y values for IKFL/ITEY/TVO/IGCG against their real latitudes
+  // in data/charts/*.json - more negative Y consistently matched further
+  // north for all three pairs, so south = increasing Y. Shifted south by
+  // the real measured distance (1.24nm, no east/west component) using
+  // this file's own studs-per-nm scale (STUDS_PER_NM/100 = 33.07
+  // SVG-units/nm, same conversion toTrackXY() uses): y += 1.24 * 33.07.
+  //
+  // IMPORTANT, found after the above shift alone visibly did nothing:
+  // this x/y anchor only drives (a) aircraft placement above and (b) the
+  // 365Radar Ground View side panel's camera pan. It does NOT position
+  // the airport-diagram overlay drawn on 365Radar's main world map -
+  // that view injects GROUND.svg's own raw content straight into the map
+  // with zero transform of its own, so its position is entirely whatever
+  // coordinates are baked into GROUND.svg itself (that file shares the
+  // world map's exact canvas, so its raw path coordinates ARE meant to be
+  // absolute world coordinates already). The actual fix for "IKFL sits at
+  // the neck instead of the southern lobe" is a matching south shift
+  // baked into monitor/public/365radar/public/assets/maps/IKFL/GROUND.svg
+  // itself (root <svg transform="translate(0, 41.0086)">), NOT anything
+  // in this file - confirmed empirically via a real Playwright render.
+  // Both this anchor's y and GROUND.svg's transform were shifted by the
+  // same 41.0086 (=1.24nm) so the Ground View side panel's camera keeps
+  // following its own (now also shifted) content and stays framed
+  // exactly as before.
+  IKFL: { zoom: 0.253674, x: -378.5900, y: -19.2314, r: 0 },
   ITEY: { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
   IUFO: { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
   SHV: { zoom: 0.01, x: 225.4261, y: -201.4141, r: 0 },
