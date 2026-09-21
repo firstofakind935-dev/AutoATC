@@ -256,11 +256,18 @@ function buildRadioRows() {
         <button class="radio-swap">⇄</button>
         <span class="radio-standby"></span>
       </div>
-      <button class="radio-power" hidden></button>
+      <div class="radio-buttons">
+        <button class="radio-call">Call</button>
+        <button class="radio-power" hidden></button>
+      </div>
     `;
     const swapBtn = info.querySelector('.radio-swap');
     swapBtn.addEventListener('click', () => {
       window.companion.sendToControl({ tag: 'radio-action', action: 'swap', radio: key });
+    });
+    const callBtn = info.querySelector('.radio-call');
+    callBtn.addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'call', radio: key });
     });
     const powerBtn = info.querySelector('.radio-power');
     powerBtn.addEventListener('click', () => {
@@ -277,6 +284,7 @@ function buildRadioRows() {
       activeEl: info.querySelector('.radio-active'),
       standbyEl: info.querySelector('.radio-standby'),
       swapBtn,
+      callBtn,
       powerBtn,
     };
   }
@@ -313,10 +321,15 @@ function buildRadioRows() {
 function updateRadioDisplay() {
   for (const [key, radio] of Object.entries(radioState.radios)) {
     const refs = radioRowRefs[key];
-    refs.labelEl.textContent = radio.label + (radio.inop ? ' (inop)' : '');
+    const isPrimary = key === radioState.primaryRadio;
+    refs.labelEl.textContent = radio.label + (radio.inop ? ' (inop)' : '') + (isPrimary ? ' - CALLING' : '');
     refs.activeEl.textContent = radio.active.toFixed(3);
     refs.standbyEl.textContent = radio.standby.toFixed(3);
     refs.swapBtn.disabled = radio.inop;
+    // Can't select an inop radio to talk on (nothing to call with), and no
+    // point re-selecting whichever one's already selected.
+    refs.callBtn.disabled = radio.inop || isPrimary;
+    refs.callBtn.classList.toggle('active', isPrimary);
     // The knob stays usable even while inop - a real radio lets you dial
     // in a standby frequency before switching it on, you just can't swap
     // it into active (or have it actually used for comms) until it is.
@@ -421,7 +434,7 @@ window.companion.onOverlayCommand((command) => {
     renderMessagePanel();
     for (const m of incoming) showToast(m);
   } else if (command.type === 'radio-state') {
-    radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing };
+    radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing, primaryRadio: command.primaryRadio };
     if (!radioPanel.hidden) renderRadioPanel();
   }
 });

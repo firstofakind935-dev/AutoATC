@@ -638,21 +638,26 @@ instead of an actual stand-in.
 
 **2. Frequency tuning.** The companion app has a real flip-flop radio panel —
 VHF1/VHF2/VHF3, each with its own active+standby frequency, a draggable/
-scrollable knob to dial the standby side, and a swap button (VHF2 starts
-inop until switched on; VHF3 defaults to guard 121.500 and is meant for the
-datalink/CPDLC channel above). It lives on the **overlay** window, not the
-control window — click "Radios" on the overlay's own top bar (same place as
-Start/Stop and Messages) to pop it up directly over the game, since that's
-what stays up while actually flying. The control window (`control.js`) still
-owns the state and the tuning/stepping logic; the overlay
-(`companion/renderer/overlay.js`) just renders it and relays knob/swap/power/
-ident interactions back via `sendToControl({tag: 'radio-action', ...})` —
-same round-trip shape region/calibration clicks already use. Swapping VHF1
-specifically (see `control.js`'s `swapRadio()`) calls
+scrollable knob to dial the standby side, a swap button, and its own **Call**
+button (all three switchable; VHF2 starts inop until switched on, VHF3
+defaults to guard 121.500 and is meant for the datalink/CPDLC channel
+above). A radio's knob stays turnable even while it's inop - only its swap
+and Call buttons require it to be switched on. It lives on the **overlay**
+window, not the control window — click "Radios" on the overlay's own top
+bar (same place as Start/Stop and Messages) to pop it up directly over the
+game, since that's what stays up while actually flying. The control window
+(`control.js`) still owns the state and the tuning/stepping logic; the
+overlay (`companion/renderer/overlay.js`) just renders it and relays
+knob/swap/call/power/ident interactions back via
+`sendToControl({tag: 'radio-action', ...})` — same round-trip shape
+region/calibration clicks already use. Call explicitly picks which radio
+you're currently talking on (`control.js`'s `selectPrimaryRadio()`) —
+defaults to VHF1, not derived from any radio's power state. Swapping the
+currently-called radio (`control.js`'s `swapRadio()`) calls
 `companion/lib/uploader.js`'s `tuneFrequency()`, which posts to the
 monitor; Bot Manager polls that queue and moves the pilot's real Discord
-voice state to whichever bot owns that frequency — VHF2/VHF3 are tracked
-and displayed but don't trigger a move
+voice state to whichever bot owns that frequency — the other two radios are
+tracked and displayed but don't trigger a move while not called
 (`src/botmanager/frequencyLookup.js` matches a frequency to a fleet bot
 using `data/frequencies.json` — same heuristic-match, spot-check-it spirit
 as `scripts/extract-charts.js`). This only works for a pilot who has

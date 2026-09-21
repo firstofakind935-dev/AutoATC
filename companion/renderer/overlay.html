@@ -164,7 +164,8 @@
     font-size: 0.9em;
   }
   .radio-swap:disabled { opacity: 0.35; cursor: not-allowed; }
-  .radio-power {
+  .radio-buttons { display: flex; gap: 6px; margin-top: 4px; }
+  .radio-power, .radio-call {
     background: transparent;
     border: 1px solid rgba(56, 189, 248, 0.4);
     color: #b9c6dc;
@@ -172,8 +173,14 @@
     padding: 2px 6px;
     font-size: 0.68em;
     cursor: pointer;
-    margin-top: 4px;
   }
+  .radio-call.active {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #e6ebf5;
+    font-weight: 600;
+  }
+  .radio-call:disabled:not(.active) { opacity: 0.35; cursor: not-allowed; }
 
   /* The knob: a small draggable/scrollable dial. Turning it steps the
      standby frequency (or squawk digit) - the rotation itself is purely a

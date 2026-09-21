@@ -250,6 +250,7 @@ window.companion.onOverlayResult(async (result) => {
     else if (action === 'setStandby') setRadioStandby(radio, value);
     else if (action === 'swap') swapRadio(radio);
     else if (action === 'power') toggleRadioPower(radio);
+    else if (action === 'call') selectPrimaryRadio(radio);
     else if (action === 'squawkStep') stepSquawk(value);
     else if (action === 'squawkSet') setSquawk(value);
     else if (action === 'ident') pressIdent();
@@ -497,9 +498,10 @@ document.getElementById('stopTrackingBtn').addEventListener('click', stopTrackin
 // switchable radio's knob stays turnable even while inop (same as a real
 // radio lets you dial in a standby frequency before powering it on) - only
 // its swap button is gated by inop, since that's what actually puts a
-// frequency into use. Only the current "primary" radio's active frequency
-// (see primaryRadioKey() below - VHF1 by default, VHF2 once it's switched
-// on) actually moves you on swap; VHF3 never takes that role.
+// frequency into use. Each radio has its own Call button (a real
+// transmit-select action, not derived from power state) - only the
+// currently-selected one's active frequency actually moves you on swap;
+// see selectPrimaryRadio() below.
 const FREQ_MIN = 118.0;
 const FREQ_MAX = 136.975;
 const FREQ_STEP = 0.025;
@@ -531,12 +533,19 @@ function clampFreq(value) {
   return Math.min(FREQ_MAX, Math.max(FREQ_MIN, Math.round(value / FREQ_STEP) * FREQ_STEP));
 }
 
+// Which radio is "what you're currently talking on" - explicitly chosen by
+// the pilot via each radio's Call button (see selectPrimaryRadio() below),
+// not derived from power state. Starts on VHF1, same as the radios
+// themselves default to it being the only one switched on.
+let primaryRadio = 'vhf1';
+
 function pushRadioStateToOverlay() {
   window.companion.sendToOverlay({
     type: 'radio-state',
     radios,
     squawk,
     identing: identUntilMs > Date.now(),
+    primaryRadio,
   });
 }
 
@@ -558,25 +567,21 @@ function toggleRadioPower(key) {
 }
 
 /**
- * Which radio is "what you're currently listening/talking to" - the one
- * whose swap actually fires a tune request to Bot Manager (see the class
- * comment on BotManagerBot's Job 2). Defaults to VHF1, but switching VHF2
- * on hands that role to VHF2 instead, same as a pilot choosing to work a
- * second radio - switching VHF2 back off hands it back to VHF1. This
- * doesn't check VHF1's own inop state: if VHF1 is switched off (and VHF2
- * isn't on), it stays "primary" in name, it just can't actually be swapped
- * until switched back on (its swap button is disabled while inop, same as
- * any switchable radio) - turning your primary off doesn't silently
- * promote a backup, same as a real pilot has to deliberately choose to
- * work a second radio. VHF3 (DATA) never takes this role at all.
+ * Explicitly makes `key` the radio "you're currently talking on" - a real
+ * radio-select action, same as a pilot pressing a transmit-select button,
+ * not something inferred from power state. Refuses to select an inop
+ * radio (nothing to talk on if it's off), same as its swap button already
+ * being disabled in that state.
  */
-function primaryRadioKey() {
-  return radios.vhf2.inop ? 'vhf1' : 'vhf2';
+function selectPrimaryRadio(key) {
+  if (radios[key].inop) return;
+  primaryRadio = key;
+  pushRadioStateToOverlay();
 }
 
 /**
  * Flips standby into active - the classic flip-flop swap. Only the current
- * primary radio (see primaryRadioKey() above) also fires an actual tune
+ * primary radio (see selectPrimaryRadio() above) also fires an actual tune
  * request to Bot Manager.
  */
 async function swapRadio(key) {
@@ -584,7 +589,7 @@ async function swapRadio(key) {
   [radio.active, radio.standby] = [radio.standby, radio.active];
   pushRadioStateToOverlay();
 
-  if (key !== primaryRadioKey()) return;
+  if (key !== primaryRadio) return;
 
   if (!settings.monitorUrl || !settings.callsign) {
     log('Cannot tune - set your callsign and Monitor URL first.');
