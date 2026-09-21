@@ -490,12 +490,15 @@ document.getElementById('stopTrackingBtn').addEventListener('click', stopTrackin
 // Fresh defaults every launch, matching a real aircraft's radios coming up
 // on standby rather than remembering last session's frequencies:
 //  - VHF1: active radio, both active/standby default to 122.800.
-//  - VHF2: same defaults, but starts inop (its knob/swap/type controls are
-//    disabled) until the pilot switches it on.
-//  - VHF3: dedicated to DATA - defaults to guard 121.500 on both sides.
-// Only VHF1's active frequency actually moves you (see swapRadio() below) -
-// VHF2/VHF3 are tracked and displayed but don't trigger a Discord move,
-// since there's no second real use for them defined yet.
+//  - VHF2: same defaults, but starts inop until the pilot switches it on.
+//  - VHF3: dedicated to DATA, defaults to guard 121.500 on both sides -
+//    also switchable, same as VHF2.
+// A switchable radio's knob stays turnable even while inop (same as a real
+// radio lets you dial in a standby frequency before powering it on) - only
+// its swap button is gated by inop, since that's what actually puts a
+// frequency into use. Only the current "primary" radio's active frequency
+// (see primaryRadioKey() below - VHF1 by default, VHF2 once it's switched
+// on) actually moves you on swap; VHF3 never takes that role.
 const FREQ_MIN = 118.0;
 const FREQ_MAX = 136.975;
 const FREQ_STEP = 0.025;
@@ -503,7 +506,7 @@ const FREQ_STEP = 0.025;
 const radios = {
   vhf1: { label: 'VHF1', active: 122.8, standby: 122.8, inop: false, switchable: false },
   vhf2: { label: 'VHF2', active: 122.8, standby: 122.8, inop: true, switchable: true },
-  vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: false },
+  vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: true },
 };
 
 // Real transponder codes are 4 octal digits (0-7 only, no 8/9) - 2000
