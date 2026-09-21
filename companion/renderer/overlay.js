@@ -181,8 +181,12 @@ radiosBtn.addEventListener('click', () => toggleRadioPanel());
  * every step round-trips through control.js and back as a fresh
  * 'radio-state' push, and rebuilding this element on that echo used to
  * reset "rotation" to 0 before the turn was ever visible, which is why the
- * knob looked like it didn't turn at all. enabled/disabled is instead a
- * live toggle (setDisabled) on the same persistent element.
+ * knob looked like it didn't turn at all.
+ *
+ * Always turnable, even while a switchable radio (VHF2) is inop - same as
+ * a real radio, you can dial in a standby frequency before switching it
+ * on. Only the swap button (see updateRadioDisplay()) is gated by inop,
+ * since that's what actually puts a frequency into use.
  */
 function makeKnob(onStep) {
   const knob = document.createElement('div');
@@ -192,17 +196,14 @@ function makeKnob(onStep) {
   knob.appendChild(indicator);
 
   let rotation = 0;
-  let disabled = false;
   const STEP_DEG = 20;
   function applyStep(direction) {
-    if (disabled) return;
     rotation += direction * STEP_DEG;
     indicator.style.transform = `rotate(${rotation}deg)`;
     onStep(direction);
   }
 
   knob.addEventListener('wheel', (e) => {
-    if (disabled) return;
     e.preventDefault();
     applyStep(e.deltaY < 0 ? 1 : -1);
   });
@@ -211,7 +212,6 @@ function makeKnob(onStep) {
   let lastY = 0;
   const DRAG_PX_PER_STEP = 6;
   knob.addEventListener('mousedown', (e) => {
-    if (disabled) return;
     dragging = true;
     lastY = e.clientY;
     e.preventDefault();
@@ -227,14 +227,7 @@ function makeKnob(onStep) {
     dragging = false;
   });
 
-  return {
-    el: knob,
-    setDisabled(next) {
-      disabled = next;
-      knob.style.opacity = disabled ? '0.35' : '';
-      knob.style.cursor = disabled ? 'not-allowed' : 'grab';
-    },
-  };
+  return { el: knob };
 }
 
 // Filled in once by buildRadioRows() - { vhf1: {knob, activeEl, standbyEl,
@@ -324,7 +317,9 @@ function updateRadioDisplay() {
     refs.activeEl.textContent = radio.active.toFixed(3);
     refs.standbyEl.textContent = radio.standby.toFixed(3);
     refs.swapBtn.disabled = radio.inop;
-    refs.knob.setDisabled(radio.inop);
+    // The knob stays usable even while inop - a real radio lets you dial
+    // in a standby frequency before switching it on, you just can't swap
+    // it into active (or have it actually used for comms) until it is.
     if (radio.switchable) {
       refs.powerBtn.hidden = false;
       refs.powerBtn.textContent = radio.inop ? 'Switch on' : 'Switch off';
