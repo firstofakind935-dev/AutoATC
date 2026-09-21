@@ -14,6 +14,8 @@ async function uploadPosition({
   altitudeFt,
   headingDeg,
   fixAgeSec,
+  squawk,
+  identing,
 }) {
   const headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
@@ -33,6 +35,16 @@ async function uploadPosition({
       altitudeFt: typeof altitudeFt === 'number' ? Math.round(altitudeFt) : null,
       headingDeg: typeof headingDeg === 'number' ? Math.round(headingDeg) : null,
       fixAgeSec: typeof fixAgeSec === 'number' ? Math.round(fixAgeSec) : null,
+      // What the pilot's transponder is currently set to (see the radio
+      // panel in control.js) - lets a controller check compliance against
+      // whatever squawk was actually assigned (flight strip's
+      // clearance.squawk) instead of just trusting the report blind. See
+      // systemPrompt.js's squawk-compliance instruction.
+      squawk: typeof squawk === 'string' ? squawk : null,
+      // True for a few seconds right after the pilot presses "Ident" in
+      // the companion app (real-world "squawk ident") - a controller can
+      // reference this to confirm they're looking at the right aircraft.
+      identing: Boolean(identing),
     },
   };
 

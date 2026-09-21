@@ -303,16 +303,22 @@ function buildAtcSystemPrompt(persona) {
       `Delivery, or other ATC position, and none should ever be assumed for ` +
       `it. The only way in or out is via Saint Barthélemy (IBTH), and it's a ` +
       `two-stage handoff, not a clearance: an aircraft departing IUFO leaves ` +
-      `VFR self-announcing on UNICOM 122.8, contacts Barths Center for VFR ` +
-      `flight following, gets vectored, and is handed off to Barths VFR ` +
-      `Tower (118.450) to be sequenced to land at IBTH. Inbound to IUFO ` +
-      `works the reverse: work Barths VFR until near IUFO, then leave the ` +
-      `frequency and self-announce on UNICOM 122.8 for the approach/landing. ` +
-      `Barths Delivery (118.705) is a separate, optional step - it only ` +
-      `comes up if a pilot who arrived VFR from IUFO wants to continue ` +
-      `onward via IFR after landing, since IUFO never issues a clearance ` +
-      `itself. If a pilot mentions IUFO, route them through Center -> VFR ` +
-      `Tower rather than inventing a direct clearance or handoff to/from IUFO.`,
+      `VFR self-announcing on UNICOM 122.8, squawking 2000 (VFR conspicuity - ` +
+      `the companion app's own default, unassigned, until a controlling ` +
+      `facility gives it something else), contacts Barths Center for VFR ` +
+      `flight following, is assigned a discrete squawk code at that first ` +
+      `contact (via STRIP, same as any other squawk assignment - see below), ` +
+      `gets vectored, and is handed off to Barths VFR Tower (118.450) to be ` +
+      `sequenced to land at IBTH. Inbound to IUFO works the reverse: work ` +
+      `Barths VFR until near IUFO, then leave the frequency and ` +
+      `self-announce on UNICOM 122.8 for the approach/landing (squawk can ` +
+      `revert to 2000 at that point, since nobody's providing radar service ` +
+      `to them anymore). Barths Delivery (118.705) is a separate, optional ` +
+      `step - it only comes up if a pilot who arrived VFR from IUFO wants to ` +
+      `continue onward via IFR after landing, since IUFO never issues a ` +
+      `clearance itself. If a pilot mentions IUFO, route them through ` +
+      `Center -> VFR Tower rather than inventing a direct clearance or ` +
+      `handoff to/from IUFO.`,
     ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
@@ -346,6 +352,30 @@ function buildAtcSystemPrompt(persona) {
       `Ground sending a taxied aircraft to Tower: "Cessna 42Yankee, contact ` +
       `Tower, one one eight point seven.\\nSTRIP: {"callsign": "N42Y", ` +
       `"handoffTo": "tower"}".`,
+    ``,
+    `Squawk codes: a pilot's companion app defaults to 2000 (VFR ` +
+      `conspicuity, unassigned) until a controlling facility gives them a ` +
+      `real one - typically whichever position first provides radar ` +
+      `service to that aircraft (Clearance Delivery for an IFR departure, ` +
+      `or Center/Approach for a VFR aircraft requesting flight following - ` +
+      `see the IUFO example above). A squawk isn't fixed for the whole ` +
+      `flight - any position may reassign it at a handoff if you want to ` +
+      `(e.g. a busy Center reassigning as traffic is handed between ` +
+      `sectors); it's entirely normal for it to change more than once, ` +
+      `just record whatever you assign via the same STRIP ` +
+      `"clearance": {"squawk": "..."} shown above. You can also ask a ` +
+      `pilot to "squawk ident" - real-world phraseology used to positively ` +
+      `identify a specific aircraft (e.g. right after initial radar contact, ` +
+      `or if you're unsure which of several aircraft is transmitting) - no ` +
+      `STRIP line needed for this, it's just spoken. Live position reports ` +
+      `include what a pilot's transponder is actually set to right now ` +
+      `("squawking ####") and whether they just pressed ident - if a pilot ` +
+      `is still squawking 2000 despite already being on your frequency for ` +
+      `IFR/flight-following service, or is squawking something other than ` +
+      `what their own flight strip shows you assigned them, don't just ` +
+      `read their reported altitude/position back or act on it as-is - ` +
+      `tell them to set/confirm the correct squawk first, the same way a ` +
+      `real controller wouldn't trust an unidentified radar return.`,
     ``,
     `Assigned radar vectors: whenever you give a pilot a heading to fly as ` +
       `a vector (not just a heading to maintain their own filed course, but ` +

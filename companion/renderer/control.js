@@ -425,6 +425,8 @@ async function trackTick() {
       altitudeFt: info.altitudeFt,
       headingDeg: heading,
       fixAgeSec,
+      squawk,
+      identing: identUntilMs > Date.now(),
     });
     log(
       `Uploaded: ${nearest.distanceNm.toFixed(1)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}, ` +
@@ -585,6 +587,14 @@ async function swapRadio(key) {
 // real-world-style ICAO conventions elsewhere in this repo).
 let squawk = '2000';
 
+// Real-world "squawk ident" (a transponder button that makes an aircraft's
+// blip flash on radar for positive identification, held for ~18s) - see
+// systemPrompt.js for when ATC is expected to ask for it. There's no radar
+// here to actually flash, so this just rides along on the next upload(s) as
+// position.identing (see positions.js's formatRow) for the LLM to see.
+const IDENT_DURATION_MS = 18_000;
+let identUntilMs = 0;
+
 function renderSquawk() {
   document.getElementById('squawkCode').textContent = squawk;
 }
@@ -609,6 +619,15 @@ document.getElementById('squawkType').addEventListener('change', (e) => {
   }
   squawk = value;
   renderSquawk();
+});
+
+document.getElementById('identBtn').addEventListener('click', () => {
+  identUntilMs = Date.now() + IDENT_DURATION_MS;
+  setStatus('identStatus', 'Identing...', 'warn');
+  setTimeout(() => {
+    if (Date.now() >= identUntilMs) setStatus('identStatus', '', null);
+  }, IDENT_DURATION_MS + 100);
+  log('Squawked ident.');
 });
 
 renderRadioPanels();

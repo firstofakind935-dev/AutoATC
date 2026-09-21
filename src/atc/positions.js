@@ -38,6 +38,12 @@ function formatRow(row) {
   if (typeof p.headingDeg === 'number') parts.push(`heading ${p.headingDeg}°`);
   if (row.aircraftType) parts.push(row.aircraftType);
   if (typeof row.speed === 'number') parts.push(`${row.speed}kts`);
+  // What their transponder is actually set to right now - compare against
+  // the flight strip's clearance.squawk (see formatStripsContext) before
+  // trusting the rest of this report; see systemPrompt.js's squawk
+  // compliance instruction.
+  if (p.squawk) parts.push(`squawking ${p.squawk}`);
+  if (p.identing) parts.push('IDENT pressed');
 
   const staleness = stalenessNote(p.fixAgeSec);
   if (staleness) parts.push(staleness);

@@ -672,6 +672,20 @@ permission, in addition to the usual voice permissions every fleet bot
 needs. See `.env.example` and `config/bots.example.json`'s `"botmanager"`
 entry.
 
+**Squawk.** The radio panel's squawk field defaults to 2000 (VFR
+conspicuity/unassigned) every launch. Whichever position first provides
+radar service to an aircraft assigns a real code via the same `STRIP`
+directive that already carries destination/altitude/departure-freq (see
+`src/ai/systemPrompt.js`) — it isn't fixed for the rest of the flight, any
+position can reassign it at a handoff. The companion app also has an
+**Ident** button (real-world "squawk ident," held for ~18s) that rides
+along on the next few position uploads as `position.identing`. Both are
+included in the live positions context (`src/atc/positions.js`) so a
+controller can check compliance — the system prompt tells the model not to
+act on a pilot's reported altitude/position if they're still squawking the
+2000 default despite already being on frequency for service, or squawking
+something other than what their own flight strip shows was assigned.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this
