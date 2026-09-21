@@ -3,13 +3,19 @@ process.env.FFMPEG_PATH = process.env.FFMPEG_PATH || require('ffmpeg-static');
 const { loadFleetConfig } = require('./utils/config');
 const { AtcBot } = require('./bot/AtcBot');
 const { AtisBot } = require('./bot/AtisBot');
+const { BotManagerBot } = require('./bot/BotManagerBot');
 const { makeLogger } = require('./utils/logger');
 const { startPositionSync } = require('./flightradar365/positionSync');
 
 const logger = makeLogger('fleet');
 
-function createBot(config) {
-  return config.type === 'atis' ? new AtisBot(config) : new AtcBot(config);
+// fleetConfig is only used by BotManagerBot, which needs to see every other
+// bot's config (for the failover hierarchy and frequency-tuning lookup) -
+// AtcBot/AtisBot only ever need their own.
+function createBot(config, fleetConfig) {
+  if (config.type === 'atis') return new AtisBot(config);
+  if (config.type === 'botmanager') return new BotManagerBot(config, fleetConfig);
+  return new AtcBot(config);
 }
 
 async function main() {
@@ -27,7 +33,7 @@ async function main() {
 
   startPositionSync();
 
-  const bots = fleetConfig.map(createBot);
+  const bots = fleetConfig.map((c) => createBot(c, fleetConfig));
 
   const results = await Promise.allSettled(bots.map((bot) => bot.start()));
   results.forEach((result, index) => {

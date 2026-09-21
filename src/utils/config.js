@@ -9,7 +9,7 @@ const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.jso
 const EXAMPLE_CONFIG_PATH = path.join(__dirname, '..', '..', 'config', 'bots.example.json');
 
 const VALID_PROVIDERS = new Set(['anthropic', 'openai']);
-const VALID_TYPES = new Set(['atc', 'atis']);
+const VALID_TYPES = new Set(['atc', 'atis', 'botmanager']);
 
 function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
   if (!fs.existsSync(configPath)) {
@@ -82,7 +82,11 @@ function validateEntry(entry, index) {
     throw new Error(`${where}.type must be one of: ${[...VALID_TYPES].join(', ')}`);
   }
 
-  const required = ['name', 'tokenEnv', 'guildId', 'voiceChannelId', 'persona'];
+  // Bot Manager isn't an ATC voice position - it never joins a channel of
+  // its own (only moves other members between the fleet's channels, and
+  // occasionally stands in as Center - see src/bot/BotManagerBot.js), so it
+  // doesn't need voiceChannelId/persona the way every other type does.
+  const required = type === 'botmanager' ? ['name', 'tokenEnv', 'guildId'] : ['name', 'tokenEnv', 'guildId', 'voiceChannelId', 'persona'];
   for (const field of required) {
     if (!entry || entry[field] === undefined || entry[field] === null || entry[field] === '') {
       throw new Error(`${where} is missing required field "${field}".`);
@@ -100,9 +104,16 @@ function validateEntry(entry, index) {
     type,
     token,
     guildId: String(entry.guildId),
-    voiceChannelId: String(entry.voiceChannelId),
+    voiceChannelId: entry.voiceChannelId ? String(entry.voiceChannelId) : null,
     logChannelId: entry.logChannelId ? String(entry.logChannelId) : null,
   };
+
+  if (type === 'botmanager') {
+    return {
+      ...base,
+      flightPlansChannelId: entry.flightPlansChannelId ? String(entry.flightPlansChannelId) : null,
+    };
+  }
 
   if (type === 'atis') {
     // No LLM/STT involved at all - this bot only broadcasts, it never

@@ -48,4 +48,26 @@ async function uploadPosition({
   }
 }
 
-module.exports = { uploadPosition };
+// Posts a frequency-tune request to the monitor's /api/tune (see
+// monitor/server.js) - BotManagerBot polls that queue and actually moves
+// the pilot's Discord voice state, since only it has a live guild.js client
+// to do that with. Requires the pilot to have already linked their callsign
+// to a Discord account via /fileflightplan at least once - BotManagerBot
+// looks that link up itself, so nothing Discord-specific is needed here.
+async function tuneFrequency({ monitorUrl, apiKey, callsign, frequency }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+  const response = await fetch(`${monitorUrl.replace(/\/+$/, '')}/api/tune`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ callsign, frequency }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Tune request to ${monitorUrl} failed (${response.status}): ${text}`);
+  }
+}
+
+module.exports = { uploadPosition, tuneFrequency };

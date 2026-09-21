@@ -24,7 +24,7 @@ const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
 // actual tesseract.js call has to run in the main process instead, since
 // preload's V8 context can't create the worker_threads Worker it needs.
 const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
-const { uploadPosition } = tryRequire('uploader', './lib/uploader');
+const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
@@ -73,5 +73,6 @@ contextBridge.exposeInMainWorld('companion', {
   parseFlightInfo,
   parseHeadingTape,
   uploadPosition,
+  tuneFrequency,
   pollCpdlc,
 });

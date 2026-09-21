@@ -65,5 +65,12 @@
       "callsign": "Izolirani ATIS",
       "ttsVoice": "alloy"
     }
+  },
+  {
+    "name": "Bot Manager",
+    "type": "botmanager",
+    "tokenEnv": "BOT_MANAGER_TOKEN",
+    "guildId": "REPLACE_WITH_GUILD_ID",
+    "flightPlansChannelId": "REPLACE_WITH_FLIGHTPLANS_CHANNEL_ID"
   }
 ]

@@ -52,6 +52,17 @@ const cpdlcMessages = new Map(); // normalized callsign -> array of messages, ol
 const broadcastMessages = []; // fleet-wide announcements, oldest first - see POST /api/cpdlc/broadcast
 let nextCpdlcId = 1; // shared across per-callsign and broadcast messages, so a single "since" cursor covers both
 const flightStrips = new Map(); // normalized callsign -> latest strip snapshot (see src/atc/flightStrips.js)
+// normalized callsign -> {callsign, discordUserId, guildId, linkedAt} - set
+// by whichever bot handles the /fileflightplan command (see
+// src/bot/BotManagerBot.js), since that's a Discord interaction and so
+// already carries interaction.user.id. Bot Manager looks this up to know
+// who to move when a companion-app pilot tunes a new frequency.
+const pilotLinks = new Map();
+// Pending frequency-tune requests from the companion app, oldest first -
+// Bot Manager polls and drains this (see GET/DELETE /api/tune-requests
+// below), same "post here, a bot polls and acts" shape as CPDLC.
+const tuneRequests = [];
+let nextTuneRequestId = 1;
 
 function normalizeCallsign(raw) {
   return (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -349,6 +360,71 @@ app.get('/api/dashboard/flightstrips', (req, res) => {
     })
     .sort((a, b) => a.callsign.localeCompare(b.callsign));
   res.json(result);
+});
+
+// Pushed by BotManagerBot when a pilot runs /fileflightplan - ties a
+// callsign to the Discord account that filed it (interaction.user.id),
+// which is otherwise unknowable from the companion app's plain-text
+// callsign field. A later filing for the same callsign replaces the link
+// (re-filing under a new Discord account re-points it), matching how
+// flight strips are mutable, latest-wins state rather than a log.
+app.post('/api/pilot-link', requireIngestAuth, (req, res) => {
+  const { callsign, discordUserId, guildId } = req.body || {};
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" is required' });
+  if (!discordUserId || typeof discordUserId !== 'string') return res.status(400).json({ error: '"discordUserId" is required' });
+  if (!guildId || typeof guildId !== 'string') return res.status(400).json({ error: '"guildId" is required' });
+
+  const key = normalizeCallsign(callsign);
+  if (!key) return res.status(400).json({ error: '"callsign" has no usable characters' });
+
+  pilotLinks.set(key, { callsign, discordUserId, guildId, linkedAt: Date.now() });
+  res.status(204).end();
+});
+
+// Read by BotManagerBot when resolving a tune request (or a failover
+// reassignment) to a specific Discord member to move.
+app.get('/api/pilot-link', requireIngestAuth, (req, res) => {
+  const { callsign } = req.query;
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" query param is required' });
+
+  const link = pilotLinks.get(normalizeCallsign(callsign));
+  if (!link) return res.status(404).json({ error: 'no pilot link on file for that callsign' });
+  res.json(link);
+});
+
+// Pushed by the companion app when a pilot dials a new frequency (see
+// companion/lib/uploader.js's tuneFrequency()). Queued rather than acted on
+// here, since actually moving a Discord member requires a live guild.js
+// client, which only BotManagerBot has - the monitor just relays the
+// request.
+app.post('/api/tune', requireIngestAuth, (req, res) => {
+  const { callsign, frequency } = req.body || {};
+  if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" is required' });
+  if (!frequency || typeof frequency !== 'string') return res.status(400).json({ error: '"frequency" is required' });
+
+  const request = { id: nextTuneRequestId++, callsign, frequency, createdAt: Date.now() };
+  tuneRequests.push(request);
+  res.status(201).json({ id: request.id });
+});
+
+// Polled by BotManagerBot - returns every pending request without removing
+// them (removal is explicit via DELETE below, once a move has actually been
+// attempted, so a request isn't silently dropped if Bot Manager itself was
+// mid-restart when it was posted).
+app.get('/api/tune-requests', requireIngestAuth, (req, res) => {
+  res.json(tuneRequests);
+});
+
+// Acks (removes) one request after BotManagerBot has attempted it,
+// success or failure alike - a failed move (e.g. pilot not currently in
+// any voice channel to be moved from) isn't worth retrying blindly forever,
+// and the pilot can just tune again.
+app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
+  const id = Number(req.params.id);
+  const index = tuneRequests.findIndex((r) => r.id === id);
+  if (index === -1) return res.status(404).json({ error: 'no such tune request' });
+  tuneRequests.splice(index, 1);
+  res.status(204).end();
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));

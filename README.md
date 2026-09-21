@@ -614,6 +614,58 @@ controlling that position isn't limited by that — see "How the human
 handoff works today" above for the `/cpdlc` slash command, which sends one
 on demand regardless of whether anything just triggered a turn.
 
+### Bot Manager (failover + frequency tuning)
+
+`src/bot/BotManagerBot.js` is a fleet-wide utility bot (`"type": "botmanager"`
+in `config/bots.json`) — not an ATC voice position itself, it never joins a
+channel of its own. It has two jobs:
+
+**1. Failover.** It polls the monitor's `/api/status` for a bot going
+offline (same 90s heartbeat threshold the dashboard uses) and moves whoever
+was in that bot's voice channel up to the next available position, using a
+fixed seniority order (`src/botmanager/hierarchy.js`):
+Delivery → Apron → Ground → Tower → Approach/Departure → Center. It walks up
+within the same airport first (`persona.airport`); if nothing higher is
+online there, it falls back to any online Approach/Departure/Center in the
+fleet (Center regions aren't scoped to one airport — see
+`src/charts/frequencies.js`'s comment on that). If Center itself goes
+offline with nothing above it, Bot Manager logs into a second Discord
+application (`CENTER_FALLBACK_TOKEN`) and runs a real `AtcBot` instance
+using Center's own guild/voice channel/persona/AI config, standing in until
+the real Center bot's heartbeat comes back — then tears the fallback down
+automatically. No `CENTER_FALLBACK_TOKEN` configured just means a loud log
+instead of an actual stand-in.
+
+**2. Frequency tuning.** In the companion app, a pilot can type a frequency
+and click **Tune** (see `companion/lib/uploader.js`'s `tuneFrequency()`),
+which posts to the monitor; Bot Manager polls that queue and moves the
+pilot's real Discord voice state to whichever bot owns that frequency
+(`src/botmanager/frequencyLookup.js` matches a frequency to a fleet bot
+using `data/frequencies.json` — same heuristic-match, spot-check-it spirit
+as `scripts/extract-charts.js`). This only works for a pilot who has
+already linked their callsign to a Discord account, which happens via the
+**`/fileflightplan`** slash command (a fixed template: callsign, aircraft,
+departure, arrival, altitude, route) — Discord hands the bot
+`interaction.user.id` directly, which is the only reliable way to know
+which Discord account a plain-text callsign belongs to. That command also
+doubles as a stand-in for `flightradar365.lovable.app`'s own
+Discord-login-gated flight plan filing when that's unavailable: set
+`flightPlansChannelId` on the Bot Manager config entry and every filing also
+gets posted there for humans to read.
+
+```
+POST /api/pilot-link              — Bot Manager records a callsign -> Discord user link
+GET  /api/pilot-link?callsign=    — Bot Manager looks a link up when resolving a move
+POST /api/tune                    — companion app requests a frequency tune
+GET  /api/tune-requests           — Bot Manager polls pending tune requests
+DELETE /api/tune-requests/:id     — Bot Manager acks one after attempting it
+```
+
+Requires the `BOT_MANAGER_TOKEN` bot to be invited with the **Move Members**
+permission, in addition to the usual voice permissions every fleet bot
+needs. See `.env.example` and `config/bots.example.json`'s `"botmanager"`
+entry.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this
@@ -631,3 +683,11 @@ on demand regardless of whether anything just triggered a turn.
 - One voice utterance is processed at a time per bot; if two pilots key up
   on the same frequency simultaneously, replies still go out in order but
   playback isn't real radio-style priority/blocking.
+- `src/botmanager/frequencyLookup.js` matches a fleet bot to a frequency
+  heuristically (airport ICAO + position abbreviation, or callsign text for
+  Center) against `data/frequencies.json` — spot-check that a position
+  actually resolves (it logs any it can't) before relying on frequency
+  tuning for it.
+- `CENTER_FALLBACK_TOKEN` is a single token — a fleet with more than one
+  independent Center region can only have Bot Manager cover one outage at a
+  time with it.

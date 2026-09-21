@@ -464,6 +464,30 @@ function stopTracking() {
 document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
 document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
 
+document.getElementById('tuneBtn').addEventListener('click', async () => {
+  const frequency = document.getElementById('tuneFrequency').value.trim();
+  if (!frequency) return;
+  if (!settings.monitorUrl || !settings.callsign) {
+    setStatus('tuneStatus', 'Set your callsign and Monitor URL first.', 'bad');
+    return;
+  }
+
+  setStatus('tuneStatus', 'Tuning...', 'warn');
+  try {
+    await window.companion.tuneFrequency({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      frequency,
+    });
+    setStatus('tuneStatus', `Tune request sent for ${frequency}.`, 'ok');
+    log(`Tuned ${frequency}.`);
+  } catch (err) {
+    setStatus('tuneStatus', 'Failed to send tune request.', 'bad');
+    log(`Tune to ${frequency} failed: ${err.message}`);
+  }
+});
+
 // ---------- Init ----------
 
 function showLoadErrors() {

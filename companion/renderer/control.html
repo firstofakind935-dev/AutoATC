@@ -155,6 +155,17 @@
             <button class="btn btn-primary" id="startTrackingBtn">Start tracking</button>
             <button class="btn btn-secondary" id="stopTrackingBtn" disabled>Stop tracking</button>
           </div>
+          <div class="field-grid">
+            <label>Tune frequency <input id="tuneFrequency" placeholder="e.g. 118.100"></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-secondary" id="tuneBtn">Tune</button>
+            <span class="status-pill" id="tuneStatus"></span>
+          </div>
+          <p class="hint">
+            Requires having filed a flight plan with /fileflightplan at least once (links your
+            callsign to your Discord account, so Bot Manager knows who to move).
+          </p>
           <pre id="trackingStatus"></pre>
         </div>
       </section>
