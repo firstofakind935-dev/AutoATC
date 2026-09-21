@@ -204,8 +204,7 @@
   refreshStrips();
   setInterval(refreshStrips, 5000);
 
-  // View tab switching (Logs / Radar / Strips). The Radar tab is an
-  // iframe onto public/365radar/ - see monitor/server.js's /365radar route.
+  // View tab switching (Logs / Strips).
   document.querySelectorAll('.view-tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.view-tab').forEach((t) => t.classList.toggle('active', t === tab));

@@ -208,9 +208,11 @@ app.get('/api/positions', requireIngestAuth, (req, res) => {
 
 // Same data, for a browser-facing radar to poll directly (no Bearer token
 // required, unlike /api/positions above, which expects a server-to-server
-// credential) - this is what 365Radar (see public/365radar/) polls.
-// Deliberately not gated by requireDashboardAuth: live traffic position
-// isn't worth protecting the way logs/pilot transcripts are.
+// credential) - AutoATC's own web radar used to be the only consumer of
+// this; that's been pulled out, but the route stays as its integration
+// point for whatever radar replaces it. Deliberately not gated by
+// requireDashboardAuth: live traffic position isn't worth protecting the
+// way logs/pilot transcripts are.
 app.get('/api/dashboard/positions', (req, res) => {
   res.json(freshPositions());
 });
@@ -423,43 +425,6 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
   if (index === -1) return res.status(404).json({ error: 'no such tune request' });
   tuneRequests.splice(index, 1);
   res.status(204).end();
-});
-
-// Public radar page (e.g. https://your-monitor.up.railway.app/radar) -
-// live traffic on a map for anyone with the link, without the dashboard's
-// Basic-auth login and without exposing the Logs tab or bot health (those
-// stay behind requireDashboardAuth below). Registered before that gate,
-// and before express.static claims '/', so these specific routes are
-// reachable with no credentials regardless of dashboard auth config.
-// This is "365Radar" (see public/365radar/) - ATC365's own radar, a
-// near-verbatim port of the GPLv3-licensed t-arpin/atc24radar UI with only
-// its data source swapped for AutoATC's own position feed and its branding
-// updated (see public/365radar/index.html's own header comment). The
-// dashboard's Radar tab embeds this same page in an iframe, so there is
-// one radar implementation, not two.
-// Redirect (not sendFile) so the browser's URL actually becomes
-// /365radar/ - 365radar/index.html uses relative paths (public/style.css,
-// src/main.js, etc.) that must resolve against that directory, not /radar.
-app.get(['/radar', '/radar/'], (req, res) => res.redirect('/365radar/'));
-
-// The 365radar bundle (HTML/CSS/JS, ground-chart SVGs, plane icons, static
-// airport/fix reference data) is plain reference data or code, not
-// sensitive - unlike index.html/app.js (which pull in the Logs UI) or the
-// API routes above - so the whole directory is exempted from dashboard
-// auth, mirroring the /radar route above and the /api/dashboard/* routes.
-app.use('/365radar', express.static(path.join(__dirname, 'public', '365radar')));
-
-// Stand-ins for the two endpoints the ported 365radar/src/main.js expects
-// from the upstream 24radar.xyz backend (ATIS-letter auto-fetch and the
-// approach-plate listing) that AutoATC has no equivalent for - AutoATC only
-// has ground charts, not instrument approach plates, and no ATIS-letter
-// tracking. main.js already handles a 404/empty response gracefully (see
-// atisLetter()/loadApproachList()), so these degrade rather than crash.
-app.get('/365radar-api/atis/:icao', (req, res) => {
-  res.status(404).json({ error: 'ATIS letter tracking is not available in AutoATC' });
-});
-app.get('/365radar-api/approaches/:icao', (req, res) => {
-  res.json([]);
 });
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
