@@ -54,6 +54,12 @@
         </p>
       </header>
 
+      <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="setupTab">Setup</button>
+        <button class="tab-btn" data-tab="radiosTab">Radios</button>
+      </nav>
+
+      <div class="tab-panel" id="setupTab">
       <section class="card" id="settings">
         <div class="card-header">
           <span class="step-badge">1</span>
@@ -158,10 +164,11 @@
           <pre id="trackingStatus"></pre>
         </div>
       </section>
+      </div>
 
+      <div class="tab-panel" id="radiosTab" hidden>
       <section class="card" id="radios" hidden>
         <div class="card-header">
-          <span class="step-badge">6</span>
           <h2>Radios</h2>
         </div>
         <div class="card-body">
@@ -188,6 +195,8 @@
           <span class="status-pill" id="tuneStatus"></span>
         </div>
       </section>
+      <p class="hint" id="radiosNotReadyHint">Show the overlay and get through setup first - the radio panel activates once tracking is available.</p>
+      </div>
     </main>
   </div>
 

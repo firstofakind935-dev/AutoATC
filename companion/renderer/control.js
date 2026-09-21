@@ -118,6 +118,7 @@ async function showOverlay() {
   document.getElementById('calibration').hidden = false;
   document.getElementById('tracking').hidden = false;
   document.getElementById('radios').hidden = false;
+  document.getElementById('radiosNotReadyHint').hidden = true;
 
   sendRegionsToOverlay();
   syncBar();
@@ -632,6 +633,19 @@ document.getElementById('identBtn').addEventListener('click', () => {
 
 renderRadioPanels();
 renderSquawk();
+
+// ---------- Tabs ----------
+
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach((panel) => {
+      panel.hidden = true;
+    });
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).hidden = false;
+  });
+});
 
 // ---------- Init ----------
 
