@@ -21,6 +21,1287 @@
     }
   },
   {
+    "name": "Rockford Center",
+    "tokenEnv": "BOT_IRCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Rockford Center",
+      "airport": "IRFD",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Rockford Approach",
+    "tokenEnv": "BOT_IRFD_APP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Rockford Approach",
+      "airport": "IRFD",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Rockford Departures",
+    "tokenEnv": "BOT_IRFD_DEP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Departure",
+      "callsign": "Rockford Departures",
+      "airport": "IRFD",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Rockford Tower",
+    "tokenEnv": "BOT_IRFD_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Rockford Tower",
+      "airport": "IRFD",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Rockford Ground",
+    "tokenEnv": "BOT_IRFD_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Rockford Ground",
+      "airport": "IRFD",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Rockford Delivery",
+    "tokenEnv": "BOT_IRFD_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Rockford Delivery",
+      "airport": "IRFD",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Mellor Approach",
+    "tokenEnv": "BOT_IMLR_APP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Mellor Approach",
+      "airport": "IMLR",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Mellor Tower",
+    "tokenEnv": "BOT_IMLR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Mellor Tower",
+      "airport": "IMLR",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Mellor Ground",
+    "tokenEnv": "BOT_IMLR_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Mellor Ground",
+      "airport": "IMLR",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Mellor Delivery",
+    "tokenEnv": "BOT_IMLR_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Mellor Delivery",
+      "airport": "IMLR",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Garry Tower",
+    "tokenEnv": "BOT_IGAR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Garry Tower",
+      "airport": "IGAR",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Boltic Tower",
+    "tokenEnv": "BOT_IBLT_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Boltic Tower",
+      "airport": "IBLT",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Training Control",
+    "tokenEnv": "BOT_IRTC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Training",
+      "callsign": "Training Control",
+      "airport": null,
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Center",
+    "tokenEnv": "BOT_IOCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Tokyo Center",
+      "airport": "ITKO",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Approach",
+    "tokenEnv": "BOT_ITKO_APP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Tokyo Approach",
+      "airport": "ITKO",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Departures",
+    "tokenEnv": "BOT_ITKO_DEP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Departure",
+      "callsign": "Tokyo Departures",
+      "airport": "ITKO",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Tower",
+    "tokenEnv": "BOT_ITKO_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Tokyo Tower",
+      "airport": "ITKO",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Ground",
+    "tokenEnv": "BOT_ITKO_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Tokyo Ground",
+      "airport": "ITKO",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Tokyo Delivery",
+    "tokenEnv": "BOT_ITKO_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Tokyo Delivery",
+      "airport": "ITKO",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Saba Tower",
+    "tokenEnv": "BOT_IDCS_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Saba Tower",
+      "airport": "IDCS",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Bird Tower",
+    "tokenEnv": "BOT_IBRD_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Bird Tower",
+      "airport": "IBRD",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Perth Center",
+    "tokenEnv": "BOT_IPCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Perth Center",
+      "airport": "IPPH",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Perth Arrivals",
+    "tokenEnv": "BOT_IPPH_ARR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Perth Arrivals",
+      "airport": "IPPH",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Perth Tower",
+    "tokenEnv": "BOT_IPPH_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Perth Tower",
+      "airport": "IPPH",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Perth Ground",
+    "tokenEnv": "BOT_IPPH_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Perth Ground",
+      "airport": "IPPH",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Perth Delivery",
+    "tokenEnv": "BOT_IPPH_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Perth Delivery",
+      "airport": "IPPH",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Lukla Tower",
+    "tokenEnv": "BOT_ILKL_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Lukla Tower",
+      "airport": "ILKL",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Grindavik Center",
+    "tokenEnv": "BOT_IGCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Grindavik Center",
+      "airport": "IKFL",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Keflavik Approach",
+    "tokenEnv": "BOT_IKFL_APP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Keflavik Approach",
+      "airport": "IKFL",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Keflavik Tower",
+    "tokenEnv": "BOT_IKFL_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Keflavik Tower",
+      "airport": "IKFL",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Keflavik Ground",
+    "tokenEnv": "BOT_IKFL_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Keflavik Ground",
+      "airport": "IKFL",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Keflavik Delivery",
+    "tokenEnv": "BOT_IKFL_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Keflavik Delivery",
+      "airport": "IKFL",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Pingyeri Tower",
+    "tokenEnv": "BOT_ITEY_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Pingyeri Tower",
+      "airport": "ITEY",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Cyprus Center",
+    "tokenEnv": "BOT_ICCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Cyprus Center",
+      "airport": "ILAR",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Larnaca Approach",
+    "tokenEnv": "BOT_ILAR_APP_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Approach",
+      "callsign": "Larnaca Approach",
+      "airport": "ILAR",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Larnaca Tower",
+    "tokenEnv": "BOT_ILAR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Larnaca Tower",
+      "airport": "ILAR",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Larnaca Ground",
+    "tokenEnv": "BOT_ILAR_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Larnaca Ground",
+      "airport": "ILAR",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Mcconnell Tower",
+    "tokenEnv": "BOT_IIAB_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Mcconnell Tower",
+      "airport": "IIAB",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Paphos Tower",
+    "tokenEnv": "BOT_IPAP_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Paphos Tower",
+      "airport": "IPAP",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Barra Tower",
+    "tokenEnv": "BOT_IBAR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Barra Tower",
+      "airport": "IBAR",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Henstridge Tower",
+    "tokenEnv": "BOT_IHEN_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Henstridge Tower",
+      "airport": "IHEN",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Izolirani Center",
+    "tokenEnv": "BOT_IZCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Izolirani Center",
+      "airport": "IZOL",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Izolirani Tower",
+    "tokenEnv": "BOT_IZOL_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Izolirani Tower",
+      "airport": "IZOL",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Izolirani Ground",
+    "tokenEnv": "BOT_IZOL_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Izolirani Ground",
+      "airport": "IZOL",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Izoliranii Delivery",
+    "tokenEnv": "BOT_IZOL_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Izoliranii Delivery",
+      "airport": "IZOL",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Al Najaf Tower",
+    "tokenEnv": "BOT_IJAF_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Al Najaf Tower",
+      "airport": "IJAF",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Scrampton Tower",
+    "tokenEnv": "BOT_ISCM_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Scrampton Tower",
+      "airport": "ISCM",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Sauthemptona Center",
+    "tokenEnv": "BOT_EGCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Sauthemptona Center",
+      "airport": "ISAU",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Sauthemptona Tower",
+    "tokenEnv": "BOT_ISAU_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Sauthemptona Tower",
+      "airport": "ISAU",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Sauthemptona Ground",
+    "tokenEnv": "BOT_ISAU_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Sauthemptona Ground",
+      "airport": "ISAU",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Sauthemptona Apron",
+    "tokenEnv": "BOT_ISAU_APRON_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Apron",
+      "callsign": "Sauthemptona Apron",
+      "airport": "ISAU",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Barths Tower",
+    "tokenEnv": "BOT_IBTH_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Barths Tower",
+      "airport": "IBTH",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Barths VFR",
+    "tokenEnv": "BOT_IBTH_VFR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Barths VFR",
+      "airport": "IBTH",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Barths Ground",
+    "tokenEnv": "BOT_IBTH_GND_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Ground",
+      "callsign": "Barths Ground",
+      "airport": "IBTH",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Barths Delivery",
+    "tokenEnv": "BOT_IBTH_DEL_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Delivery",
+      "callsign": "Barths Delivery",
+      "airport": "IBTH",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Skopelos Center",
+    "tokenEnv": "BOT_ISCC_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Center",
+      "callsign": "Skopelos Center",
+      "airport": "ISKP",
+      "ttsVoice": "echo"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Skopelos VFR Tower",
+    "tokenEnv": "BOT_ISKP_VFR_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Skopelos VFR Tower",
+      "airport": "ISKP",
+      "ttsVoice": "fable"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Carrier Tower",
+    "tokenEnv": "BOT_USS_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Carrier Tower",
+      "airport": "USS",
+      "ttsVoice": "onyx"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Carrier Apron",
+    "tokenEnv": "BOT_USS_APRON_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Apron",
+      "callsign": "Carrier Apron",
+      "airport": "USS",
+      "ttsVoice": "nova"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Carrier Tower",
+    "tokenEnv": "BOT_HMS_TWR_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Tower",
+      "callsign": "Carrier Tower",
+      "airport": "HMS",
+      "ttsVoice": "shimmer"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
+    "name": "Carrier Apron",
+    "tokenEnv": "BOT_HMS_APRON_TOKEN",
+    "guildId": "1507182217393340426",
+    "voiceChannelId": null,
+    "logChannelId": null,
+    "persona": {
+      "position": "Apron",
+      "callsign": "Carrier Apron",
+      "airport": "HMS",
+      "ttsVoice": "alloy"
+    },
+    "ai": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fallback": {
+        "provider": "openai",
+        "model": "qwen2.5:3b"
+      }
+    }
+  },
+  {
     "name": "Bot Manager",
     "type": "botmanager",
     "tokenEnv": "BOT_MANAGER_TOKEN",
