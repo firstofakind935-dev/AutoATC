@@ -297,15 +297,25 @@ function log(message) {
   el.textContent = `${line}\n${el.textContent}`.slice(0, 8000);
 }
 
-async function ocrRegion(sourceCanvas, region) {
+// UPSCALE: a tightly-drawn region (e.g. just the heading tape's boxed
+// number) can be a tiny handful of pixels tall, and Tesseract confuses
+// similarly-shaped digits (9/7 confirmed via a real capture: a correct
+// "194" read at one tick, then "174" moments later at the same real
+// heading) more often the fewer pixels there are to define each glyph's
+// shape. Drawing into a larger canvas lets the browser's own image
+// smoothing do the upscaling before OCR sees it.
+const UPSCALE = 3;
+
+async function ocrRegion(sourceCanvas, region, { heading = false } = {}) {
   if (!region) return '';
   const cropped = document.createElement('canvas');
-  cropped.width = Math.max(1, Math.round(region.w));
-  cropped.height = Math.max(1, Math.round(region.h));
+  cropped.width = Math.max(1, Math.round(region.w * UPSCALE));
+  cropped.height = Math.max(1, Math.round(region.h * UPSCALE));
   cropped
     .getContext('2d')
     .drawImage(sourceCanvas, region.x, region.y, region.w, region.h, 0, 0, cropped.width, cropped.height);
-  return window.companion.recognizeText(cropped.toDataURL('image/png'));
+  const dataUrl = cropped.toDataURL('image/png');
+  return heading ? window.companion.recognizeHeadingText(dataUrl) : window.companion.recognizeText(dataUrl);
 }
 
 // The overlay's boxes are in the display's logical (CSS) pixel space; the
@@ -344,7 +354,7 @@ async function trackTick() {
   frame.getContext('2d').drawImage(captureVideo, 0, 0);
 
   const [headingText, infoText] = await Promise.all([
-    ocrRegion(frame, toVideoRect(settings.regions.heading)),
+    ocrRegion(frame, toVideoRect(settings.regions.heading), { heading: true }),
     ocrRegion(frame, toVideoRect(settings.regions.info)),
   ]);
 

@@ -183,6 +183,16 @@ ipcMain.handle('recognize-text', (event, image) => {
   });
 });
 
+// Digit-only variant for the heading tape - see lib/ocr.js's getHeadingWorker().
+ipcMain.handle('recognize-heading-text', (event, image) => {
+  const proc = getOcrProcess();
+  const id = ocrRequestId++;
+  return new Promise((resolve, reject) => {
+    ocrPending.set(id, { resolve, reject });
+    proc.send({ id, image, kind: 'heading' });
+  });
+});
+
 app.whenReady().then(() => {
   createControlWindow();
   app.on('activate', () => {

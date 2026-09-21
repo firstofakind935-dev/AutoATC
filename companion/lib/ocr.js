@@ -14,6 +14,27 @@ function getWorker() {
   return workerPromise;
 }
 
+// A separate, dedicated worker for the heading tape - it's a digit-only
+// field (unlike the info box, which needs letters for the aircraft type),
+// and confirmed real captures show Tesseract occasionally misreading one
+// digit as another (a clean "194" read at one tick, then "174" moments
+// later at the same real heading) - a character whitelist removes the
+// letter-vs-digit hypothesis space entirely, which meaningfully improves
+// digit disambiguation. Kept as its own worker (not shared, parameters
+// swapped per call) so two ocrRegion() calls firing in parallel each tick
+// can never race on which whitelist is active.
+let headingWorkerPromise = null;
+
+async function getHeadingWorker() {
+  if (!headingWorkerPromise) {
+    headingWorkerPromise = createWorker('eng').then(async (worker) => {
+      await worker.setParameters({ tessedit_char_whitelist: '0123456789' });
+      return worker;
+    });
+  }
+  return headingWorkerPromise;
+}
+
 /**
  * image: anything tesseract.js accepts - a data URL, a Buffer, or a canvas.
  * Returns the raw recognized text (trimmed); parsing that into a specific
@@ -22,6 +43,13 @@ function getWorker() {
  */
 async function recognizeText(image) {
   const worker = await getWorker();
+  const { data } = await worker.recognize(image);
+  return (data.text || '').trim();
+}
+
+/** Same as recognizeText(), but via the digit-only worker - see getHeadingWorker(). */
+async function recognizeHeadingText(image) {
+  const worker = await getHeadingWorker();
   const { data } = await worker.recognize(image);
   return (data.text || '').trim();
 }
@@ -77,10 +105,16 @@ function parseHeadingTape(rawText) {
 }
 
 async function terminate() {
-  if (!workerPromise) return;
-  const worker = await workerPromise;
-  await worker.terminate();
-  workerPromise = null;
+  if (workerPromise) {
+    const worker = await workerPromise;
+    await worker.terminate();
+    workerPromise = null;
+  }
+  if (headingWorkerPromise) {
+    const worker = await headingWorkerPromise;
+    await worker.terminate();
+    headingWorkerPromise = null;
+  }
 }
 
-module.exports = { recognizeText, parseFlightInfo, parseHeadingTape, terminate };
+module.exports = { recognizeText, recognizeHeadingText, parseFlightInfo, parseHeadingTape, terminate };

@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('companion', {
   // Runs in the main process (see main.js's 'recognize-text' handler) -
   // not called directly here, unlike the other lib/*.js functions above.
   recognizeText: (image) => ipcRenderer.invoke('recognize-text', image),
+  // Digit-only OCR pass for the heading tape - see lib/ocr.js's getHeadingWorker().
+  recognizeHeadingText: (image) => ipcRenderer.invoke('recognize-heading-text', image),
   parseFlightInfo,
   parseHeadingTape,
   uploadPosition,
