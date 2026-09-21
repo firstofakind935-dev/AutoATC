@@ -39,25 +39,19 @@ export default{
     // container-width-in-real-nm is consistent between the two: measured
     // each SVG's own getBBox() in a real browser, then solved
     // zoom = (IRFD.zoom * IRFD.realWidthNm) / IKFL.realWidthNm.
-    // x/y also had to be recalculated, not just zoom - per this file's own
-    // main.js ground-view code, viewBox.width/height = bbox.width/height *
-    // zoom, but viewBox.x/y are the raw stored x/y verbatim, NOT
-    // re-centered automatically - the original x/y was some human's
-    // interactively panned-to center point at the OLD (smaller) zoom,
-    // saved together as one {zoom, x, y} snapshot (see the commented-out
-    // console.log in main.js's ground-view pan handler - that's literally
-    // how these values were captured originally). Changing zoom alone
-    // while leaving that old top-left corner in place shoved the frame
-    // off to the side once the viewBox grew ~6.9x, which is why Keflavik
-    // briefly showed "in the wrong spot" after only the zoom fix. Fixed
-    // by solving for the new x/y that keep that same original center
-    // point, just with a viewBox sized for the new zoom:
-    // center = oldX + (bbox.width*oldZoom)/2 (same for y), then
-    // newX = center - (bbox.width*newZoom)/2 (same for y). The other
-    // airports here still use IRFD's un-recalibrated scale and may have
-    // the same relative-size issue - fix them the same way (zoom AND x/y
-    // together) once real measurements are available for them too.
-    "IKFL": { zoom: 0.253674, x: -381.5523, y: -62.5267, r: 0 },
+    // x/y is DELIBERATELY left untouched, on purpose, after an earlier
+    // attempt to "recenter" it for the ground view broke something more
+    // important: this same x/y is also IKFL's world-map anchor point -
+    // main.js's own adaptPositionsToAircraftData() (and src/flightradar365/
+    // groundOffsets.js's positionSync.js counterpart) uses it to convert a
+    // bot's distanceNm/bearingDeg from this airport into a world-map
+    // position. Changing it for ground-view framing cosmetics silently
+    // moves every aircraft plotted relative to this airport on the actual
+    // map. Only zoom is safe to recalibrate alone; if the ground view
+    // still looks off-center at the new zoom, that's a separate,
+    // ground-view-only problem to fix without touching x/y - the real
+    // anchor coordinate is not the thing to adjust for it.
+    "IKFL": { zoom: 0.253674, x: -378.5900, y: -60.2400, r: 0 },
     "ITEY": { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
     "IUFO": { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
     "SHV": { zoom: 0.01, x: 225.4261, y: -201.4141, r: 0 },
