@@ -39,19 +39,26 @@ export default{
     // container-width-in-real-nm is consistent between the two: measured
     // each SVG's own getBBox() in a real browser, then solved
     // zoom = (IRFD.zoom * IRFD.realWidthNm) / IKFL.realWidthNm.
-    // x/y is DELIBERATELY left untouched, on purpose, after an earlier
-    // attempt to "recenter" it for the ground view broke something more
-    // important: this same x/y is also IKFL's world-map anchor point -
-    // main.js's own adaptPositionsToAircraftData() (and src/flightradar365/
-    // groundOffsets.js's positionSync.js counterpart) uses it to convert a
-    // bot's distanceNm/bearingDeg from this airport into a world-map
-    // position. Changing it for ground-view framing cosmetics silently
-    // moves every aircraft plotted relative to this airport on the actual
-    // map. Only zoom is safe to recalibrate alone; if the ground view
-    // still looks off-center at the new zoom, that's a separate,
-    // ground-view-only problem to fix without touching x/y - the real
-    // anchor coordinate is not the thing to adjust for it.
-    "IKFL": { zoom: 0.253674, x: -378.5900, y: -60.2400, r: 0 },
+    // x/y: this same pair is ALSO IKFL's world-map anchor point - this
+    // file's own main.js adaptPositionsToAircraftData() (and
+    // src/flightradar365/positionSync.js's toTrackXY() counterpart) use it
+    // to convert a bot's distanceNm/bearingDeg from this airport into a
+    // world-map position, so it's not safe to nudge for ground-view
+    // framing reasons alone (an earlier attempt at that here broke real
+    // aircraft placement and was reverted). Y specifically was genuinely
+    // wrong though, independent of the zoom/framing work above -
+    // side-by-side against a correct reference map, IKFL's marker sat up
+    // near the island's neck instead of down in the southern lobe where
+    // it actually is. Confirmed the sign convention (which direction is
+    // "south") empirically first, rather than guessing, by comparing this
+    // file's Y values for IKFL/ITEY/TVO/IGCG against their real latitudes
+    // in data/charts/*.json - more negative Y consistently matched
+    // further north for all three pairs, so south = increasing Y. Shifted
+    // south by the real measured distance (1.24nm, no east/west
+    // component) using this file's own studs-per-nm scale
+    // (STUDS_PER_NM/100 = 33.07 SVG-units/nm, same conversion toTrackXY()
+    // uses): y += 1.24 * 33.07.
+    "IKFL": { zoom: 0.253674, x: -378.5900, y: -19.2314, r: 0 },
     "ITEY": { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
     "IUFO": { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
     "SHV": { zoom: 0.01, x: 225.4261, y: -201.4141, r: 0 },
