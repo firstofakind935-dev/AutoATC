@@ -176,28 +176,33 @@ radiosBtn.addEventListener('click', () => toggleRadioPanel());
  * rotate() handles values past 360° fine, and wrapping it would make the
  * animated transition spin the long way around at the wrap point instead
  * of continuing to turn the same direction the knob was actually turned.
+ *
+ * Built ONCE per radio and never recreated (see buildRadioRows() below) -
+ * every step round-trips through control.js and back as a fresh
+ * 'radio-state' push, and rebuilding this element on that echo used to
+ * reset "rotation" to 0 before the turn was ever visible, which is why the
+ * knob looked like it didn't turn at all. enabled/disabled is instead a
+ * live toggle (setDisabled) on the same persistent element.
  */
-function makeKnob(onStep, disabled) {
+function makeKnob(onStep) {
   const knob = document.createElement('div');
   knob.className = 'knob';
   const indicator = document.createElement('div');
   indicator.className = 'knob-indicator';
   knob.appendChild(indicator);
-  if (disabled) {
-    knob.style.opacity = '0.35';
-    knob.style.cursor = 'not-allowed';
-    return knob;
-  }
 
   let rotation = 0;
+  let disabled = false;
   const STEP_DEG = 20;
   function applyStep(direction) {
+    if (disabled) return;
     rotation += direction * STEP_DEG;
     indicator.style.transform = `rotate(${rotation}deg)`;
     onStep(direction);
   }
 
   knob.addEventListener('wheel', (e) => {
+    if (disabled) return;
     e.preventDefault();
     applyStep(e.deltaY < 0 ? 1 : -1);
   });
@@ -206,6 +211,7 @@ function makeKnob(onStep, disabled) {
   let lastY = 0;
   const DRAG_PX_PER_STEP = 6;
   knob.addEventListener('mousedown', (e) => {
+    if (disabled) return;
     dragging = true;
     lastY = e.clientY;
     e.preventDefault();
@@ -221,71 +227,125 @@ function makeKnob(onStep, disabled) {
     dragging = false;
   });
 
-  return knob;
+  return {
+    el: knob,
+    setDisabled(next) {
+      disabled = next;
+      knob.style.opacity = disabled ? '0.35' : '';
+      knob.style.cursor = disabled ? 'not-allowed' : 'grab';
+    },
+  };
 }
 
-function renderRadioPanel() {
+// Filled in once by buildRadioRows() - { vhf1: {knob, activeEl, standbyEl,
+// swapBtn, labelEl, powerBtn}, ..., squawk: {knob, activeEl, labelEl} }.
+let radioRowRefs = null;
+
+function buildRadioRows() {
   const list = document.getElementById('radioList');
   list.innerHTML = '';
-  if (!radioState) {
-    list.innerHTML = '<div class="message-empty">Waiting for the control window...</div>';
-    return;
-  }
+  radioRowRefs = {};
 
-  for (const [key, radio] of Object.entries(radioState.radios)) {
+  for (const key of Object.keys(radioState.radios)) {
     const row = document.createElement('div');
     row.className = 'radio-row';
 
     const knob = makeKnob((direction) => {
       window.companion.sendToControl({ tag: 'radio-action', action: 'step', radio: key, value: direction });
-    }, radio.inop);
+    });
 
     const info = document.createElement('div');
     info.className = 'radio-info';
     info.innerHTML = `
-      <div class="radio-label">${radio.label}${radio.inop ? ' (inop)' : ''}</div>
+      <div class="radio-label"></div>
       <div class="radio-freqs">
-        <span class="radio-active">${radio.active.toFixed(3)}</span>
-        <button class="radio-swap" ${radio.inop ? 'disabled' : ''}>⇄</button>
-        <span class="radio-standby">${radio.standby.toFixed(3)}</span>
+        <span class="radio-active"></span>
+        <button class="radio-swap">⇄</button>
+        <span class="radio-standby"></span>
       </div>
-      ${radio.switchable ? `<button class="radio-power">${radio.inop ? 'Switch on' : 'Switch off'}</button>` : ''}
+      <button class="radio-power" hidden></button>
     `;
-    info.querySelector('.radio-swap').addEventListener('click', () => {
+    const swapBtn = info.querySelector('.radio-swap');
+    swapBtn.addEventListener('click', () => {
       window.companion.sendToControl({ tag: 'radio-action', action: 'swap', radio: key });
     });
     const powerBtn = info.querySelector('.radio-power');
-    if (powerBtn) {
-      powerBtn.addEventListener('click', () => {
-        window.companion.sendToControl({ tag: 'radio-action', action: 'power', radio: key });
-      });
-    }
+    powerBtn.addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'power', radio: key });
+    });
 
-    row.appendChild(knob);
+    row.appendChild(knob.el);
     row.appendChild(info);
     list.appendChild(row);
+
+    radioRowRefs[key] = {
+      knob,
+      labelEl: info.querySelector('.radio-label'),
+      activeEl: info.querySelector('.radio-active'),
+      standbyEl: info.querySelector('.radio-standby'),
+      swapBtn,
+      powerBtn,
+    };
   }
 
   const squawkRow = document.createElement('div');
   squawkRow.className = 'radio-row';
   const squawkKnob = makeKnob((direction) => {
     window.companion.sendToControl({ tag: 'radio-action', action: 'squawkStep', value: direction });
-  }, false);
+  });
   const squawkInfo = document.createElement('div');
   squawkInfo.className = 'radio-info';
   squawkInfo.innerHTML = `
-    <div class="radio-label">Squawk${radioState.identing ? ' - IDENT' : ''}</div>
+    <div class="radio-label"></div>
     <div class="radio-freqs">
-      <span class="radio-active">${radioState.squawk}</span>
+      <span class="radio-active"></span>
       <button class="radio-power">Ident</button>
     </div>
   `;
   squawkInfo.querySelector('.radio-power').addEventListener('click', () => {
     window.companion.sendToControl({ tag: 'radio-action', action: 'ident' });
   });
-  squawkRow.appendChild(squawkKnob);
+  squawkRow.appendChild(squawkKnob.el);
   squawkRow.appendChild(squawkInfo);
   list.appendChild(squawkRow);
+
+  radioRowRefs.squawk = {
+    knob: squawkKnob,
+    labelEl: squawkInfo.querySelector('.radio-label'),
+    activeEl: squawkInfo.querySelector('.radio-active'),
+  };
+}
+
+/** Updates the already-built rows' text/enabled-state from radioState - never touches the knob DOM itself. */
+function updateRadioDisplay() {
+  for (const [key, radio] of Object.entries(radioState.radios)) {
+    const refs = radioRowRefs[key];
+    refs.labelEl.textContent = radio.label + (radio.inop ? ' (inop)' : '');
+    refs.activeEl.textContent = radio.active.toFixed(3);
+    refs.standbyEl.textContent = radio.standby.toFixed(3);
+    refs.swapBtn.disabled = radio.inop;
+    refs.knob.setDisabled(radio.inop);
+    if (radio.switchable) {
+      refs.powerBtn.hidden = false;
+      refs.powerBtn.textContent = radio.inop ? 'Switch on' : 'Switch off';
+    } else {
+      refs.powerBtn.hidden = true;
+    }
+  }
+
+  const squawkRefs = radioRowRefs.squawk;
+  squawkRefs.labelEl.textContent = 'Squawk' + (radioState.identing ? ' - IDENT' : '');
+  squawkRefs.activeEl.textContent = radioState.squawk;
+}
+
+function renderRadioPanel() {
+  const list = document.getElementById('radioList');
+  if (!radioState) {
+    list.innerHTML = '<div class="message-empty">Waiting for the control window...</div>';
+    return;
+  }
+  if (!radioRowRefs) buildRadioRows();
+  updateRadioDisplay();
 }
 
 // ---------- Datalink (CPDLC/PDC) messages ----------
