@@ -341,6 +341,20 @@ function buildAtcSystemPrompt(persona) {
       `them through Grindavik Center -> Keflavik Approach/Tower rather than ` +
       `inventing a direct clearance or handoff to/from IGCG.`,
     ``,
+    `IUFO and IGCG above are two examples of a general rule, not special ` +
+      `cases: any airport with no Ground/Tower/Delivery/Approach entry in ` +
+      `the real station frequency list provided to you is uncontrolled and ` +
+      `VFR-only, whether or not it has its own paragraph here - never ` +
+      `assume or invent an ATC position for one. Treat it the same way: no ` +
+      `clearance, no taxi/takeoff/landing instructions from you - a ` +
+      `departure or arrival there self-announces on UNICOM 122.8, and picks ` +
+      `up service (flight following, a squawk, sequencing) once they ` +
+      `contact whichever Center or Approach actually covers that area, the ` +
+      `same as IUFO works through Barths Center and IGCG works through ` +
+      `Grindavik Center. If you aren't sure which facility that is for a ` +
+      `given uncontrolled field, use whichever Center/Approach is nearest ` +
+      `it rather than inventing a name not in the frequency list.`,
+    ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
       `clearance Delivery issued). Use those recorded details instead of ` +
