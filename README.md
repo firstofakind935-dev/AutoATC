@@ -492,19 +492,35 @@ that file (fetching positions, building the payload, the sync loop, the
 `replace: true` semantics) doesn't depend on which coordinate system
 turns out to be right.
 
-#### Radar view
+#### Radar view (365Radar)
 
-AutoATC previously vendored a near-verbatim port of
-[24Radar](https://github.com/t-arpin/atc24radar) as its own web radar
-(the dashboard's Radar tab, and a public `/radar` page). That's been
-pulled out in favor of a radar built separately, so neither exists in
-this repo anymore - the dashboard now has just the Logs and Strips
-tabs. What stays, as the integration point for whatever consumes
-positions next:
+AutoATC vendors a near-verbatim port of
+[24Radar](https://github.com/t-arpin/atc24radar) (GPLv3) as its own web
+radar, rebranded **365Radar** for ATC365 (`monitor/public/365radar/` -
+see that directory's `index.html` header comment and `LICENSE`). Only
+the aircraft-tracking data source is swapped for AutoATC's own
+bot-estimated position feed; UI, layout and interaction code is
+otherwise unmodified from upstream. Reachable two ways:
 
 ```
-GET /api/dashboard/positions    — live aircraft positions, dashboard-auth-free (see below)
-GET /api/dashboard/flightstrips — live flight strips, same auth story
+GET /radar      — redirects to /365radar/, a public link with no dashboard login required
+GET /365radar/  — the radar page itself
+```
+
+The dashboard's Radar tab (between Logs and Strips) embeds this same
+`/365radar/` page in an iframe, so there's one radar implementation, not
+two. Both the public `/radar` route and the `/365radar/` bundle itself
+are exempt from `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth - live traffic
+position isn't worth protecting the way logs/pilot transcripts are.
+
+`365radar/src/main.js` expects two endpoints from the upstream
+24radar.xyz backend that AutoATC has no equivalent for (ATIS-letter
+auto-fetch and instrument approach plates); these degrade gracefully
+rather than crash:
+
+```
+GET /365radar-api/atis/:icao        — 404 (AutoATC doesn't track ATIS letters)
+GET /365radar-api/approaches/:icao  — [] (AutoATC only has ground charts, not approach plates)
 ```
 
 The map itself is served from a separate dashboard-facing endpoint (not
@@ -513,7 +529,8 @@ authenticates with the `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth
 credentials, not the `INGEST_API_KEY` Bearer token bots use:
 
 ```
-GET /api/dashboard/positions   — same data as /api/positions, gated by dashboard auth instead
+GET /api/dashboard/positions    — same data as /api/positions, gated by dashboard auth instead
+GET /api/dashboard/flightstrips — live flight strips, same auth story
 ```
 
 #### Flight strips
@@ -562,8 +579,8 @@ The monitor validates it server-side before using it for anything
 (`activeVectorFor()` in `monitor/server.js` - a finite number in
 `[0, 360)` or it's dropped) and joins it into `/api/positions`/
 `/api/dashboard/positions` alongside that aircraft's own position, for
-whatever radar ends up consuming it to draw. The Strips tab's **Vector**
-column shows the same data as plain text for anyone not looking at a map.
+365Radar (or any other radar) to draw. The Strips tab's **Vector** column
+shows the same data as plain text for anyone not looking at a map.
 
 ### Datalink messages (CPDLC/PDC)
 
