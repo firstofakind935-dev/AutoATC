@@ -155,18 +155,35 @@
             <button class="btn btn-primary" id="startTrackingBtn">Start tracking</button>
             <button class="btn btn-secondary" id="stopTrackingBtn" disabled>Stop tracking</button>
           </div>
-          <div class="field-grid">
-            <label>Tune frequency <input id="tuneFrequency" placeholder="e.g. 118.100"></label>
-          </div>
-          <div class="card-actions">
-            <button class="btn btn-secondary" id="tuneBtn">Tune</button>
-            <span class="status-pill" id="tuneStatus"></span>
-          </div>
-          <p class="hint">
-            Requires having filed a flight plan with /fileflightplan at least once (links your
-            callsign to your Discord account, so Bot Manager knows who to move).
-          </p>
           <pre id="trackingStatus"></pre>
+        </div>
+      </section>
+
+      <section class="card" id="radios" hidden>
+        <div class="card-header">
+          <span class="step-badge">6</span>
+          <h2>Radios</h2>
+        </div>
+        <div class="card-body">
+          <p class="hint">
+            VHF1's active frequency is what Bot Manager actually moves you to when swapped - VHF2/VHF3
+            are tracked here but don't move your Discord channel. Requires having filed a flight plan
+            with /fileflightplan at least once (links your callsign to your Discord account, so Bot
+            Manager knows who to move).
+          </p>
+          <div id="radioPanels"></div>
+          <div class="radio-panel">
+            <div class="radio-name">Squawk</div>
+            <div class="freq-display">
+              <span class="freq-active" id="squawkCode">2000</span>
+            </div>
+            <div class="knob-controls">
+              <button class="btn btn-secondary" id="squawkDown">▼</button>
+              <input id="squawkType" placeholder="4-digit code (0-7 only)" maxlength="4">
+              <button class="btn btn-secondary" id="squawkUp">▲</button>
+            </div>
+          </div>
+          <span class="status-pill" id="tuneStatus"></span>
         </div>
       </section>
     </main>

@@ -117,6 +117,7 @@ async function showOverlay() {
   document.getElementById('regions').hidden = false;
   document.getElementById('calibration').hidden = false;
   document.getElementById('tracking').hidden = false;
+  document.getElementById('radios').hidden = false;
 
   sendRegionsToOverlay();
   syncBar();
@@ -464,14 +465,103 @@ function stopTracking() {
 document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
 document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
 
-document.getElementById('tuneBtn').addEventListener('click', async () => {
-  const frequency = document.getElementById('tuneFrequency').value.trim();
-  if (!frequency) return;
+// ---------- Radio panel (VHF1/2/3 + squawk) ----------
+
+// Fresh defaults every launch, matching a real aircraft's radios coming up
+// on standby rather than remembering last session's frequencies:
+//  - VHF1: active radio, both active/standby default to 122.800.
+//  - VHF2: same defaults, but starts inop (its knob/swap/type controls are
+//    disabled) until the pilot switches it on.
+//  - VHF3: dedicated to DATA - defaults to guard 121.500 on both sides.
+// Only VHF1's active frequency actually moves you (see swapRadio() below) -
+// VHF2/VHF3 are tracked and displayed but don't trigger a Discord move,
+// since there's no second real use for them defined yet.
+const FREQ_MIN = 118.0;
+const FREQ_MAX = 136.975;
+const FREQ_STEP = 0.025;
+
+const radios = {
+  vhf1: { label: 'VHF1', active: 122.8, standby: 122.8, inop: false, switchable: false },
+  vhf2: { label: 'VHF2', active: 122.8, standby: 122.8, inop: true, switchable: true },
+  vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: false },
+};
+
+function formatFreq(value) {
+  return value.toFixed(3);
+}
+
+function clampFreq(value) {
+  return Math.min(FREQ_MAX, Math.max(FREQ_MIN, Math.round(value / FREQ_STEP) * FREQ_STEP));
+}
+
+function renderRadioPanels() {
+  const container = document.getElementById('radioPanels');
+  container.innerHTML = '';
+
+  for (const [key, radio] of Object.entries(radios)) {
+    const panel = document.createElement('div');
+    panel.className = 'radio-panel';
+    panel.innerHTML = `
+      <div class="radio-name">${radio.label}${radio.inop ? ' (inop)' : ''}</div>
+      <div class="freq-display">
+        <span class="freq-active">${formatFreq(radio.active)}</span>
+        <button class="btn btn-secondary" data-action="swap" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>⇄</button>
+        <span class="freq-standby">${formatFreq(radio.standby)}</span>
+      </div>
+      <div class="knob-controls">
+        <button class="btn btn-secondary" data-action="down" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>▼</button>
+        <input data-action="type" data-radio="${key}" placeholder="Type frequency" ${radio.inop ? 'disabled' : ''}>
+        <button class="btn btn-secondary" data-action="up" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>▲</button>
+        ${radio.switchable ? `<button class="btn btn-secondary" data-action="power" data-radio="${key}">${radio.inop ? 'Switch on' : 'Switch off'}</button>` : ''}
+      </div>
+    `;
+    container.appendChild(panel);
+  }
+
+  container.querySelectorAll('[data-action="swap"]').forEach((btn) => btn.addEventListener('click', () => swapRadio(btn.dataset.radio)));
+  container.querySelectorAll('[data-action="up"]').forEach((btn) => btn.addEventListener('click', () => stepRadio(btn.dataset.radio, 1)));
+  container.querySelectorAll('[data-action="down"]').forEach((btn) => btn.addEventListener('click', () => stepRadio(btn.dataset.radio, -1)));
+  container.querySelectorAll('[data-action="power"]').forEach((btn) => btn.addEventListener('click', () => toggleRadioPower(btn.dataset.radio)));
+  container.querySelectorAll('[data-action="type"]').forEach((input) =>
+    input.addEventListener('change', () => {
+      const value = Number(input.value);
+      if (!Number.isFinite(value)) return;
+      radios[input.dataset.radio].standby = clampFreq(value);
+      renderRadioPanels();
+    })
+  );
+}
+
+function stepRadio(key, direction) {
+  const radio = radios[key];
+  radio.standby = clampFreq(radio.standby + direction * FREQ_STEP);
+  renderRadioPanels();
+}
+
+function toggleRadioPower(key) {
+  radios[key].inop = !radios[key].inop;
+  renderRadioPanels();
+}
+
+/**
+ * Flips standby into active - the classic flip-flop swap. Only VHF1 also
+ * fires an actual tune request to Bot Manager (see the class comment on
+ * BotManagerBot's Job 2 for why VHF1 specifically is treated as "what
+ * you're currently listening to").
+ */
+async function swapRadio(key) {
+  const radio = radios[key];
+  [radio.active, radio.standby] = [radio.standby, radio.active];
+  renderRadioPanels();
+
+  if (key !== 'vhf1') return;
+
   if (!settings.monitorUrl || !settings.callsign) {
     setStatus('tuneStatus', 'Set your callsign and Monitor URL first.', 'bad');
     return;
   }
 
+  const frequency = formatFreq(radio.active);
   setStatus('tuneStatus', 'Tuning...', 'warn');
   try {
     await window.companion.tuneFrequency({
@@ -486,7 +576,43 @@ document.getElementById('tuneBtn').addEventListener('click', async () => {
     setStatus('tuneStatus', 'Failed to send tune request.', 'bad');
     log(`Tune to ${frequency} failed: ${err.message}`);
   }
+}
+
+// ---------- Squawk ----------
+
+// Real transponder codes are 4 octal digits (0-7 only, no 8/9) - 2000
+// matches this fleet's VFR conspicuity default (see IZOL/Rockford's own
+// real-world-style ICAO conventions elsewhere in this repo).
+let squawk = '2000';
+
+function renderSquawk() {
+  document.getElementById('squawkCode').textContent = squawk;
+}
+
+function stepSquawk(direction) {
+  // Treated as a plain base-8 number for stepping (0000 <-> 7777 wraps),
+  // simpler than modeling the two physical dual-concentric knobs a real
+  // transponder has for the digit pairs.
+  const asOctal = parseInt(squawk, 8);
+  const next = (asOctal + direction + 0o10000) % 0o10000;
+  squawk = next.toString(8).padStart(4, '0');
+  renderSquawk();
+}
+
+document.getElementById('squawkUp').addEventListener('click', () => stepSquawk(1));
+document.getElementById('squawkDown').addEventListener('click', () => stepSquawk(-1));
+document.getElementById('squawkType').addEventListener('change', (e) => {
+  const value = e.target.value.trim();
+  if (!/^[0-7]{4}$/.test(value)) {
+    e.target.value = squawk;
+    return;
+  }
+  squawk = value;
+  renderSquawk();
 });
+
+renderRadioPanels();
+renderSquawk();
 
 // ---------- Init ----------
 

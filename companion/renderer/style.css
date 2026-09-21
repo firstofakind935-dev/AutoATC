@@ -277,3 +277,50 @@ input[type="checkbox"] {
   overflow-y: auto;
   margin: 12px 0 0;
 }
+
+.radio-panel {
+  background: #0e1626;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.radio-name {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.freq-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.freq-active {
+  font-family: var(--mono);
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.freq-standby {
+  font-family: var(--mono);
+  font-size: 1.1em;
+  color: var(--text-muted);
+}
+
+.knob-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.knob-controls input {
+  flex: 1;
+  min-width: 0;
+}
