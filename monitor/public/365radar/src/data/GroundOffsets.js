@@ -29,7 +29,20 @@ export default{
     "IBAR": { zoom: 0.01, x: 251.2702, y: 272.0383, r: 0 },
     "IBRD": { zoom: 0.01, x: -61.6464, y: -233.9458, r: 0 },
     "IGCG": { zoom: 0.0535, x: -349.6831, y: -99.0152, r: 0 },
-    "IKFL": { zoom: 0.0369, x: -378.5900, y: -60.2400, r: 0 },
+    // IKFL's zoom is measured, not estimated like its siblings here - the
+    // ground SVGs aren't drawn to a shared real-world scale (confirmed:
+    // IKFL's chart is ~6.7x denser per real nm than IRFD's), so a uniform
+    // zoom across airports makes smaller-chart-scale airports look
+    // over-zoomed relative to others (the original "Keflavik 2x oversized"
+    // bug). Recalibrated against real in-game measurements (IKFL 0.7x0.9nm,
+    // IRFD 6.1x6.8nm - IRFD's own zoom kept as the fixed anchor) so
+    // container-width-in-real-nm is consistent between the two: measured
+    // each SVG's own getBBox() in a real browser, then solved
+    // zoom = (IRFD.zoom * IRFD.realWidthNm) / IKFL.realWidthNm. The other
+    // airports here still use IRFD's un-recalibrated scale and may have
+    // the same relative-size issue - fix them the same way once real
+    // measurements are available for them too.
+    "IKFL": { zoom: 0.253674, x: -378.5900, y: -60.2400, r: 0 },
     "ITEY": { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
     "IUFO": { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
     "SHV": { zoom: 0.01, x: 225.4261, y: -201.4141, r: 0 },
