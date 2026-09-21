@@ -554,17 +554,29 @@ function toggleRadioPower(key) {
 }
 
 /**
- * Flips standby into active - the classic flip-flop swap. Only VHF1 also
- * fires an actual tune request to Bot Manager (see the class comment on
- * BotManagerBot's Job 2 for why VHF1 specifically is treated as "what
- * you're currently listening to").
+ * Which radio is "what you're currently listening/talking to" - the one
+ * whose swap actually fires a tune request to Bot Manager (see the class
+ * comment on BotManagerBot's Job 2). Defaults to VHF1, but switching VHF2
+ * on hands that role to VHF2 instead, same as a pilot choosing to work a
+ * second radio - VHF1 doesn't actually power down or stop displaying, it
+ * just stops being the one that drives a channel move. Switching VHF2 back
+ * off hands it back to VHF1. VHF3 (DATA) never takes this role.
+ */
+function primaryRadioKey() {
+  return radios.vhf2.inop ? 'vhf1' : 'vhf2';
+}
+
+/**
+ * Flips standby into active - the classic flip-flop swap. Only the current
+ * primary radio (see primaryRadioKey() above) also fires an actual tune
+ * request to Bot Manager.
  */
 async function swapRadio(key) {
   const radio = radios[key];
   [radio.active, radio.standby] = [radio.standby, radio.active];
   pushRadioStateToOverlay();
 
-  if (key !== 'vhf1') return;
+  if (key !== primaryRadioKey()) return;
 
   if (!settings.monitorUrl || !settings.callsign) {
     log('Cannot tune - set your callsign and Monitor URL first.');

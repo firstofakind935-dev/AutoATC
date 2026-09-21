@@ -177,8 +177,9 @@
 
   /* The knob: a small draggable/scrollable dial. Turning it steps the
      standby frequency (or squawk digit) - the rotation itself is purely a
-     tactile cue (accumulates per step, wraps at 360°), not a literal
-     mapping of the underlying value's range. See overlay.js's makeKnob(). */
+     tactile cue (accumulates per step, animated - see the transition on
+     .knob-indicator below), not a literal mapping of the underlying
+     value's range. See overlay.js's makeKnob(). */
   .knob {
     width: 34px;
     height: 34px;
@@ -200,6 +201,10 @@
     background: #38bdf8;
     transform-origin: 1px 14px;
     margin-left: -1px;
+    /* Animates each step's rotation instead of snapping instantly, so
+       turning the knob actually reads as turning. Fast enough to keep up
+       with rapid wheel/drag steps rather than queuing up behind them. */
+    transition: transform 120ms ease-out;
   }
 
   /* Toast for a newly-arrived message - separate from #banner, which is

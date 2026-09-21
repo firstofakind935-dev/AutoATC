@@ -169,9 +169,13 @@ radiosBtn.addEventListener('click', () => toggleRadioPanel());
 /**
  * A small draggable/scrollable dial. Turning it (mouse-wheel, or drag up/
  * down) calls onStep(+1) / onStep(-1) per notch - the rotation itself is
- * just a tactile cue that accumulates per step and wraps at 360°, not a
- * literal mapping of the underlying frequency/squawk range (that range is
- * far too fine-grained for one knob turn to cover 1:1).
+ * just a tactile cue that accumulates per step, not a literal mapping of
+ * the underlying frequency/squawk range (that range is far too
+ * fine-grained for one knob turn to cover 1:1). Deliberately left
+ * unwrapped (no "% 360") rather than wrapping the angle back to 0 - CSS's
+ * rotate() handles values past 360° fine, and wrapping it would make the
+ * animated transition spin the long way around at the wrap point instead
+ * of continuing to turn the same direction the knob was actually turned.
  */
 function makeKnob(onStep, disabled) {
   const knob = document.createElement('div');
@@ -188,7 +192,7 @@ function makeKnob(onStep, disabled) {
   let rotation = 0;
   const STEP_DEG = 20;
   function applyStep(direction) {
-    rotation = (rotation + direction * STEP_DEG + 360) % 360;
+    rotation += direction * STEP_DEG;
     indicator.style.transform = `rotate(${rotation}deg)`;
     onStep(direction);
   }
