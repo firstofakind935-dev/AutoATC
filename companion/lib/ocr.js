@@ -37,7 +37,12 @@ async function recognizeText(image) {
 function parseFlightInfo(rawText) {
   if (!rawText) return { aircraftType: null, speedKts: null, altitudeFt: null };
 
-  const speedMatch = rawText.match(/(\d{1,4})\s*kts?\b/i);
+  // Tesseract regularly reads a lone "0" (e.g. speed "0kts" while stationary/
+  // taxiing - confirmed against a real log: "Okts Altitude 1243ft") as the
+  // letter "O" instead of the digit - there's nothing else in the run to
+  // anchor it as a digit. Accept O/o standing in for a leading zero here,
+  // then normalize before parsing as a number.
+  const speedMatch = rawText.match(/([0-9Oo][0-9Oo]{0,3})\s*kts?\b/i);
   const altitudeMatch = rawText.match(/(\d{1,6})\s*ft\b/i);
 
   // The aircraft type is a short alphanumeric token (e.g. "A220", "C172")
@@ -47,7 +52,7 @@ function parseFlightInfo(rawText) {
 
   return {
     aircraftType: typeMatch ? typeMatch[1] : null,
-    speedKts: speedMatch ? Number(speedMatch[1]) : null,
+    speedKts: speedMatch ? Number(speedMatch[1].replace(/[Oo]/g, '0')) : null,
     altitudeFt: altitudeMatch ? Number(altitudeMatch[1]) : null,
   };
 }
