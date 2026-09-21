@@ -306,6 +306,44 @@ function log(message) {
 // smoothing do the upscaling before OCR sees it.
 const UPSCALE = 3;
 
+// Forces the crop to pure black/white before handing it to Tesseract, which
+// is tuned for dark text on a light background - the heading tape is the
+// opposite (a light boxed number on a dark pill), and leaving that
+// anti-aliased gradient in place was still producing a misread (194 read as
+// 174, consistently, even with a digit-only whitelist, upscaling, and a
+// single-line page-segmentation mode) so it's the glyph edges themselves,
+// not just resolution or character-class ambiguity, that needed cleaning
+// up. Auto-detects polarity from the crop's own average brightness rather
+// than assuming light-on-dark, so it isn't a guess.
+function binarize(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const { data } = imageData;
+
+  const pixelCount = width * height;
+  const gray = new Float32Array(pixelCount);
+  let sum = 0;
+  for (let i = 0; i < pixelCount; i++) {
+    const o = i * 4;
+    const luminance = 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
+    gray[i] = luminance;
+    sum += luminance;
+  }
+  const mean = sum / pixelCount;
+  const backgroundIsDark = mean < 128;
+
+  for (let i = 0; i < pixelCount; i++) {
+    const isForeground = backgroundIsDark ? gray[i] > mean : gray[i] < mean;
+    const v = isForeground ? 0 : 255;
+    const o = i * 4;
+    data[o] = v;
+    data[o + 1] = v;
+    data[o + 2] = v;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
 async function ocrRegion(sourceCanvas, region, { heading = false } = {}) {
   if (!region) return '';
   const cropped = document.createElement('canvas');
@@ -314,6 +352,7 @@ async function ocrRegion(sourceCanvas, region, { heading = false } = {}) {
   cropped
     .getContext('2d')
     .drawImage(sourceCanvas, region.x, region.y, region.w, region.h, 0, 0, cropped.width, cropped.height);
+  if (heading) binarize(cropped);
   const dataUrl = cropped.toDataURL('image/png');
   return heading ? window.companion.recognizeHeadingText(dataUrl) : window.companion.recognizeText(dataUrl);
 }
@@ -388,7 +427,7 @@ async function trackTick() {
     });
     log(
       `Uploaded: ${nearest.distanceNm.toFixed(1)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}, ` +
-        `${info.altitudeFt}ft, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)` +
+        `${info.altitudeFt != null ? `${info.altitudeFt}ft` : 'alt ?'}, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)` +
         // Temporary diagnostic (see companion/lib/ocr.js's parseHeadingTape) -
         // a "successful" parse can still read the wrong number if the raw OCR
         // text isn't what's expected, and that raw text was previously only

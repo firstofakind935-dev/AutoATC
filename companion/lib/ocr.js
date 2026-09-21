@@ -3,7 +3,7 @@
 // easily-testable math lives apart from anything that needs a real
 // Tesseract worker (which is slow to spin up and not worth mocking here).
 
-const { createWorker } = require('tesseract.js');
+const { createWorker, PSM } = require('tesseract.js');
 
 let workerPromise = null;
 
@@ -28,7 +28,16 @@ let headingWorkerPromise = null;
 async function getHeadingWorker() {
   if (!headingWorkerPromise) {
     headingWorkerPromise = createWorker('eng').then(async (worker) => {
-      await worker.setParameters({ tessedit_char_whitelist: '0123456789' });
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789',
+        // The region is always exactly one cropped field (the tape's boxed
+        // current-heading number), but Tesseract's default page-segmentation
+        // mode assumes general document layout, which is the wrong model for
+        // a single isolated UI number and confirmed (194 misread as 174,
+        // consistently, not just as one-off noise) not to be enough on its
+        // own even with a digit-only whitelist and upscaling.
+        tessedit_pageseg_mode: PSM.SINGLE_LINE,
+      });
       return worker;
     });
   }
