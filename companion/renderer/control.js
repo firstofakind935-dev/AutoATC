@@ -489,11 +489,12 @@ document.getElementById('stopTrackingBtn').addEventListener('click', stopTrackin
 
 // Fresh defaults every launch, matching a real aircraft's radios coming up
 // on standby rather than remembering last session's frequencies:
-//  - VHF1: active radio, both active/standby default to 122.800.
+//  - VHF1: the default primary radio, both active/standby default to
+//    122.800, starts switched on.
 //  - VHF2: same defaults, but starts inop until the pilot switches it on.
-//  - VHF3: dedicated to DATA, defaults to guard 121.500 on both sides -
-//    also switchable, same as VHF2.
-// A switchable radio's knob stays turnable even while inop (same as a real
+//  - VHF3: dedicated to DATA, defaults to guard 121.500 on both sides.
+// All three are switchable (VHF1/VHF3 just default to on, VHF2 to off). A
+// switchable radio's knob stays turnable even while inop (same as a real
 // radio lets you dial in a standby frequency before powering it on) - only
 // its swap button is gated by inop, since that's what actually puts a
 // frequency into use. Only the current "primary" radio's active frequency
@@ -504,7 +505,7 @@ const FREQ_MAX = 136.975;
 const FREQ_STEP = 0.025;
 
 const radios = {
-  vhf1: { label: 'VHF1', active: 122.8, standby: 122.8, inop: false, switchable: false },
+  vhf1: { label: 'VHF1', active: 122.8, standby: 122.8, inop: false, switchable: true },
   vhf2: { label: 'VHF2', active: 122.8, standby: 122.8, inop: true, switchable: true },
   vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: true },
 };
@@ -561,9 +562,13 @@ function toggleRadioPower(key) {
  * whose swap actually fires a tune request to Bot Manager (see the class
  * comment on BotManagerBot's Job 2). Defaults to VHF1, but switching VHF2
  * on hands that role to VHF2 instead, same as a pilot choosing to work a
- * second radio - VHF1 doesn't actually power down or stop displaying, it
- * just stops being the one that drives a channel move. Switching VHF2 back
- * off hands it back to VHF1. VHF3 (DATA) never takes this role.
+ * second radio - switching VHF2 back off hands it back to VHF1. This
+ * doesn't check VHF1's own inop state: if VHF1 is switched off (and VHF2
+ * isn't on), it stays "primary" in name, it just can't actually be swapped
+ * until switched back on (its swap button is disabled while inop, same as
+ * any switchable radio) - turning your primary off doesn't silently
+ * promote a backup, same as a real pilot has to deliberately choose to
+ * work a second radio. VHF3 (DATA) never takes this role at all.
  */
 function primaryRadioKey() {
   return radios.vhf2.inop ? 'vhf1' : 'vhf2';
