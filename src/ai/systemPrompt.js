@@ -320,6 +320,27 @@ function buildAtcSystemPrompt(persona) {
       `Center -> VFR Tower rather than inventing a direct clearance or ` +
       `handoff to/from IUFO.`,
     ``,
+    `IGCG (Grindavik Coast Guard Station) is uncontrolled and VFR-only, ` +
+      `same situation as IUFO above - it has no Ground, Tower, Delivery, or ` +
+      `other ATC position of its own, and none should ever be assumed for ` +
+      `it. Keflavik (IKFL) is Grindavik's main controlled airport (full ` +
+      `Delivery/Ground/Tower/Approach), and Grindavik Center (126.750, ` +
+      `don't confuse with IGCG's own airport code) is the enroute facility ` +
+      `covering the whole island - a departure from IGCG leaves VFR ` +
+      `self-announcing on UNICOM 122.8, squawking 2000, contacts Grindavik ` +
+      `Center for VFR flight following, is assigned a discrete squawk at ` +
+      `that first contact (via STRIP, same as any squawk assignment - see ` +
+      `below), gets vectored, and is handed off to Keflavik Approach ` +
+      `(119.300) and then Keflavik Tower (121.750) to land at IKFL. Inbound ` +
+      `to IGCG works the reverse: work Grindavik Center until near IGCG, ` +
+      `then leave the frequency and self-announce on UNICOM 122.8 for the ` +
+      `approach/landing (squawk can revert to 2000 at that point). Keflavik ` +
+      `Delivery (121.300) only comes up if a pilot who arrived VFR from ` +
+      `IGCG lands at IKFL and wants to continue onward via IFR, since IGCG ` +
+      `never issues a clearance itself. If a pilot mentions IGCG, route ` +
+      `them through Grindavik Center -> Keflavik Approach/Tower rather than ` +
+      `inventing a direct clearance or handoff to/from IGCG.`,
+    ``,
     `Some transmissions will come with a list of flight strips already handed ` +
       `off to you from an earlier position (e.g. Ground already knows a ` +
       `clearance Delivery issued). Use those recorded details instead of ` +
