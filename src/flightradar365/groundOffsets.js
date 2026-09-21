@@ -62,6 +62,24 @@ module.exports = {
   // the real measured distance (1.24nm, no east/west component) using
   // this file's own studs-per-nm scale (STUDS_PER_NM/100 = 33.07
   // SVG-units/nm, same conversion toTrackXY() uses): y += 1.24 * 33.07.
+  //
+  // IMPORTANT, found after the above shift alone visibly did nothing:
+  // this x/y anchor only drives (a) aircraft placement above and (b) the
+  // 365Radar Ground View side panel's camera pan. It does NOT position
+  // the airport-diagram overlay drawn on 365Radar's main world map -
+  // that view injects GROUND.svg's own raw content straight into the map
+  // with zero transform of its own, so its position is entirely whatever
+  // coordinates are baked into GROUND.svg itself (that file shares the
+  // world map's exact canvas, so its raw path coordinates ARE meant to be
+  // absolute world coordinates already). The actual fix for "IKFL sits at
+  // the neck instead of the southern lobe" is a matching south shift
+  // baked into monitor/public/365radar/public/assets/maps/IKFL/GROUND.svg
+  // itself (root <svg transform="translate(0, 41.0086)">), NOT anything
+  // in this file - confirmed empirically via a real Playwright render.
+  // Both this anchor's y and GROUND.svg's transform were shifted by the
+  // same 41.0086 (=1.24nm) so the Ground View side panel's camera keeps
+  // following its own (now also shifted) content and stays framed
+  // exactly as before.
   IKFL: { zoom: 0.253674, x: -378.5900, y: -19.2314, r: 0 },
   ITEY: { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
   IUFO: { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },

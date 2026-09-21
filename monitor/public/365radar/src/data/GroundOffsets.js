@@ -58,6 +58,29 @@ export default{
     // component) using this file's own studs-per-nm scale
     // (STUDS_PER_NM/100 = 33.07 SVG-units/nm, same conversion toTrackXY()
     // uses): y += 1.24 * 33.07.
+    //
+    // IMPORTANT, found after the above shift alone visibly did nothing:
+    // this x/y anchor only drives (a) aircraft placement above and (b)
+    // the dedicated Ground View side panel's camera pan
+    // (loadGroundChartSVG()'s viewBox.x/y). It does NOT position the
+    // airport-diagram overlay drawn on the main world map -
+    // loadAirportData() injects GROUND.svg's own raw content straight
+    // into #boundaries-svg (via innerHTML +=) with zero transform of its
+    // own, so that overlay's position is entirely whatever coordinates
+    // are baked into public/assets/maps/IKFL/GROUND.svg itself (that file
+    // shares boundaries.svg's exact canvas/viewBox, so its raw path
+    // coordinates ARE meant to be absolute world coordinates already).
+    // The actual fix for "IKFL sits at the neck instead of the southern
+    // lobe" is therefore a matching south shift baked into GROUND.svg's
+    // root <svg transform="translate(0, 41.0086)">, NOT anything in this
+    // file - confirmed empirically via a real Playwright render (the
+    // marker moved from the island's neck down into the narrower southern
+    // stretch once the SVG-level transform was added, whereas editing
+    // only this file's y produced no visible change at all, matching what
+    // was reported). Both this anchor's y and GROUND.svg's transform were
+    // shifted by the same 41.0086 (=1.24nm) so the Ground View side
+    // panel's camera keeps following its own (now also shifted) content
+    // and stays framed exactly as before.
     "IKFL": { zoom: 0.253674, x: -378.5900, y: -19.2314, r: 0 },
     "ITEY": { zoom: 0.0415, x: -356.1399, y: -72.5132, r: 0 },
     "IUFO": { zoom: 0.01, x: 96.7315, y: -85.7401, r: 0 },
