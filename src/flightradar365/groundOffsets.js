@@ -1,11 +1,13 @@
 // Per-airport {x, y} world-coordinate anchor points, in the same raw
-// PTFS/Roblox stud-derived coordinate space AutoATC's now-removed web
-// radar used - kept here because positionSync.js's toTrackXY() still
-// needs them to convert a bot's distanceNm/bearingDeg into flightradar365's
-// x/y. Only x/y are used; zoom/r (ground-view framing) are meaningless
-// outside a radar UI but kept for every entry rather than trimmed down,
-// since this was originally a straight copy of the removed radar's own
-// GroundOffsets.js and there was no reason to diverge the shape.
+// PTFS/Roblox stud-derived coordinate space 365Radar
+// (monitor/public/365radar/) uses - this is a CommonJS copy of that
+// module's own src/data/GroundOffsets.js, kept here because
+// positionSync.js's toTrackXY() needs it too, to convert a bot's
+// distanceNm/bearingDeg into flightradar365's x/y. Only x/y are used by
+// toTrackXY(); zoom/r (ground-view framing) are meaningless here but kept
+// for every entry rather than trimmed down, since this is meant to stay a
+// straight copy of 365Radar's own file, not diverge from it - if that file
+// changes, copy the update here too.
 module.exports = {
   IBLT: { zoom: 0.00885905028317445, x: -116.75703430175781, y: 171.21368408203125, r: 76.1 },
   IBTH: { zoom: 0.009168518271158612, x: 53.03730392456055, y: -49.046810150146484, r: 0 },
