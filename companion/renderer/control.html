@@ -54,12 +54,6 @@
         </p>
       </header>
 
-      <nav class="tab-bar">
-        <button class="tab-btn active" data-tab="setupTab">Setup</button>
-        <button class="tab-btn" data-tab="radiosTab">Radios</button>
-      </nav>
-
-      <div class="tab-panel" id="setupTab">
       <section class="card" id="settings">
         <div class="card-header">
           <span class="step-badge">1</span>
@@ -164,39 +158,12 @@
           <pre id="trackingStatus"></pre>
         </div>
       </section>
-      </div>
 
-      <div class="tab-panel" id="radiosTab" hidden>
-      <section class="card" id="radios" hidden>
-        <div class="card-header">
-          <h2>Radios</h2>
-        </div>
-        <div class="card-body">
-          <p class="hint">
-            VHF1's active frequency is what Bot Manager actually moves you to when swapped - VHF2/VHF3
-            are tracked here but don't move your Discord channel. Requires having filed a flight plan
-            with /fileflightplan at least once (links your callsign to your Discord account, so Bot
-            Manager knows who to move).
-          </p>
-          <div id="radioPanels"></div>
-          <div class="radio-panel">
-            <div class="radio-name">Squawk</div>
-            <div class="freq-display">
-              <span class="freq-active" id="squawkCode">2000</span>
-            </div>
-            <div class="knob-controls">
-              <button class="btn btn-secondary" id="squawkDown">▼</button>
-              <input id="squawkType" placeholder="4-digit code (0-7 only)" maxlength="4">
-              <button class="btn btn-secondary" id="squawkUp">▲</button>
-              <button class="btn btn-secondary" id="identBtn">Ident</button>
-              <span class="status-pill" id="identStatus"></span>
-            </div>
-          </div>
-          <span class="status-pill" id="tuneStatus"></span>
-        </div>
-      </section>
-      <p class="hint" id="radiosNotReadyHint">Show the overlay and get through setup first - the radio panel activates once tracking is available.</p>
-      </div>
+      <p class="hint">
+        The radio panel (VHF1/2/3 + squawk) now lives on the overlay itself - click
+        <strong>Radios</strong> on the overlay's top bar while it's shown, no need to switch back to
+        this window while flying.
+      </p>
     </main>
   </div>
 

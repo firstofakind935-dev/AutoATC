@@ -120,6 +120,88 @@
   .message-body { line-height: 1.4; }
   .message-item.message-broadcast { border-left: 3px solid #38bdf8; padding-left: 9px; }
 
+  /* Radio/transponder panel, opened from the bar the same way the message
+     panel is - see overlay.js's toggleRadioPanel(). */
+  #radioPanel {
+    position: fixed;
+    top: 44px;
+    right: 14px;
+    width: 300px;
+    max-height: 480px;
+    overflow-y: auto;
+    background: rgba(11, 18, 32, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    padding: 10px;
+  }
+  .radio-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+  }
+  .radio-row:last-child { border-bottom: none; }
+  .radio-info { flex: 1; min-width: 0; }
+  .radio-label {
+    font-size: 0.68em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8ea0c0;
+  }
+  .radio-freqs { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+  .radio-active { font-size: 1.05em; font-weight: 700; color: #38bdf8; }
+  .radio-standby { font-size: 0.92em; color: #b9c6dc; }
+  .radio-swap {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #e6ebf5;
+    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .radio-swap:disabled { opacity: 0.35; cursor: not-allowed; }
+  .radio-power {
+    background: transparent;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #b9c6dc;
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-size: 0.68em;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  /* The knob: a small draggable/scrollable dial. Turning it steps the
+     standby frequency (or squawk digit) - the rotation itself is purely a
+     tactile cue (accumulates per step, wraps at 360°), not a literal
+     mapping of the underlying value's range. See overlay.js's makeKnob(). */
+  .knob {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2a3a56, #0e1626);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    position: relative;
+    cursor: grab;
+    flex-shrink: 0;
+    touch-action: none;
+  }
+  .knob:active { cursor: grabbing; }
+  .knob-indicator {
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    width: 2px;
+    height: 11px;
+    background: #38bdf8;
+    transform-origin: 1px 14px;
+    margin-left: -1px;
+  }
+
   /* Toast for a newly-arrived message - separate from #banner, which is
      reserved for setup/calibration prompts. Broadcasts (fleet-wide, not
      addressed to this pilot specifically) get a distinct color from a
@@ -159,6 +241,7 @@
     </div>
     <div class="bar-actions">
       <button id="barMessagesBtn" class="overlay-ui">Messages<span id="messagesBadge" hidden></span></button>
+      <button id="barRadiosBtn" class="overlay-ui">Radios</button>
       <button id="barToggleTrackingBtn" class="overlay-ui">Start tracking</button>
       <button id="barSetupBtn" class="overlay-ui">Setup</button>
     </div>
@@ -166,6 +249,10 @@
 
   <div id="messagePanel" class="overlay-ui" hidden>
     <div id="messageList"></div>
+  </div>
+
+  <div id="radioPanel" class="overlay-ui" hidden>
+    <div id="radioList"></div>
   </div>
 
   <div id="banner"></div>

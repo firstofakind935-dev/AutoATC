@@ -148,6 +148,142 @@ document.getElementById('barSetupBtn').addEventListener('click', () => {
   window.companion.focusControlWindow();
 });
 
+// ---------- Radio panel (VHF1/2/3 + squawk) ----------
+// State lives in the control window (see control.js) - this just renders
+// whatever snapshot it last pushed via 'radio-state' and relays user
+// interaction back via sendToControl({tag: 'radio-action', ...}), same
+// round-trip shape as region/calibration clicks use.
+
+const radioPanel = document.getElementById('radioPanel');
+const radiosBtn = document.getElementById('barRadiosBtn');
+let radioState = null; // last snapshot from control.js, or null before one's arrived
+
+function toggleRadioPanel(forceOpen) {
+  const open = forceOpen !== undefined ? forceOpen : radioPanel.hidden;
+  radioPanel.hidden = !open;
+  if (open) renderRadioPanel();
+}
+
+radiosBtn.addEventListener('click', () => toggleRadioPanel());
+
+/**
+ * A small draggable/scrollable dial. Turning it (mouse-wheel, or drag up/
+ * down) calls onStep(+1) / onStep(-1) per notch - the rotation itself is
+ * just a tactile cue that accumulates per step and wraps at 360°, not a
+ * literal mapping of the underlying frequency/squawk range (that range is
+ * far too fine-grained for one knob turn to cover 1:1).
+ */
+function makeKnob(onStep, disabled) {
+  const knob = document.createElement('div');
+  knob.className = 'knob';
+  const indicator = document.createElement('div');
+  indicator.className = 'knob-indicator';
+  knob.appendChild(indicator);
+  if (disabled) {
+    knob.style.opacity = '0.35';
+    knob.style.cursor = 'not-allowed';
+    return knob;
+  }
+
+  let rotation = 0;
+  const STEP_DEG = 20;
+  function applyStep(direction) {
+    rotation = (rotation + direction * STEP_DEG + 360) % 360;
+    indicator.style.transform = `rotate(${rotation}deg)`;
+    onStep(direction);
+  }
+
+  knob.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    applyStep(e.deltaY < 0 ? 1 : -1);
+  });
+
+  let dragging = false;
+  let lastY = 0;
+  const DRAG_PX_PER_STEP = 6;
+  knob.addEventListener('mousedown', (e) => {
+    dragging = true;
+    lastY = e.clientY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dy = lastY - e.clientY; // dragging up (dy > 0) increases, matching a real radio knob
+    if (Math.abs(dy) < DRAG_PX_PER_STEP) return;
+    lastY = e.clientY;
+    applyStep(dy > 0 ? 1 : -1);
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
+
+  return knob;
+}
+
+function renderRadioPanel() {
+  const list = document.getElementById('radioList');
+  list.innerHTML = '';
+  if (!radioState) {
+    list.innerHTML = '<div class="message-empty">Waiting for the control window...</div>';
+    return;
+  }
+
+  for (const [key, radio] of Object.entries(radioState.radios)) {
+    const row = document.createElement('div');
+    row.className = 'radio-row';
+
+    const knob = makeKnob((direction) => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'step', radio: key, value: direction });
+    }, radio.inop);
+
+    const info = document.createElement('div');
+    info.className = 'radio-info';
+    info.innerHTML = `
+      <div class="radio-label">${radio.label}${radio.inop ? ' (inop)' : ''}</div>
+      <div class="radio-freqs">
+        <span class="radio-active">${radio.active.toFixed(3)}</span>
+        <button class="radio-swap" ${radio.inop ? 'disabled' : ''}>⇄</button>
+        <span class="radio-standby">${radio.standby.toFixed(3)}</span>
+      </div>
+      ${radio.switchable ? `<button class="radio-power">${radio.inop ? 'Switch on' : 'Switch off'}</button>` : ''}
+    `;
+    info.querySelector('.radio-swap').addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'swap', radio: key });
+    });
+    const powerBtn = info.querySelector('.radio-power');
+    if (powerBtn) {
+      powerBtn.addEventListener('click', () => {
+        window.companion.sendToControl({ tag: 'radio-action', action: 'power', radio: key });
+      });
+    }
+
+    row.appendChild(knob);
+    row.appendChild(info);
+    list.appendChild(row);
+  }
+
+  const squawkRow = document.createElement('div');
+  squawkRow.className = 'radio-row';
+  const squawkKnob = makeKnob((direction) => {
+    window.companion.sendToControl({ tag: 'radio-action', action: 'squawkStep', value: direction });
+  }, false);
+  const squawkInfo = document.createElement('div');
+  squawkInfo.className = 'radio-info';
+  squawkInfo.innerHTML = `
+    <div class="radio-label">Squawk${radioState.identing ? ' - IDENT' : ''}</div>
+    <div class="radio-freqs">
+      <span class="radio-active">${radioState.squawk}</span>
+      <button class="radio-power">Ident</button>
+    </div>
+  `;
+  squawkInfo.querySelector('.radio-power').addEventListener('click', () => {
+    window.companion.sendToControl({ tag: 'radio-action', action: 'ident' });
+  });
+  squawkRow.appendChild(squawkKnob);
+  squawkRow.appendChild(squawkInfo);
+  list.appendChild(squawkRow);
+}
+
 // ---------- Datalink (CPDLC/PDC) messages ----------
 
 function describeMessage(m) {
@@ -225,5 +361,8 @@ window.companion.onOverlayCommand((command) => {
     unreadCount += incoming.length;
     renderMessagePanel();
     for (const m of incoming) showToast(m);
+  } else if (command.type === 'radio-state') {
+    radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing };
+    if (!radioPanel.hidden) renderRadioPanel();
   }
 });

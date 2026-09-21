@@ -117,11 +117,10 @@ async function showOverlay() {
   document.getElementById('regions').hidden = false;
   document.getElementById('calibration').hidden = false;
   document.getElementById('tracking').hidden = false;
-  document.getElementById('radios').hidden = false;
-  document.getElementById('radiosNotReadyHint').hidden = true;
 
   sendRegionsToOverlay();
   syncBar();
+  pushRadioStateToOverlay();
 }
 
 async function hideOverlay() {
@@ -242,6 +241,18 @@ window.companion.onOverlayResult(async (result) => {
   if (result.tag === 'bar-toggle-tracking') {
     if (trackingTimer) stopTracking();
     else startTracking();
+    return;
+  }
+
+  if (result.tag === 'radio-action') {
+    const { action, radio, value } = result;
+    if (action === 'step') stepRadio(radio, value);
+    else if (action === 'setStandby') setRadioStandby(radio, value);
+    else if (action === 'swap') swapRadio(radio);
+    else if (action === 'power') toggleRadioPower(radio);
+    else if (action === 'squawkStep') stepSquawk(value);
+    else if (action === 'squawkSet') setSquawk(value);
+    else if (action === 'ident') pressIdent();
   }
 });
 
@@ -469,6 +480,12 @@ document.getElementById('startTrackingBtn').addEventListener('click', startTrack
 document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
 
 // ---------- Radio panel (VHF1/2/3 + squawk) ----------
+// The actual panel UI now lives on the overlay window (its "Radios" bar
+// button - see overlay.js), since that's what stays up while flying; this
+// window just owns the state and the logic, same as it always has -
+// pushRadioStateToOverlay() below sends a fresh snapshot for the overlay to
+// render, and the onOverlayResult 'radio-action' case (see further down)
+// receives back whatever the pilot did to a knob/swap/power/ident control.
 
 // Fresh defaults every launch, matching a real aircraft's radios coming up
 // on standby rather than remembering last session's frequencies:
@@ -489,100 +506,6 @@ const radios = {
   vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: false },
 };
 
-function formatFreq(value) {
-  return value.toFixed(3);
-}
-
-function clampFreq(value) {
-  return Math.min(FREQ_MAX, Math.max(FREQ_MIN, Math.round(value / FREQ_STEP) * FREQ_STEP));
-}
-
-function renderRadioPanels() {
-  const container = document.getElementById('radioPanels');
-  container.innerHTML = '';
-
-  for (const [key, radio] of Object.entries(radios)) {
-    const panel = document.createElement('div');
-    panel.className = 'radio-panel';
-    panel.innerHTML = `
-      <div class="radio-name">${radio.label}${radio.inop ? ' (inop)' : ''}</div>
-      <div class="freq-display">
-        <span class="freq-active">${formatFreq(radio.active)}</span>
-        <button class="btn btn-secondary" data-action="swap" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>⇄</button>
-        <span class="freq-standby">${formatFreq(radio.standby)}</span>
-      </div>
-      <div class="knob-controls">
-        <button class="btn btn-secondary" data-action="down" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>▼</button>
-        <input data-action="type" data-radio="${key}" placeholder="Type frequency" ${radio.inop ? 'disabled' : ''}>
-        <button class="btn btn-secondary" data-action="up" data-radio="${key}" ${radio.inop ? 'disabled' : ''}>▲</button>
-        ${radio.switchable ? `<button class="btn btn-secondary" data-action="power" data-radio="${key}">${radio.inop ? 'Switch on' : 'Switch off'}</button>` : ''}
-      </div>
-    `;
-    container.appendChild(panel);
-  }
-
-  container.querySelectorAll('[data-action="swap"]').forEach((btn) => btn.addEventListener('click', () => swapRadio(btn.dataset.radio)));
-  container.querySelectorAll('[data-action="up"]').forEach((btn) => btn.addEventListener('click', () => stepRadio(btn.dataset.radio, 1)));
-  container.querySelectorAll('[data-action="down"]').forEach((btn) => btn.addEventListener('click', () => stepRadio(btn.dataset.radio, -1)));
-  container.querySelectorAll('[data-action="power"]').forEach((btn) => btn.addEventListener('click', () => toggleRadioPower(btn.dataset.radio)));
-  container.querySelectorAll('[data-action="type"]').forEach((input) =>
-    input.addEventListener('change', () => {
-      const value = Number(input.value);
-      if (!Number.isFinite(value)) return;
-      radios[input.dataset.radio].standby = clampFreq(value);
-      renderRadioPanels();
-    })
-  );
-}
-
-function stepRadio(key, direction) {
-  const radio = radios[key];
-  radio.standby = clampFreq(radio.standby + direction * FREQ_STEP);
-  renderRadioPanels();
-}
-
-function toggleRadioPower(key) {
-  radios[key].inop = !radios[key].inop;
-  renderRadioPanels();
-}
-
-/**
- * Flips standby into active - the classic flip-flop swap. Only VHF1 also
- * fires an actual tune request to Bot Manager (see the class comment on
- * BotManagerBot's Job 2 for why VHF1 specifically is treated as "what
- * you're currently listening to").
- */
-async function swapRadio(key) {
-  const radio = radios[key];
-  [radio.active, radio.standby] = [radio.standby, radio.active];
-  renderRadioPanels();
-
-  if (key !== 'vhf1') return;
-
-  if (!settings.monitorUrl || !settings.callsign) {
-    setStatus('tuneStatus', 'Set your callsign and Monitor URL first.', 'bad');
-    return;
-  }
-
-  const frequency = formatFreq(radio.active);
-  setStatus('tuneStatus', 'Tuning...', 'warn');
-  try {
-    await window.companion.tuneFrequency({
-      monitorUrl: settings.monitorUrl,
-      apiKey: settings.monitorApiKey || null,
-      callsign: settings.callsign,
-      frequency,
-    });
-    setStatus('tuneStatus', `Tune request sent for ${frequency}.`, 'ok');
-    log(`Tuned ${frequency}.`);
-  } catch (err) {
-    setStatus('tuneStatus', 'Failed to send tune request.', 'bad');
-    log(`Tune to ${frequency} failed: ${err.message}`);
-  }
-}
-
-// ---------- Squawk ----------
-
 // Real transponder codes are 4 octal digits (0-7 only, no 8/9) - 2000
 // matches this fleet's VFR conspicuity default (see IZOL/Rockford's own
 // real-world-style ICAO conventions elsewhere in this repo).
@@ -596,8 +519,70 @@ let squawk = '2000';
 const IDENT_DURATION_MS = 18_000;
 let identUntilMs = 0;
 
-function renderSquawk() {
-  document.getElementById('squawkCode').textContent = squawk;
+function formatFreq(value) {
+  return value.toFixed(3);
+}
+
+function clampFreq(value) {
+  return Math.min(FREQ_MAX, Math.max(FREQ_MIN, Math.round(value / FREQ_STEP) * FREQ_STEP));
+}
+
+function pushRadioStateToOverlay() {
+  window.companion.sendToOverlay({
+    type: 'radio-state',
+    radios,
+    squawk,
+    identing: identUntilMs > Date.now(),
+  });
+}
+
+function stepRadio(key, direction) {
+  const radio = radios[key];
+  radio.standby = clampFreq(radio.standby + direction * FREQ_STEP);
+  pushRadioStateToOverlay();
+}
+
+function setRadioStandby(key, value) {
+  if (!Number.isFinite(value)) return;
+  radios[key].standby = clampFreq(value);
+  pushRadioStateToOverlay();
+}
+
+function toggleRadioPower(key) {
+  radios[key].inop = !radios[key].inop;
+  pushRadioStateToOverlay();
+}
+
+/**
+ * Flips standby into active - the classic flip-flop swap. Only VHF1 also
+ * fires an actual tune request to Bot Manager (see the class comment on
+ * BotManagerBot's Job 2 for why VHF1 specifically is treated as "what
+ * you're currently listening to").
+ */
+async function swapRadio(key) {
+  const radio = radios[key];
+  [radio.active, radio.standby] = [radio.standby, radio.active];
+  pushRadioStateToOverlay();
+
+  if (key !== 'vhf1') return;
+
+  if (!settings.monitorUrl || !settings.callsign) {
+    log('Cannot tune - set your callsign and Monitor URL first.');
+    return;
+  }
+
+  const frequency = formatFreq(radio.active);
+  try {
+    await window.companion.tuneFrequency({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      frequency,
+    });
+    log(`Tuned ${frequency}.`);
+  } catch (err) {
+    log(`Tune to ${frequency} failed: ${err.message}`);
+  }
 }
 
 function stepSquawk(direction) {
@@ -607,45 +592,21 @@ function stepSquawk(direction) {
   const asOctal = parseInt(squawk, 8);
   const next = (asOctal + direction + 0o10000) % 0o10000;
   squawk = next.toString(8).padStart(4, '0');
-  renderSquawk();
+  pushRadioStateToOverlay();
 }
 
-document.getElementById('squawkUp').addEventListener('click', () => stepSquawk(1));
-document.getElementById('squawkDown').addEventListener('click', () => stepSquawk(-1));
-document.getElementById('squawkType').addEventListener('change', (e) => {
-  const value = e.target.value.trim();
-  if (!/^[0-7]{4}$/.test(value)) {
-    e.target.value = squawk;
-    return;
-  }
+function setSquawk(value) {
+  if (!/^[0-7]{4}$/.test(value)) return;
   squawk = value;
-  renderSquawk();
-});
+  pushRadioStateToOverlay();
+}
 
-document.getElementById('identBtn').addEventListener('click', () => {
+function pressIdent() {
   identUntilMs = Date.now() + IDENT_DURATION_MS;
-  setStatus('identStatus', 'Identing...', 'warn');
-  setTimeout(() => {
-    if (Date.now() >= identUntilMs) setStatus('identStatus', '', null);
-  }, IDENT_DURATION_MS + 100);
   log('Squawked ident.');
-});
-
-renderRadioPanels();
-renderSquawk();
-
-// ---------- Tabs ----------
-
-document.querySelectorAll('.tab-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach((panel) => {
-      panel.hidden = true;
-    });
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).hidden = false;
-  });
-});
+  pushRadioStateToOverlay();
+  setTimeout(pushRadioStateToOverlay, IDENT_DURATION_MS + 100);
+}
 
 // ---------- Init ----------
 
