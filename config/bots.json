@@ -19,5 +19,12 @@
         "model": "qwen2.5:3b"
       }
     }
+  },
+  {
+    "name": "Bot Manager",
+    "type": "botmanager",
+    "tokenEnv": "BOT_MANAGER_TOKEN",
+    "guildId": "1507182217393340426",
+    "flightPlansChannelId": null
   }
 ]
