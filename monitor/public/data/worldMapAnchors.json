@@ -1,0 +1,150 @@
+{
+  "image": "world-map.png",
+  "imageWidth": 937,
+  "imageHeight": 706,
+  "pxPerNm": 24.0,
+  "studsPerNm": 3307.14286,
+  "note": "x/y are pixel coordinates on world-map.png. confidence: direct = pixel-measured from the image itself; derived-from-X = offset from a direct anchor using existing relative stud spacing; fitted-only = predicted from a global least-squares transform fit to 8 trusted native anchors (residuals up to ~45px seen on those 8 points, so treat as a rough first pass, not verified against the image).",
+  "anchors": {
+    "IRFD": {
+      "x": 442,
+      "y": 519,
+      "confidence": "direct"
+    },
+    "IMLR": {
+      "x": 377,
+      "y": 448,
+      "confidence": "direct"
+    },
+    "IPPH": {
+      "x": 684,
+      "y": 228,
+      "confidence": "direct"
+    },
+    "IZOL": {
+      "x": 825,
+      "y": 362,
+      "confidence": "direct"
+    },
+    "IBTH": {
+      "x": 571,
+      "y": 325,
+      "confidence": "direct"
+    },
+    "ISAU": {
+      "x": 170,
+      "y": 520,
+      "confidence": "direct-approx"
+    },
+    "ISKP": {
+      "x": 710,
+      "y": 460,
+      "confidence": "direct-approx"
+    },
+    "ILAR": {
+      "x": 698,
+      "y": 618,
+      "confidence": "direct"
+    },
+    "IPAP": {
+      "x": 774,
+      "y": 629,
+      "confidence": "derived-from-ILAR"
+    },
+    "IKFL": {
+      "x": 200,
+      "y": 355,
+      "confidence": "manual-within-island (verified against island shape south of the neck)"
+    },
+    "ITEY": {
+      "x": 217,
+      "y": 346,
+      "confidence": "derived-from-IKFL"
+    },
+    "IGCG": {
+      "x": 224,
+      "y": 328,
+      "confidence": "derived-from-IKFL"
+    },
+    "TVO": {
+      "x": 223,
+      "y": 335,
+      "confidence": "derived-from-IKFL"
+    },
+    "IUFO": {
+      "x": 603,
+      "y": 299,
+      "confidence": "derived-from-IBTH"
+    },
+    "IGRV": {
+      "x": 206,
+      "y": 317,
+      "confidence": "fitted-only"
+    },
+    "IBLT": {
+      "x": 433,
+      "y": 479,
+      "confidence": "fitted-only"
+    },
+    "IDCS": {
+      "x": 518,
+      "y": 32,
+      "confidence": "fitted-only"
+    },
+    "IGAR": {
+      "x": 388,
+      "y": 519,
+      "confidence": "fitted-only"
+    },
+    "IHEN": {
+      "x": 629,
+      "y": 662,
+      "confidence": "fitted-only"
+    },
+    "IIAB": {
+      "x": 666,
+      "y": 649,
+      "confidence": "fitted-only"
+    },
+    "IJAF": {
+      "x": 866,
+      "y": 375,
+      "confidence": "fitted-only"
+    },
+    "ILKL": {
+      "x": 703,
+      "y": 247,
+      "confidence": "fitted-only"
+    },
+    "ISCM": {
+      "x": 795,
+      "y": 334,
+      "confidence": "fitted-only"
+    },
+    "ITKO": {
+      "x": 474,
+      "y": 106,
+      "confidence": "fitted-only"
+    },
+    "ITRC": {
+      "x": 494,
+      "y": 575,
+      "confidence": "fitted-only"
+    },
+    "IBAR": {
+      "x": 699,
+      "y": 567,
+      "confidence": "fitted-only"
+    },
+    "IBRD": {
+      "x": 497,
+      "y": 189,
+      "confidence": "fitted-only (KNOWN BAD: lands in open ocean, needs manual placement)"
+    },
+    "SHV": {
+      "x": 708,
+      "y": 224,
+      "confidence": "fitted-only"
+    }
+  }
+}

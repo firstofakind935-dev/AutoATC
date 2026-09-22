@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AutoATC Radar</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-border: #262b36;
+    --text: #e4e7ec;
+    --text-dim: #8b94a3;
+    --accent: #4f8cff;
+    --ok: #3ecf8e;
+    --warn: #e8b339;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  header .sub {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  header label {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+  #wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+    background: #0a1622;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  svg.panning { cursor: grabbing; }
+
+  .airport-dot { fill: #6b90c4; opacity: 0.6; }
+  .airport-dot.low-confidence { fill: none; stroke: #b06b3a; stroke-width: 1.2; opacity: 0.7; }
+  .airport-label { fill: #9db3d6; font-size: 9px; font-family: "SF Mono", Menlo, Consolas, monospace; opacity: 0.75; pointer-events: none; }
+
+  .aircraft-dot { fill: var(--ok); stroke: #06251a; stroke-width: 0.8; }
+  .aircraft-dot.stale { fill: var(--warn); }
+  .aircraft-label { fill: var(--text); font-size: 10px; font-weight: 600; font-family: "SF Mono", Menlo, Consolas, monospace; pointer-events: none; }
+  .aircraft-sub { fill: var(--text-dim); font-size: 8.5px; font-family: "SF Mono", Menlo, Consolas, monospace; pointer-events: none; }
+
+  #empty-note {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    max-width: 340px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>AutoATC Radar</h1>
+    <span class="sub">world-map.png &middot; ~24px/nm</span>
+    <label><input type="checkbox" id="show-airports" checked /> airports</label>
+    <label><input type="checkbox" id="show-low-confidence" /> unverified positions</label>
+  </header>
+  <div id="wrap">
+    <svg id="radar-svg" viewBox="0 0 937 706" preserveAspectRatio="xMidYMid meet">
+      <image id="bg" href="assets/world-map.png" x="0" y="0" width="937" height="706" />
+      <g id="airports"></g>
+      <g id="aircraft"></g>
+    </svg>
+    <div id="empty-note" style="display:none;">No aircraft currently reporting a position.</div>
+  </div>
+
+<script>
+(function () {
+  const svg = document.getElementById('radar-svg');
+  const airportsLayer = document.getElementById('airports');
+  const aircraftLayer = document.getElementById('aircraft');
+  const showAirports = document.getElementById('show-airports');
+  const showLowConfidence = document.getElementById('show-low-confidence');
+  const emptyNote = document.getElementById('empty-note');
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  let anchors = null;
+  let pxPerNm = 24;
+
+  async function loadAnchors() {
+    const res = await fetch('data/worldMapAnchors.json');
+    const data = await res.json();
+    anchors = data.anchors;
+    pxPerNm = data.pxPerNm;
+    renderAirports();
+  }
+
+  function isLowConfidence(conf) {
+    return !conf || conf.startsWith('fitted-only');
+  }
+
+  function renderAirports() {
+    airportsLayer.innerHTML = '';
+    for (const icao in anchors) {
+      const a = anchors[icao];
+      const low = isLowConfidence(a.confidence);
+      if (low && !showLowConfidence.checked) continue;
+      const dot = el('circle', { cx: a.x, cy: a.y, r: 2.2, class: 'airport-dot' + (low ? ' low-confidence' : '') });
+      airportsLayer.appendChild(dot);
+      const label = el('text', { x: a.x + 4, y: a.y + 3, class: 'airport-label' });
+      label.textContent = icao;
+      airportsLayer.appendChild(label);
+    }
+  }
+
+  function bearingToOffset(distanceNm, bearingDeg) {
+    const rad = (bearingDeg * Math.PI) / 180;
+    return {
+      dx: Math.sin(rad) * distanceNm * pxPerNm,
+      dy: -Math.cos(rad) * distanceNm * pxPerNm,
+    };
+  }
+
+  async function refreshAircraft() {
+    let rows;
+    try {
+      const res = await fetch('/api/dashboard/positions');
+      if (!res.ok) return;
+      rows = await res.json();
+    } catch {
+      return; // stays on last-known render until the next successful poll
+    }
+
+    aircraftLayer.innerHTML = '';
+    if (!Array.isArray(rows) || rows.length === 0) {
+      emptyNote.style.display = 'block';
+      return;
+    }
+
+    let plotted = 0;
+    for (const row of rows) {
+      const p = row.position || {};
+      if (typeof p.distanceNm !== 'number' || typeof p.bearingDeg !== 'number' || !p.referenceAirport) continue;
+      const anchor = anchors[p.referenceAirport];
+      if (!anchor) continue; // no known anchor for this airport yet
+
+      const { dx, dy } = bearingToOffset(p.distanceNm, p.bearingDeg);
+      const x = anchor.x + dx;
+      const y = anchor.y + dy;
+      const stale = typeof p.fixAgeSec === 'number' && p.fixAgeSec > 60;
+
+      const dot = el('circle', { cx: x, cy: y, r: 3, class: 'aircraft-dot' + (stale ? ' stale' : '') });
+      aircraftLayer.appendChild(dot);
+
+      const label = el('text', { x: x + 5, y: y - 4, class: 'aircraft-label' });
+      label.textContent = row.callsign;
+      aircraftLayer.appendChild(label);
+
+      const subParts = [];
+      if (typeof p.altitudeFt === 'number') subParts.push(`${p.altitudeFt}ft`);
+      if (typeof row.speed === 'number') subParts.push(`${row.speed}kt`);
+      if (subParts.length) {
+        const sub = el('text', { x: x + 5, y: y + 7, class: 'aircraft-sub' });
+        sub.textContent = subParts.join(' ');
+        aircraftLayer.appendChild(sub);
+      }
+      plotted++;
+    }
+    emptyNote.style.display = plotted === 0 ? 'block' : 'none';
+  }
+
+  showAirports.addEventListener('change', () => {
+    airportsLayer.style.display = showAirports.checked ? 'block' : 'none';
+  });
+  showLowConfidence.addEventListener('change', renderAirports);
+
+  // ---- pan/zoom (drag to pan, wheel to zoom) ----
+  const viewBox = svg.viewBox.baseVal;
+  let isPanning = false;
+  let panStart = { x: 0, y: 0 };
+  let viewStart = { x: 0, y: 0, w: 0, h: 0 };
+
+  svg.addEventListener('mousedown', (e) => {
+    isPanning = true;
+    svg.classList.add('panning');
+    panStart = { x: e.clientX, y: e.clientY };
+    viewStart = { x: viewBox.x, y: viewBox.y, w: viewBox.width, h: viewBox.height };
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = viewStart.w / rect.width;
+    const scaleY = viewStart.h / rect.height;
+    viewBox.x = viewStart.x - (e.clientX - panStart.x) * scaleX;
+    viewBox.y = viewStart.y - (e.clientY - panStart.y) * scaleY;
+  });
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    svg.classList.remove('panning');
+  });
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const zoomPointX = viewBox.x + (mouseX / rect.width) * viewBox.width;
+    const zoomPointY = viewBox.y + (mouseY / rect.height) * viewBox.height;
+    const delta = e.deltaY < 0 ? 0.9 : 1.1;
+    viewBox.width = Math.min(937 * 2, Math.max(80, viewBox.width * delta));
+    viewBox.height = Math.min(706 * 2, Math.max(60, viewBox.height * delta));
+    viewBox.x = zoomPointX - (mouseX / rect.width) * viewBox.width;
+    viewBox.y = zoomPointY - (mouseY / rect.height) * viewBox.height;
+  }, { passive: false });
+
+  loadAnchors().then(() => {
+    refreshAircraft();
+    setInterval(refreshAircraft, 4000);
+  });
+})();
+</script>
+</body>
+</html>

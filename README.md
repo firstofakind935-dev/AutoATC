@@ -494,16 +494,52 @@ turns out to be right.
 
 #### Radar view
 
-There is currently no bundled web radar - a prior port (365Radar, a
-rebrand of [24Radar](https://github.com/t-arpin/atc24radar)) was pulled
-out. `/api/dashboard/positions` and `/api/dashboard/flightstrips` below
-still exist and stay unauthenticated for exactly this purpose - they're
-the integration point for whatever radar replaces it:
+A prior port (365Radar, a rebrand of
+[24Radar](https://github.com/t-arpin/atc24radar)) was pulled out because
+its hand-authored vector island shapes never reliably agreed with each
+other (a world map, a separate ground-view backdrop, and per-airport
+diagram SVGs, each independently traced) - see the repo history around
+the "Recalibrate the world map's island positions" and "Actually fix
+IKFL's world-map position" commits for how much churn that caused for
+how little payoff.
+
+The current radar (`monitor/public/radar.html`, served at `/radar`) takes
+a different approach entirely: instead of vector shapes, it uses one
+raster screenshot of the actual PTFS world map
+(`public/assets/world-map.png`) as its backdrop, so there's exactly one
+source of truth for where every island actually is - nothing to keep
+in sync. Aircraft and airport positions are plotted on top of that image
+using `public/data/worldMapAnchors.json` - a per-airport pixel anchor
+plus a single shared px-per-nm scale (~24px/nm), derived by measuring
+real, known in-game island dimensions directly against that same image
+(not guessed, and not carried over from the old vector system's
+coordinates, which is exactly what kept going wrong before).
+
+Anchor confidence is intentionally visible, not hidden: each entry in
+`worldMapAnchors.json` is tagged `direct` (pixel-measured straight off
+the image), `derived-from-X` (offset from a direct anchor using existing
+relative spacing), or `fitted-only` (predicted from a least-squares fit
+across the 8 `direct` anchors, unverified against the image - the fit's
+own residuals ran up to ~45px on its training points, so treat these as
+a rough first pass). The radar page's "unverified positions" checkbox
+toggles `fitted-only` anchors on with a distinct hollow marker, so a bad
+one (IBRD currently lands in open ocean - a known, flagged case, not a
+silent bug) is obvious rather than hidden. Fixing one is a single-entry
+edit to that JSON file, verified by eye against `world-map.png` - no
+SVG-alignment archaeology required.
 
 ```
-GET /api/dashboard/positions    — same data as /api/positions, gated by dashboard auth instead
-GET /api/dashboard/flightstrips — live flight strips, same auth story
+GET /radar                       — the radar page itself, no dashboard login required
+GET /assets/world-map.png        — the backdrop image
+GET /data/worldMapAnchors.json   — anchor points + scale
+GET /api/dashboard/positions     — same data as /api/positions, gated by dashboard auth instead
+GET /api/dashboard/flightstrips  — live flight strips, same auth story
 ```
+
+The dashboard's Radar tab (between Logs and Strips) embeds this same
+`/radar` page in an iframe. Both it and the API routes above are exempt
+from `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth - live traffic position
+isn't worth protecting the way logs/pilot transcripts are.
 
 #### Flight strips
 

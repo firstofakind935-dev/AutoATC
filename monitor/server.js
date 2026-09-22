@@ -427,6 +427,21 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
   res.status(204).end();
 });
 
+// Public radar page (e.g. https://your-monitor.up.railway.app/radar) - live
+// traffic on a real map for anyone with the link, without the dashboard's
+// Basic-auth login. Uses a single raster screenshot of the actual PTFS
+// world map (public/assets/world-map.png) as its backdrop instead of
+// hand-authored vector island shapes, plus public/data/worldMapAnchors.json
+// (per-airport pixel anchor + a shared px-per-nm scale, derived by
+// measuring known real-world island dimensions directly against that same
+// image - see that file's own "note" field for the confidence tiers).
+// Only these specific paths are exempted, not the whole public/ directory -
+// the dashboard's own index.html/app.js (bot health, logs) stay behind
+// requireDashboardAuth below.
+app.get(['/radar', '/radar/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'radar.html')));
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.use('/data', express.static(path.join(__dirname, 'public', 'data')));
+
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
 
 const server = app.listen(PORT, () => {
