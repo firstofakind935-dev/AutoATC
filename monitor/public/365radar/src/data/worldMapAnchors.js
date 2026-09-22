@@ -42,13 +42,13 @@ export default {
       "confidence": "direct-approx"
     },
     "ILAR": {
-      "x": 698,
-      "y": 618,
-      "confidence": "direct"
+      "x": 678,
+      "y": 595,
+      "confidence": "direct (visible runway/taxiway pattern identified in the image)"
     },
     "IPAP": {
-      "x": 774,
-      "y": 629,
+      "x": 754,
+      "y": 606,
       "confidence": "derived-from-ILAR"
     },
     "IKFL": {
@@ -87,19 +87,19 @@ export default {
       "confidence": "fitted-only"
     },
     "IDCS": {
-      "x": 518,
-      "y": 32,
-      "confidence": "fitted-only"
+      "x": 513,
+      "y": 25,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "IGAR": {
-      "x": 388,
-      "y": 519,
-      "confidence": "fitted-only"
+      "x": 397,
+      "y": 527,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "IHEN": {
-      "x": 629,
-      "y": 662,
-      "confidence": "fitted-only"
+      "x": 632,
+      "y": 665,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "IIAB": {
       "x": 666,
@@ -107,9 +107,9 @@ export default {
       "confidence": "fitted-only"
     },
     "IJAF": {
-      "x": 866,
-      "y": 375,
-      "confidence": "fitted-only"
+      "x": 860,
+      "y": 380,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "ILKL": {
       "x": 703,
@@ -117,29 +117,29 @@ export default {
       "confidence": "fitted-only"
     },
     "ISCM": {
-      "x": 795,
-      "y": 334,
-      "confidence": "fitted-only"
+      "x": 792,
+      "y": 330,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "ITKO": {
-      "x": 474,
-      "y": 106,
-      "confidence": "fitted-only"
+      "x": 456,
+      "y": 115,
+      "confidence": "direct (visible runway/taxiway pattern identified in the image)"
     },
     "ITRC": {
-      "x": 494,
-      "y": 575,
-      "confidence": "fitted-only"
+      "x": 495,
+      "y": 573,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "IBAR": {
-      "x": 699,
-      "y": 567,
-      "confidence": "fitted-only"
+      "x": 706,
+      "y": 574,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "IBRD": {
-      "x": 497,
-      "y": 189,
-      "confidence": "fitted-only (KNOWN BAD: lands in open ocean, needs manual placement)"
+      "x": 460,
+      "y": 151,
+      "confidence": "fitted-only, snapped onto nearest landmass (no unambiguous runway visible at this image resolution)"
     },
     "SHV": {
       "x": 708,
