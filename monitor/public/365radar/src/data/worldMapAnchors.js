@@ -1,4 +1,4 @@
-{
+export default {
   "image": "world-map.png",
   "imageWidth": 937,
   "imageHeight": 706,
@@ -147,4 +147,4 @@
       "confidence": "fitted-only"
     }
   }
-}
+};

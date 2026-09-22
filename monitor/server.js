@@ -429,18 +429,49 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
 
 // Public radar page (e.g. https://your-monitor.up.railway.app/radar) - live
 // traffic on a real map for anyone with the link, without the dashboard's
-// Basic-auth login. Uses a single raster screenshot of the actual PTFS
-// world map (public/assets/world-map.png) as its backdrop instead of
-// hand-authored vector island shapes, plus public/data/worldMapAnchors.json
-// (per-airport pixel anchor + a shared px-per-nm scale, derived by
-// measuring known real-world island dimensions directly against that same
-// image - see that file's own "note" field for the confidence tiers).
-// Only these specific paths are exempted, not the whole public/ directory -
-// the dashboard's own index.html/app.js (bot health, logs) stay behind
-// requireDashboardAuth below.
-app.get(['/radar', '/radar/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'radar.html')));
-app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
-app.use('/data', express.static(path.join(__dirname, 'public', 'data')));
+// Basic-auth login. Registered before that gate, and before express.static
+// claims '/', so these specific routes are reachable with no credentials
+// regardless of dashboard auth config.
+//
+// This is 365Radar (public/365radar/) - the full controller-workstation
+// UI (station select, flight strips, ATIS, vector/measuring tool, etc.),
+// a near-verbatim port of the GPLv3-licensed t-arpin/atc24radar. Its own
+// world map used to be a hand-traced vector layer (coast.svg/
+// boundaries.svg) that never reliably agreed with the per-airport GROUND.svg
+// diagrams laid on top of it - see this repo's commit history for how much
+// churn that caused. It's since been swapped for a single raster
+// screenshot of the real PTFS world map (365radar/public/assets/world-map.png)
+// plus 365radar/src/data/worldMapAnchors.js (per-airport pixel anchor + a
+// shared px-per-nm scale, each entry tagged with how it was verified -
+// some pixel-measured directly against visible runway markings in the
+// image, some still only a rough best-effort estimate; see that file's
+// own "note" field). The dashboard's Radar tab embeds this same page in
+// an iframe, so there is one radar implementation, not two.
+// Redirect (not sendFile) so the browser's URL actually becomes
+// /365radar/ - 365radar/index.html uses relative paths (public/style.css,
+// src/main.js, etc.) that must resolve against that directory, not /radar.
+app.get(['/radar', '/radar/'], (req, res) => res.redirect('/365radar/'));
+
+// The 365radar bundle (HTML/CSS/JS, the world map image + anchors, plane
+// icons, static airport/fix reference data) is plain reference data or
+// code, not sensitive - unlike index.html/app.js (which pull in the Logs
+// UI) or the API routes above - so the whole directory is exempted from
+// dashboard auth, mirroring the /radar route above and the
+// /api/dashboard/* routes.
+app.use('/365radar', express.static(path.join(__dirname, 'public', '365radar')));
+
+// Stand-ins for the two endpoints 365radar/src/main.js expects from the
+// upstream 24radar.xyz backend (ATIS-letter auto-fetch and the approach
+// plate listing) that AutoATC has no equivalent for - AutoATC only has
+// ground charts, not instrument approach plates, and no ATIS-letter
+// tracking. main.js already handles a 404/empty response gracefully (see
+// atisLetter()/loadApproachList()), so these degrade rather than crash.
+app.get('/365radar-api/atis/:icao', (req, res) => {
+  res.status(404).json({ error: 'ATIS letter tracking is not available in AutoATC' });
+});
+app.get('/365radar-api/approaches/:icao', (req, res) => {
+  res.json([]);
+});
 
 app.use(requireDashboardAuth, express.static(path.join(__dirname, 'public')));
 

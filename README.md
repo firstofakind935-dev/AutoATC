@@ -492,54 +492,86 @@ that file (fetching positions, building the payload, the sync loop, the
 `replace: true` semantics) doesn't depend on which coordinate system
 turns out to be right.
 
-#### Radar view
+#### Radar view (365Radar)
 
-A prior port (365Radar, a rebrand of
-[24Radar](https://github.com/t-arpin/atc24radar)) was pulled out because
-its hand-authored vector island shapes never reliably agreed with each
-other (a world map, a separate ground-view backdrop, and per-airport
-diagram SVGs, each independently traced) - see the repo history around
-the "Recalibrate the world map's island positions" and "Actually fix
-IKFL's world-map position" commits for how much churn that caused for
-how little payoff.
+AutoATC vendors a near-verbatim port of
+[24Radar](https://github.com/t-arpin/atc24radar) (GPLv3) as its own web
+radar, rebranded **365Radar** for ATC365 (`monitor/public/365radar/` -
+see that directory's `index.html` header comment and `LICENSE`). This is
+meant to be a real controller workstation, not just a passive display -
+station select, flight strips, ATIS generation, a measuring/vectoring
+tool, and topdown ground control all come from upstream 24radar largely
+unmodified.
 
-The current radar (`monitor/public/radar.html`, served at `/radar`) takes
-a different approach entirely: instead of vector shapes, it uses one
-raster screenshot of the actual PTFS world map
-(`public/assets/world-map.png`) as its backdrop, so there's exactly one
-source of truth for where every island actually is - nothing to keep
-in sync. Aircraft and airport positions are plotted on top of that image
-using `public/data/worldMapAnchors.json` - a per-airport pixel anchor
-plus a single shared px-per-nm scale (~24px/nm), derived by measuring
-real, known in-game island dimensions directly against that same image
-(not guessed, and not carried over from the old vector system's
-coordinates, which is exactly what kept going wrong before).
+**The world map itself is not upstream's.** 24radar's own hand-traced
+vector island shapes (a world map, a separate ground-view backdrop, and
+per-airport diagram SVGs, each independently authored) never reliably
+agreed with each other in this fork - see the repo history around the
+"Recalibrate the world map's island positions" and "Actually fix IKFL's
+world-map position" commits for how much churn that caused for how
+little payoff. They've been replaced with a single raster screenshot of
+the real PTFS world map (`365radar/public/assets/world-map.png`) as the
+backdrop, so there's exactly one source of truth for where every island
+actually is - nothing to keep in sync. Aircraft and airport positions
+are plotted on top of that image using
+`365radar/src/data/worldMapAnchors.js` - a per-airport pixel anchor plus
+a single shared px-per-nm scale (~24px/nm), derived by measuring real,
+known in-game island dimensions (and, for a few airports, actual visible
+runway markings) directly against that same image - not guessed, and not
+carried over from 24radar's own coordinate system, which is exactly what
+kept going wrong before. `GroundOffsets.js` (upstream's own coordinate
+file) is kept only for the separate Ground View side panel's local
+camera zoom, which this change doesn't touch.
 
 Anchor confidence is intentionally visible, not hidden: each entry in
-`worldMapAnchors.json` is tagged `direct` (pixel-measured straight off
-the image), `derived-from-X` (offset from a direct anchor using existing
-relative spacing), or `fitted-only` (predicted from a least-squares fit
-across the 8 `direct` anchors, unverified against the image - the fit's
-own residuals ran up to ~45px on its training points, so treat these as
-a rough first pass). The radar page's "unverified positions" checkbox
-toggles `fitted-only` anchors on with a distinct hollow marker, so a bad
-one (IBRD currently lands in open ocean - a known, flagged case, not a
-silent bug) is obvious rather than hidden. Fixing one is a single-entry
-edit to that JSON file, verified by eye against `world-map.png` - no
-SVG-alignment archaeology required.
+`worldMapAnchors.js` is tagged `direct` (pixel-measured straight off the
+image - some against actual visible runway markings, noted per-entry),
+`derived-from-X` (offset from a direct anchor using existing relative
+spacing), or `fitted-only` (predicted from a least-squares fit across 8
+trusted anchors, unverified against the image - the fit's own residuals
+ran up to ~45px on its training points, so treat these as a rough first
+pass, not fact). A bad one is flagged rather than hidden (IBRD currently
+lands in open ocean - a known case). Fixing one is a single-entry edit
+to that file, verified by eye against `world-map.png` - no SVG-alignment
+archaeology required. The per-airport diagram SVGs (`GROUND.svg`) are no
+longer overlaid on the main map at all (that overlay, with zero
+transform, was the original source of the misalignment) - the main map
+shows a simple marker + label at each airport's verified anchor instead,
+and the detailed diagram is still available in the Ground View side
+panel.
+
+Reachable two ways:
 
 ```
-GET /radar                       — the radar page itself, no dashboard login required
-GET /assets/world-map.png        — the backdrop image
-GET /data/worldMapAnchors.json   — anchor points + scale
-GET /api/dashboard/positions     — same data as /api/positions, gated by dashboard auth instead
-GET /api/dashboard/flightstrips  — live flight strips, same auth story
+GET /radar      — redirects to /365radar/, a public link with no dashboard login required
+GET /365radar/  — the radar page itself
 ```
 
 The dashboard's Radar tab (between Logs and Strips) embeds this same
-`/radar` page in an iframe. Both it and the API routes above are exempt
-from `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth - live traffic position
-isn't worth protecting the way logs/pilot transcripts are.
+`/365radar/` page in an iframe, so there's one radar implementation, not
+two. Both the public `/radar` route and the `/365radar/` bundle itself
+are exempt from `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth - live traffic
+position isn't worth protecting the way logs/pilot transcripts are.
+
+`365radar/src/main.js` expects two endpoints from the upstream
+24radar.xyz backend that AutoATC has no equivalent for (ATIS-letter
+auto-fetch and instrument approach plates); these degrade gracefully
+rather than crash:
+
+```
+GET /365radar-api/atis/:icao        — 404 (AutoATC doesn't track ATIS letters)
+GET /365radar-api/approaches/:icao  — [] (AutoATC only has ground charts, not approach plates)
+```
+
+The map itself is served from a separate dashboard-facing endpoint (not
+the bot fleet's own `/api/positions` above), since the dashboard
+authenticates with the `DASHBOARD_USERNAME`/`PASSWORD` Basic-auth
+credentials, not the `INGEST_API_KEY` Bearer token bots use:
+
+```
+GET /api/dashboard/positions    — same data as /api/positions, gated by dashboard auth instead
+GET /api/dashboard/flightstrips — live flight strips, same auth story
+```
 
 #### Flight strips
 

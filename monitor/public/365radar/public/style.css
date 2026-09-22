@@ -1,0 +1,971 @@
+html, body, #svg-container, .ground-svg-container, .charts-container {
+    background-color: black;
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: none;
+    display: flex;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+#svg-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    width: 100vw;
+}
+
+.ground-svg-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    background-color: #00002f;
+}
+
+.charts-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+    background-color: black;
+}
+
+.chart-wrapper {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+.chart-image {
+    user-select: none;
+    pointer-events: none;
+    transform-origin: 0 0;
+    will-change: transform;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+button {
+    border: none;
+    background-color: #333;
+    cursor: pointer;
+    color: white;
+    border-radius: 8px;
+}
+
+#rotate-chart {
+    position: absolute;
+    bottom: 10px;
+    left: 50px;
+    z-index: 10;
+    font-size: 16px;
+    width: 30px;
+    height: 30px;
+}
+
+.back-button {
+    font-size: 16px;
+    display: block;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    z-index: 2;
+}
+
+.back-button:hover {
+  background-color: #222222;
+}
+
+.back-icon {
+  width: 20px;
+  height: 20px;
+}
+
+#side-display {
+    background-color: black;
+    height: 100vh;
+    width: auto;
+    position: relative;
+    transition: 0.3s ease;
+}
+
+.sidebar-button {
+    background-color: #303030;
+    color: #fff;
+    border: none;
+    height: 30px;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+.sidebar-button:hover { 
+    background-color: #222222;
+}
+
+#resizer {
+    background-color: #333333;
+    border: none;
+    padding: 0px;
+    height: 100vh;
+    width: auto;
+    z-index: 1;
+}
+
+svg {
+    display: block;
+    overflow: visible;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+#top-bar {
+    position: absolute;
+    top: 3vh;
+    left: 5vw;
+    right: 5vw;
+    background: #22222280;
+    backdrop-filter: blur(5px);
+    color: #fff;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    border-radius: 20px;
+    gap: 5px;
+    z-index: 10;
+}
+
+/*#top-bar {
+    position: absolute;
+    width: 100vw;
+    background: #222;
+    color: #fff;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 10;
+}*/
+
+a {
+    color: #fff;
+    text-decoration: none;
+}
+
+#name {
+    margin-left: 5px;
+    margin-right: 20px;
+}
+
+.menu-button {
+    background: #303030;
+    color: #fff;
+    border: none;
+    height: 100%;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+.menu-button:hover {
+  background-color: #333333;
+}
+
+#ground-aircraft {
+    background-color: #3e3e3e;
+    border: 3px solid #4B5DA3;
+    width: 65px;
+    padding: 1px;
+    height: 40px;
+    font-size: .7em;
+}
+
+#display-button {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    bottom: 10px;
+    left: 10px;
+    z-index: 2;
+    transition: 0.3s ease; 
+}
+
+#side-panel-content {
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+}
+
+.side-window {
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    gap: 10px;
+    position: relative;
+}
+
+#side-window-1 {
+    height: 100%;
+    display: flex;
+}
+
+#side-window-2 {
+    height: 50%;
+    display: none;
+    border-top: 1px solid #333333;
+}
+
+.side-window-button {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    bottom: 10px;
+    left: 10px;
+    z-index: 10;
+}
+
+#full-wide-button {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    bottom: 10px;
+    right: 10px;
+    z-index: 2;
+    display: none;
+}
+
+.aircraft-label {
+    color: white;
+    position: absolute;
+    width: 100px;
+    height: 100px;
+}
+
+.time-display {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    color: #fff;
+    font-size: 1.2em;
+    gap: 5px;
+}
+
+#time {
+    padding: 2px;
+    width: 90px;
+    border: 3px solid #303030;
+    border-radius: 3px;
+}
+
+#time-button {
+    width: 60px;
+    height: 100%;
+    border: none;
+    transition: background 0.2s;
+    border-radius: 10px;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+}
+
+#airport-dropdown {
+    background-color: #303030;
+    color: #fff;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    height: 40px;
+    cursor: pointer;
+    text-align: center;
+    outline: none;
+    appearance: none; /* Remove default styling in some browsers */
+}
+
+.dropdown-label {
+    width: 58px;
+    margin-left: 10px;
+    font-size: .8em;
+}
+
+#ground-button {
+    background-color: #303030;
+    height: 40px;
+    width: 65px;
+}
+
+#approach-button {
+    background-color: #303030;
+    height: 40px;
+    width: 50px;
+}
+
+#info-overlay {
+    bottom: 20px;
+    right: 50px;
+    width: 200px;
+    display: block;
+    height: auto;
+}
+
+.overlay {
+  position: fixed;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  height: auto;
+
+  backdrop-filter: blur(10px);
+  border: 1px solid #33333380;
+  border-radius: 5px;
+  padding: 5px;
+  z-index: 100;
+  color: white;
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.close-svg {
+    width: 15px;
+    height: 15px;
+    position: absolute;
+    top: 7px;
+    right: 2px;
+    cursor: pointer;
+}
+
+#callsign-container {
+    display: flex;
+    width: 90%;
+    height: auto;
+    align-items: center;
+    gap: 5px;
+}
+
+#aircraft-tag {
+    font-size: .6em;
+    background-color: #333333;
+    padding: 2px;
+    padding-inline: 5px;
+    border-radius: 5px;
+}
+
+#player-name {
+    display: flex;
+    width: 90%;
+    height: 15px;
+    align-items: center;
+    font-size: .6em;
+    margin-bottom: 4px;
+}
+
+#flight-plan {
+    height: auto;
+    margin-top: 4px;
+    font-size: .7em;
+    display: flex;
+    margin-bottom: 4px;
+}
+
+#fp-info {
+    height: auto;
+    margin-block: 4px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 2px;
+}
+
+#route-container {
+    height: 60px;
+    display: flex;
+    margin-block: 8px;
+}
+
+.route {
+    background-color: rgb(22, 22, 22);
+    width: 50%;
+    border-right: 2px solid #222222;
+    padding-top: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.4em;
+    border-radius: 5px;
+}
+
+.airport-name {
+    font-size: .4em;
+}
+
+#arival {
+    border-left: 2px solid #222222;
+    border-right: none;
+}
+
+#detailed-info-container {
+    height: auto;
+    font-size: .7em;
+    display: flex;
+}
+
+#detailed-info {
+    height: auto;
+    margin-block: 4px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#plane-icon-container {
+    width: 30px;
+    height: 30px;
+    left: 90px;
+    top: 62px;
+    position: absolute;
+}
+
+#details-spacer {
+    width: 10px;
+    background-color: rgb(22, 22, 22);
+    border-right: 2px solid rgb(22, 22, 22);
+    margin-right: 5px;
+    height: auto;
+    border-radius: 5px;
+}
+
+#station-info {
+    font-size: 14px;
+}
+
+#station-type {
+    font-size: .8em;
+    background-color: #222222;
+    color: #fff;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+    border: none;
+    width: 0px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.settings-icon {
+    width: 20px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
+
+.settings-icon > svg {
+    color: white;
+}
+
+.settings-icon:hover {
+    transform: rotate(90deg);
+}
+
+#settings-overlay {
+    display: block;
+    right: 50vw;
+    bottom: 50vh;
+    width: 200px;
+}
+
+hr {
+    width: 100%;
+}
+
+input {
+    background-color: #333; /* Dark background */
+    color: #ffffff; /* White text */
+    border: 1px solid #444444; /* Subtle border */
+    border-radius: 5px; /* Rounded corners */
+    outline: none;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+.settings-input {
+    width: 45px;
+    padding: 4px;
+    margin-left: auto;
+}
+
+#bounds-check {
+    margin-left: auto;
+}
+
+#min-tool {
+    margin-left: auto;
+}
+
+#fix-button {
+    margin-left: auto;
+}
+
+#tools {
+    display: flex; 
+    gap: 5px;
+}
+
+#notepad-overlay {
+    right: 5vw;
+    bottom: 50vh;
+    display: block;
+    width: 200px;
+}
+
+#notepad-input {
+    background-color: transparent;
+    color: white; 
+    border: none;
+    padding: none;
+    outline: none;
+    height: 200px;
+    resize: none;
+    padding-top: 5px;
+    width: 196px;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+}
+
+#notepad-input::-webkit-scrollbar {
+    width: 6px; /* Thin scrollbar */
+}
+
+#notepad-input::-webkit-scrollbar-track {
+    background: transparent; /* No track background */
+}
+
+#notepad-input::-webkit-scrollbar-thumb {
+    background-color: #555; /* Dark thumb */
+    border-radius: 3px;
+}
+
+#notepad-input::-webkit-scrollbar-thumb:hover {
+    background-color: #777; /* Slightly lighter on hover */
+}
+
+.tool-icon {
+    width: 20px;
+    height: 20px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#departures-overlay {
+    right: 20vw;
+    top: 50vh;
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#departures-table {
+    background-color: transparent;
+    color: white;
+    border: 1px solid #444;
+    font-size: .7em;
+    border-collapse: collapse;
+    table-layout: auto;
+    width: 100%;
+}
+
+#departures-table th, 
+#departures-table td {
+    border: 1px solid #222222;
+    padding: 4px;
+    vertical-align: middle;
+}
+
+#departures-table input[type="text"] {
+    background-color: transparent;
+    color: white;
+    border: none;
+    outline: none;
+    width: 100%; 
+    box-sizing: border-box; 
+    font-size: inherit; 
+}
+
+#departures-table input[type="checkbox"] {
+    transform: scale(1.2);
+    margin: 0 auto;
+    display: block;
+}
+
+#arrivals-overlay {
+    right: 20vw;
+    top: 50vh;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#arrivals-table {
+    background-color: transparent;
+    color: white;
+    border: 1px solid #444;
+    font-size: .7em;
+    border-collapse: collapse;
+    table-layout: auto;
+    width: 100%;
+}
+
+#arrivals-table th, 
+#arrivals-table td {
+    border: 1px solid #222222;
+    padding: 4px;
+    vertical-align: middle;
+}
+
+#arrivals-table input[type="text"] {
+    background-color: transparent;
+    color: white;
+    border: none;
+    outline: none;
+    width: 100%; 
+    box-sizing: border-box; 
+    font-size: inherit; 
+}
+
+#arrivals-table input[type="checkbox"] {
+    transform: scale(1.2);
+    margin: 0 auto;
+    display: block;
+}
+
+#atis-overlay {
+    display: flex;
+    top: 200px;
+    left: 400px;
+    font-size: .7em;
+    height: auto;
+    padding: 10px;
+    gap: 15px;
+}
+
+.left input {
+    width: 100%;
+    border-radius: 3px;
+    margin-top: 1px;
+    border: none;
+    height: 17px;
+}
+
+.left h4 {
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+.left input[type="checkbox"] {
+    width: auto;
+}
+
+.left {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: 100px 140px;
+    grid-template-rows: auto auto;
+}
+
+
+#output {
+    white-space: pre-wrap;
+    border: 1px solid #555;
+    padding: 10px;
+    height: 130px;
+    width: 300px;
+    overflow-y: auto;
+    font-size: 1em;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+}
+
+#output::-webkit-scrollbar {
+    width: 6px; /* Thin scrollbar */
+}
+
+#output::-webkit-scrollbar-track {
+    background: transparent; /* No track background */
+}
+
+#output::-webkit-scrollbar-thumb {
+    background-color: #555; /* Dark thumb */
+    border-radius: 3px;
+}
+
+#output::-webkit-scrollbar-thumb:hover {
+    background-color: #777; /* Slightly lighter on hover */
+}
+
+.left  textarea {
+    width: 200%;
+    height: 100%;
+    resize: none;
+    scrollbar-width: thin;
+    scrollbar-color: #555 transparent;
+}
+
+.left  textarea::-webkit-scrollbar {
+    width: 6px; /* Thin scrollbar */
+}
+
+.left  textarea::-webkit-scrollbar-track {
+    background: transparent; /* No track background */
+}
+
+.left  textarea::-webkit-scrollbar-thumb {
+    background-color: #555; /* Dark thumb */
+    border-radius: 3px;
+}
+
+.left  textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #777; /* Slightly lighter on hover */
+}
+
+
+#atis-gen-button {
+    font-size: 1em;
+    font-family: inherit;
+    padding: 5px;
+}
+
+#copied-text {
+    margin-top: 5px; 
+    color: #48fb99;
+}
+
+#wind-container {
+    width: auto;
+    font-size: 14px;
+}
+
+#top-info-cont {
+    display: flex; 
+    flex-direction: column; 
+    margin-left: auto; 
+    align-items: center; 
+    font-size: .7em;
+}
+
+#credits {
+    position: absolute;
+    right: 45px;
+    bottom: 20px;
+    margin: 0 auto;
+    color: rgb(122, 122, 122);
+    font-size: .5em;
+    width: fit-content;
+}
+
+#approach-overlay {
+    right: 30vw;
+    bottom: 50vh;
+    display: flex;
+    flex-direction: column;
+    width: 100px;
+    gap: 10px;
+}
+
+#airport-dropdown-app {
+    background-color: #303030;
+    color: #fff;
+    font-family: inherit;
+    border-radius: 8px;
+    padding: 6px 10px;
+    width: 100px;
+    cursor: pointer;
+    text-align: center;
+    outline: none;
+}
+
+#changes-overlay {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: 350px;
+    height: 265px;
+    display: block;
+}
+
+#dowtime-overlay {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: 350px;
+    height: 135px;
+    display: block;
+}
+
+#vector-overlay {
+    right: 70vw;
+    bottom: 50vh;
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    gap: 10px;
+}
+
+.vector-button {
+    background-color: #303030;
+    color: #fff;
+    border: none;
+    height: 30px;
+    width: 100%;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+.vector-button:hover {
+  background-color: #333333;
+}
+
+.vector:focus {
+  outline: 2px solid #333333;
+  border-radius: 2px;
+}
+
+.atis-dropdown {
+    background-color: #303030;
+    color: #fff;
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+    border: none;
+    border-radius: 3px;
+    width: 100%;
+    height: 19px;
+    cursor: pointer;
+    text-align: center;
+    outline: none;
+    display: flex;
+    box-sizing: border-box;
+    flex-direction: column;
+    position: relative;
+    user-select: none;
+}
+
+.multiselect-dropdown {
+    display: flex;
+    border-radius: 3px;
+    height: 19px;
+    border: none;
+    background-color: #333333;
+    position: relative;
+    width: 100%;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right .1rem center;
+    background-size: 16px 12px;
+    align-items: center;
+}
+
+.multiselect-dropdown span.optext,
+.multiselect-dropdown span.placeholder {
+    margin-inline: 3px;
+    padding: 1px 0;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.multiselect-dropdown span.optext {
+    background-color: #5c5c5c;
+    padding: 1px 0.75em;
+}
+
+.multiselect-dropdown span.placeholder {
+    color: #ced4da;
+}
+
+.multiselect-dropdown-list-wrapper {
+    z-index: 100;
+    border-radius: 3px;
+    outline:none;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #333333;
+}
+
+.multiselect-dropdown-list {
+    padding: 2px;
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.multiselect-dropdown-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.multiselect-dropdown-list::-webkit-scrollbar-thumb {
+    background-color: #bec4ca;
+    border-radius: 3px;
+}
+
+.multiselect-dropdown-list div {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.multiselect-dropdown-list input {
+    height: 1.15em;
+    width: 1.15em;
+    margin-right: 0.35em;
+}
+
+.multiselect-dropdown-list div:hover {
+    background-color: #4d4d4d;
+}
+
+
+.multiselect-dropdown-all-selector {
+    border-bottom: solid 1px #999;
+}
+
+#station-overlay {
+    left: 30vw;
+    top: 15vh;
+    display: flex;
+    flex-direction: column;
+    width: 100px;
+    gap: 10px;
+}
+
+#station-toggles {
+    display: flex;
+    flex-direction: column;
+}
+
+.topdown-div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
