@@ -484,6 +484,15 @@ function svgRootToGroup(svgEl) {
     return g;
 }
 
+// Some source files (e.g. TAXIWAYS.svg) nest a second raw <svg> inside the
+// root one. Converts the root and every remaining nested <svg> descendant,
+// so no independent viewport survives anywhere in the injected subtree.
+function svgRootToGroupDeep(svgEl) {
+    const g = svgRootToGroup(svgEl);
+    g.querySelectorAll('svg').forEach((nested) => svgRootToGroup(nested));
+    return g;
+}
+
 // AutoATC adapter: this used to fetch and inject GROUND.svg's own raw
 // content directly onto the main map with zero transform, relying on its
 // native coordinates happening to already match the surrounding vector
@@ -625,6 +634,14 @@ function loadGroundChartSVG(airportSelector, cont) {
             }
 
             mapSvg.appendChild(loaded); // Add GROUND.svg first
+            // AutoATC fix: GROUND.svg shares coast.svg's exact studs-based
+            // coordinate space (both declare a 963.55x920.03 canvas), so it
+            // must inherit ground-map-svg's current (zoomed-in) viewBox
+            // directly rather than establish its own nested viewport - see
+            // svgRootToGroup()'s comment above for why a raw nested <svg>
+            // silently mis-scales content (renders it far off-screen at the
+            // wrong scale) instead of erroring outright.
+            svgRootToGroupDeep(loaded);
 
             // Now fetch and append taxiways.svg
             return fetch(`public/assets/maps/${folder}/TAXIWAYS.svg`);
@@ -636,10 +653,11 @@ function loadGroundChartSVG(airportSelector, cont) {
             return response.text();
         })
         .then(taxiwaysText => {
-            const taxiwaysSVG = parseSVG(taxiwaysText);
-            taxiwaysSVG.setAttribute('id', 'taxiwaysCenter-svg');
-            mapSvg.appendChild(taxiwaysSVG);
-
+            const taxiwaysSVGRoot = parseSVG(taxiwaysText);
+            taxiwaysSVGRoot.setAttribute('id', 'taxiwaysCenter-svg');
+            mapSvg.appendChild(taxiwaysSVGRoot);
+            // Same nested-viewport fix as GROUND.svg above.
+            const taxiwaysSVG = svgRootToGroupDeep(taxiwaysSVGRoot);
 
             const textElements = Array.from(taxiwaysSVG.querySelectorAll('g')).find(el => el.getAttribute('id')).querySelectorAll('text');
             textElements.forEach(el => {
