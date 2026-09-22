@@ -7,9 +7,9 @@
   "note": "x/y are pixel coordinates on world-map.png. confidence: direct = pixel-measured from the image itself; derived-from-X = offset from a direct anchor using existing relative stud spacing; fitted-only = predicted from a global least-squares transform fit to 8 trusted native anchors (residuals up to ~45px seen on those 8 points, so treat as a rough first pass, not verified against the image).",
   "anchors": {
     "IRFD": {
-      "x": 442,
-      "y": 519,
-      "confidence": "direct"
+      "x": 503,
+      "y": 513,
+      "confidence": "direct (visible runway/taxiway pattern identified in the image)"
     },
     "IMLR": {
       "x": 377,
@@ -52,23 +52,23 @@
       "confidence": "derived-from-ILAR"
     },
     "IKFL": {
-      "x": 200,
-      "y": 355,
-      "confidence": "manual-within-island (verified against island shape south of the neck)"
+      "x": 204,
+      "y": 342,
+      "confidence": "direct (visible runway/taxiway pattern identified in the image)"
     },
     "ITEY": {
-      "x": 217,
-      "y": 346,
+      "x": 221,
+      "y": 333,
       "confidence": "derived-from-IKFL"
     },
     "IGCG": {
-      "x": 224,
-      "y": 328,
+      "x": 228,
+      "y": 315,
       "confidence": "derived-from-IKFL"
     },
     "TVO": {
-      "x": 223,
-      "y": 335,
+      "x": 227,
+      "y": 322,
       "confidence": "derived-from-IKFL"
     },
     "IUFO": {

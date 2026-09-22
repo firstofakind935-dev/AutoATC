@@ -29,37 +29,67 @@
   header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 10px 16px;
+    gap: 10px;
+    padding: 8px 14px;
     border-bottom: 1px solid var(--panel-border);
     flex-shrink: 0;
+    flex-wrap: wrap;
   }
   header h1 {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
     letter-spacing: 0.02em;
+    white-space: nowrap;
   }
   header .sub {
     font-size: 12px;
     color: var(--text-dim);
+    white-space: nowrap;
   }
   header label {
-    margin-left: auto;
     font-size: 12px;
     color: var(--text-dim);
     display: flex;
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    white-space: nowrap;
   }
+  header select {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .toolbtn {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .toolbtn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #08101f;
+    font-weight: 600;
+  }
+  header .spacer { margin-left: auto; }
+
   #wrap {
     flex: 1;
     min-height: 0;
     position: relative;
     overflow: hidden;
     background: #0a1622;
+    display: flex;
   }
+  #map-area { position: relative; flex: 1; min-width: 0; }
   svg {
     width: 100%;
     height: 100%;
@@ -67,15 +97,26 @@
     cursor: grab;
   }
   svg.panning { cursor: grabbing; }
+  svg.measuring { cursor: crosshair; }
 
   .airport-dot { fill: #6b90c4; opacity: 0.6; }
   .airport-dot.low-confidence { fill: none; stroke: #b06b3a; stroke-width: 1.2; opacity: 0.7; }
+  .airport-dot.selected { fill: var(--accent); opacity: 1; }
   .airport-label { fill: #9db3d6; font-size: 9px; font-family: "SF Mono", Menlo, Consolas, monospace; opacity: 0.75; pointer-events: none; }
 
   .aircraft-dot { fill: var(--ok); stroke: #06251a; stroke-width: 0.8; }
   .aircraft-dot.stale { fill: var(--warn); }
   .aircraft-label { fill: var(--text); font-size: 10px; font-weight: 600; font-family: "SF Mono", Menlo, Consolas, monospace; pointer-events: none; }
   .aircraft-sub { fill: var(--text-dim); font-size: 8.5px; font-family: "SF Mono", Menlo, Consolas, monospace; pointer-events: none; }
+
+  .measure-line { stroke: #ffd166; stroke-width: 1; stroke-dasharray: 3 2; }
+  .measure-label {
+    fill: #ffd166;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  .measure-dot { fill: #ffd166; }
 
   #empty-note {
     position: absolute;
@@ -89,23 +130,85 @@
     color: var(--text-dim);
     max-width: 340px;
     line-height: 1.5;
+    pointer-events: none;
   }
+
+  #strips-panel {
+    width: 360px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--panel-border);
+    background: var(--panel);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #strips-panel.open { display: flex; }
+  #strips-panel h2 {
+    font-size: 13px;
+    margin: 0;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+  #strips-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .strip-card {
+    background: #0f1115;
+    border: 1px solid var(--panel-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .strip-card .callsign {
+    font-weight: 700;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+  .strip-card .acft { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
+  .strip-card .row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-size: 11px;
+  }
+  .strip-card .row b { color: var(--text); font-weight: 600; }
+  .strip-card .vector {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--warn);
+  }
+  #strips-empty { color: var(--text-dim); font-size: 12px; padding: 10px; }
 </style>
 </head>
 <body>
   <header>
     <h1>AutoATC Radar</h1>
     <span class="sub">world-map.png &middot; ~24px/nm</span>
+    <select id="airport-select">
+      <option value="">Go to airport&hellip;</option>
+    </select>
+    <button type="button" class="toolbtn" id="measure-btn">Measure</button>
+    <button type="button" class="toolbtn" id="strips-btn">Flight Strips</button>
+    <div class="spacer"></div>
     <label><input type="checkbox" id="show-airports" checked /> airports</label>
     <label><input type="checkbox" id="show-low-confidence" /> unverified positions</label>
   </header>
   <div id="wrap">
-    <svg id="radar-svg" viewBox="0 0 937 706" preserveAspectRatio="xMidYMid meet">
-      <image id="bg" href="assets/world-map.png" x="0" y="0" width="937" height="706" />
-      <g id="airports"></g>
-      <g id="aircraft"></g>
-    </svg>
-    <div id="empty-note" style="display:none;">No aircraft currently reporting a position.</div>
+    <div id="map-area">
+      <svg id="radar-svg" viewBox="0 0 937 706" preserveAspectRatio="xMidYMid meet">
+        <image id="bg" href="assets/world-map.png" x="0" y="0" width="937" height="706" />
+        <g id="airports"></g>
+        <g id="aircraft"></g>
+        <g id="measure"></g>
+      </svg>
+      <div id="empty-note" style="display:none;">No aircraft currently reporting a position.</div>
+    </div>
+    <aside id="strips-panel">
+      <h2>Flight Strips</h2>
+      <div id="strips-list"></div>
+    </aside>
   </div>
 
 <script>
@@ -113,9 +216,15 @@
   const svg = document.getElementById('radar-svg');
   const airportsLayer = document.getElementById('airports');
   const aircraftLayer = document.getElementById('aircraft');
+  const measureLayer = document.getElementById('measure');
   const showAirports = document.getElementById('show-airports');
   const showLowConfidence = document.getElementById('show-low-confidence');
   const emptyNote = document.getElementById('empty-note');
+  const airportSelect = document.getElementById('airport-select');
+  const measureBtn = document.getElementById('measure-btn');
+  const stripsBtn = document.getElementById('strips-btn');
+  const stripsPanel = document.getElementById('strips-panel');
+  const stripsList = document.getElementById('strips-list');
 
   const NS = 'http://www.w3.org/2000/svg';
   const el = (tag, attrs) => {
@@ -133,10 +242,21 @@
     anchors = data.anchors;
     pxPerNm = data.pxPerNm;
     renderAirports();
+    populateAirportSelect();
   }
 
   function isLowConfidence(conf) {
     return !conf || conf.startsWith('fitted-only');
+  }
+
+  function populateAirportSelect() {
+    const icaos = Object.keys(anchors).sort();
+    for (const icao of icaos) {
+      const opt = document.createElement('option');
+      opt.value = icao;
+      opt.textContent = icao;
+      airportSelect.appendChild(opt);
+    }
   }
 
   function renderAirports() {
@@ -145,7 +265,7 @@
       const a = anchors[icao];
       const low = isLowConfidence(a.confidence);
       if (low && !showLowConfidence.checked) continue;
-      const dot = el('circle', { cx: a.x, cy: a.y, r: 2.2, class: 'airport-dot' + (low ? ' low-confidence' : '') });
+      const dot = el('circle', { cx: a.x, cy: a.y, r: 2.2, class: 'airport-dot' + (low ? ' low-confidence' : ''), 'data-icao': icao });
       airportsLayer.appendChild(dot);
       const label = el('text', { x: a.x + 4, y: a.y + 3, class: 'airport-label' });
       label.textContent = icao;
@@ -217,17 +337,29 @@
   // ---- pan/zoom (drag to pan, wheel to zoom) ----
   const viewBox = svg.viewBox.baseVal;
   let isPanning = false;
+  let dragMoved = false;
   let panStart = { x: 0, y: 0 };
   let viewStart = { x: 0, y: 0, w: 0, h: 0 };
 
+  function clientToSvg(clientX, clientY) {
+    const rect = svg.getBoundingClientRect();
+    return {
+      x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
+      y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
+    };
+  }
+
   svg.addEventListener('mousedown', (e) => {
+    if (measuring) return; // measuring click handled separately below
     isPanning = true;
+    dragMoved = false;
     svg.classList.add('panning');
     panStart = { x: e.clientX, y: e.clientY };
     viewStart = { x: viewBox.x, y: viewBox.y, w: viewBox.width, h: viewBox.height };
   });
   window.addEventListener('mousemove', (e) => {
     if (!isPanning) return;
+    if (Math.abs(e.clientX - panStart.x) > 2 || Math.abs(e.clientY - panStart.y) > 2) dragMoved = true;
     const rect = svg.getBoundingClientRect();
     const scaleX = viewStart.w / rect.width;
     const scaleY = viewStart.h / rect.height;
@@ -246,15 +378,138 @@
     const zoomPointX = viewBox.x + (mouseX / rect.width) * viewBox.width;
     const zoomPointY = viewBox.y + (mouseY / rect.height) * viewBox.height;
     const delta = e.deltaY < 0 ? 0.9 : 1.1;
-    viewBox.width = Math.min(937 * 2, Math.max(80, viewBox.width * delta));
-    viewBox.height = Math.min(706 * 2, Math.max(60, viewBox.height * delta));
+    viewBox.width = Math.min(937 * 2, Math.max(15, viewBox.width * delta));
+    viewBox.height = Math.min(706 * 2, Math.max(11, viewBox.height * delta));
     viewBox.x = zoomPointX - (mouseX / rect.width) * viewBox.width;
     viewBox.y = zoomPointY - (mouseY / rect.height) * viewBox.height;
   }, { passive: false });
 
+  // ---- station select: pan/zoom to an airport ----
+  airportSelect.addEventListener('change', () => {
+    const icao = airportSelect.value;
+    if (!icao || !anchors[icao]) return;
+    const a = anchors[icao];
+    const w = 50, h = 38; // a close-in window around the field, in viewBox units
+    viewBox.x = a.x - w / 2;
+    viewBox.y = a.y - h / 2;
+    viewBox.width = w;
+    viewBox.height = h;
+    renderAirports();
+    Array.from(airportsLayer.querySelectorAll('.airport-dot')).forEach((d) => {
+      d.classList.toggle('selected', d.dataset.icao === icao);
+    });
+  });
+
+  // ---- measuring tool: click to start, click again to finish, Esc/right-click to cancel ----
+  let measuring = false;
+  let measureStart = null;
+
+  function clearMeasure() {
+    measureLayer.innerHTML = '';
+    measureStart = null;
+  }
+
+  function drawMeasurePreview(startPt, endPt) {
+    measureLayer.innerHTML = '';
+    const dx = endPt.x - startPt.x;
+    const dy = endPt.y - startPt.y;
+    const distNm = Math.hypot(dx, dy) / pxPerNm;
+    let bearing = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    if (bearing < 0) bearing += 360;
+
+    measureLayer.appendChild(el('line', { x1: startPt.x, y1: startPt.y, x2: endPt.x, y2: endPt.y, class: 'measure-line' }));
+    measureLayer.appendChild(el('circle', { cx: startPt.x, cy: startPt.y, r: 1.6, class: 'measure-dot' }));
+    measureLayer.appendChild(el('circle', { cx: endPt.x, cy: endPt.y, r: 1.6, class: 'measure-dot' }));
+    const label = el('text', { x: (startPt.x + endPt.x) / 2 + 4, y: (startPt.y + endPt.y) / 2 - 4, class: 'measure-label' });
+    label.textContent = `${distNm.toFixed(1)}nm  ${Math.round(bearing).toString().padStart(3, '0')}°`;
+    measureLayer.appendChild(label);
+  }
+
+  measureBtn.addEventListener('click', () => {
+    measuring = !measuring;
+    measureBtn.classList.toggle('active', measuring);
+    svg.classList.toggle('measuring', measuring);
+    clearMeasure();
+  });
+
+  svg.addEventListener('click', (e) => {
+    if (!measuring) return;
+    if (dragMoved) return; // a pan, not a click
+    const pt = clientToSvg(e.clientX, e.clientY);
+    if (!measureStart) {
+      measureStart = pt;
+      measureLayer.innerHTML = '';
+      measureLayer.appendChild(el('circle', { cx: pt.x, cy: pt.y, r: 1.6, class: 'measure-dot' }));
+    } else {
+      drawMeasurePreview(measureStart, pt);
+      measureStart = null; // finished - next click starts a new measurement
+    }
+  });
+  svg.addEventListener('mousemove', (e) => {
+    if (!measuring || !measureStart) return;
+    drawMeasurePreview(measureStart, clientToSvg(e.clientX, e.clientY));
+  });
+  svg.addEventListener('contextmenu', (e) => {
+    if (!measuring) return;
+    e.preventDefault();
+    clearMeasure();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && measuring) clearMeasure();
+  });
+
+  // ---- flight strips panel ----
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function refreshStrips() {
+    if (!stripsPanel.classList.contains('open')) return;
+    let strips;
+    try {
+      const res = await fetch('/api/dashboard/flightstrips');
+      if (!res.ok) return;
+      strips = await res.json();
+    } catch {
+      return;
+    }
+
+    if (!Array.isArray(strips) || strips.length === 0) {
+      stripsList.innerHTML = '<div id="strips-empty">No active flight strips.</div>';
+      return;
+    }
+
+    stripsList.innerHTML = strips
+      .map((s) => {
+        const c = s.clearance || {};
+        const rows = [];
+        if (s.currentPosition) rows.push(['Position', s.currentPosition]);
+        if (c.destination) rows.push(['Dest', c.destination]);
+        if (c.initialClimbAltitude) rows.push(['Climb', c.initialClimbAltitude]);
+        if (c.squawk) rows.push(['Squawk', c.squawk]);
+        if (c.departureFreq) rows.push(['Dep freq', c.departureFreq]);
+        const vector = typeof c.assignedHeadingDeg === 'number'
+          ? `Vector: heading ${c.assignedHeadingDeg}°${c.vectorReason ? ` (${escapeHtml(c.vectorReason)})` : ''}`
+          : '';
+        return `<div class="strip-card">
+          <span class="callsign">${escapeHtml(s.callsign)}</span><span class="acft">${escapeHtml(s.aircraftType || '')}</span>
+          ${rows.map(([k, v]) => `<div class="row"><span>${k}</span><b>${escapeHtml(v)}</b></div>`).join('')}
+          ${vector ? `<div class="vector">${vector}</div>` : ''}
+        </div>`;
+      })
+      .join('');
+  }
+
+  stripsBtn.addEventListener('click', () => {
+    stripsPanel.classList.toggle('open');
+    stripsBtn.classList.toggle('active', stripsPanel.classList.contains('open'));
+    if (stripsPanel.classList.contains('open')) refreshStrips();
+  });
+
   loadAnchors().then(() => {
     refreshAircraft();
     setInterval(refreshAircraft, 4000);
+    setInterval(refreshStrips, 5000);
   });
 })();
 </script>
