@@ -74,7 +74,7 @@ below for where these two sources have disagreed before).
 | IBAR | Barra Airport | *(none extracted)* | TWR 118.750 |
 | IBLT | Boltic Airfield | 1/19 | TWR 120.250 |
 | IBRD | Bird Island Airfield | 8/26 | TWR 118.350 |
-| IBTH | Saint Barthélemy | 27/09 | TWR 118.700, VFR TWR 118.450, GND 118.475, DEL 118.705 |
+| IBTH | Saint Barthélemy | 27/09 | TWR 118.700 |
 | IDCS | Saba Airport | 25/7 | TWR 118.250 |
 | IGAR | Air Base Garry | 4/22 | TWR 125.600 |
 | IHEN | Henstridge Airfield | 35/17 | TWR 130.250 |
@@ -85,11 +85,11 @@ below for where these two sources have disagreed before).
 | ILKL | Lukla Airport | 9/27 | TWR 120.150 |
 | IMLR | Mellor Intl. | 25/7 | APP 125.650, TWR 133.850, GND 121.920, DEL 121.925 |
 | IPAP | Paphos Intl. | 35/17 | TWR 119.900 |
-| IPPH | Perth Intl. | 29/33/11/15 | ARR 127.440, TWR 127.400, GND 121.700, DEL 118.850 |
+| IPPH | Perth Intl. | 29/33/11/15 | APP 127.440, TWR 127.400, GND 121.700, DEL 118.850 |
 | IRFD | Greater Rockford | 25C/25R/25L/7L/7C/7R | APP 120.400, DEP 120.425, TWR 121.000, GND 118.100, DEL 119.250 |
 | ISAU | Sauthemptona Airport | 8/26 | TWR 118.200, GND 130.880, APRON 130.885 |
 | ISCM | RAF Scampton | 13/31 | TWR 119.300 |
-| ISKP | Skopelos Airfield | 23/5 | VFR TWR 134.520 |
+| ISKP | Skopelos Airfield | 23/5 | TWR 134.520 |
 | ITEY | Pingeyri Airport | 31/13 | TWR 119.425 |
 | ITKO | Tokyo Intl. | 2/20/31/13 | APP 118.225, DEP 118.230, TWR 119.100, GND 118.800, DEL 121.825 |
 | ITRC / IRTC *(name mismatch, see below)* | Training Centre / Training Control | 36/18 | 119.150 |
@@ -99,8 +99,6 @@ below for where these two sources have disagreed before).
 | TVO | Tavaro Seabase | *(none extracted)* | *(none in frequency sheet)* |
 
 Notes on individual airports:
-- **IPPH (Perth)** uses **ARR** (Arrivals) instead of a separate Approach —
-  one combined frequency handles arrival sequencing.
 - **ISAU (Sauthemptona)** has *both* GND and APRON frequencies, now
   confirmed via a custom ground chart the user annotated (`ISAU_Ground_Chart.svg`,
   added 2026-09-10): two distinct physical apron zones exist (the
@@ -124,7 +122,7 @@ Notes on individual airports:
   spirit to the carrier exception but without the Apron/Center specifics
   (this hasn't been explicitly confirmed with a chart yet — flag if a
   redirect-to-Ground scenario ever fires at one of these and shouldn't).
-- **ISKP (Skopelos)** only lists a VFR TWR — same caveat as above.
+- **ISKP (Skopelos)** only lists a TWR — same caveat as above.
 
 ## Known discrepancies between chart data and the frequency sheet
 

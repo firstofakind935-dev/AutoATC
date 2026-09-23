@@ -484,7 +484,7 @@
   },
   {
     "name": "Perth Arrivals",
-    "tokenEnv": "BOT_IPPH_ARR_TOKEN",
+    "tokenEnv": "BOT_IPPH_APP_TOKEN",
     "guildId": "1507182217393340426",
     "voiceChannelId": null,
     "logChannelId": null,
@@ -1113,69 +1113,6 @@
     }
   },
   {
-    "name": "Barths VFR",
-    "tokenEnv": "BOT_IBTH_VFR_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
-    "logChannelId": null,
-    "persona": {
-      "position": "Tower",
-      "callsign": "Barths VFR",
-      "airport": "IBTH",
-      "ttsVoice": "nova"
-    },
-    "ai": {
-      "provider": "anthropic",
-      "model": "claude-haiku-4-5",
-      "fallback": {
-        "provider": "openai",
-        "model": "qwen2.5:3b"
-      }
-    }
-  },
-  {
-    "name": "Barths Ground",
-    "tokenEnv": "BOT_IBTH_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
-    "logChannelId": null,
-    "persona": {
-      "position": "Ground",
-      "callsign": "Barths Ground",
-      "airport": "IBTH",
-      "ttsVoice": "shimmer"
-    },
-    "ai": {
-      "provider": "anthropic",
-      "model": "claude-haiku-4-5",
-      "fallback": {
-        "provider": "openai",
-        "model": "qwen2.5:3b"
-      }
-    }
-  },
-  {
-    "name": "Barths Delivery",
-    "tokenEnv": "BOT_IBTH_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
-    "logChannelId": null,
-    "persona": {
-      "position": "Delivery",
-      "callsign": "Barths Delivery",
-      "airport": "IBTH",
-      "ttsVoice": "alloy"
-    },
-    "ai": {
-      "provider": "anthropic",
-      "model": "claude-haiku-4-5",
-      "fallback": {
-        "provider": "openai",
-        "model": "qwen2.5:3b"
-      }
-    }
-  },
-  {
     "name": "Skopelos Center",
     "tokenEnv": "BOT_ISCC_TOKEN",
     "guildId": "1507182217393340426",
@@ -1197,14 +1134,14 @@
     }
   },
   {
-    "name": "Skopelos VFR Tower",
-    "tokenEnv": "BOT_ISKP_VFR_TWR_TOKEN",
+    "name": "Skopelos Tower",
+    "tokenEnv": "BOT_ISKP_TWR_TOKEN",
     "guildId": "1507182217393340426",
     "voiceChannelId": null,
     "logChannelId": null,
     "persona": {
       "position": "Tower",
-      "callsign": "Skopelos VFR Tower",
+      "callsign": "Skopelos Tower",
       "airport": "ISKP",
       "ttsVoice": "fable"
     },
