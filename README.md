@@ -128,6 +128,21 @@ parsing for that server's actual contract.
 With both `STT_BASE_URL` and `TTS_BASE_URL` set (and no bot using
 `"provider": "openai"`), `OPENAI_API_KEY` isn't needed at all.
 
+#### Manually testing many positions with only one bot deployed
+
+Standing up all ~60 fleet positions just to test behavior is a lot of
+overhead. Set `TEST_DYNAMIC_PERSONA=true` on a single bot (one real Discord
+token, one config/bots.json entry) and it ignores its own configured
+persona per transmission - instead it plays whichever fleet position you
+address by callsign, matched against every persona in config/bots.json
+(see `src/ai/personaMatcher.js`). Say "Rockford Ground, Cessna 42Yankee,
+ready to taxi" and it answers as Ground; say "Rockford Tower, ..." next on
+that same bot/channel and it switches to Tower, each with its own separate
+conversation history so positions don't bleed into each other. If nothing
+in a transmission matches a known callsign, it just keeps playing whatever
+position was last active. Never set this on a real fleet deployment - every
+other bot always plays only its own configured position, exactly as before.
+
 #### Using a self-hosted / local LLM for the brain
 
 Set `"provider": "openai"` on a bot and point `OPENAI_BASE_URL` (in `.env`)

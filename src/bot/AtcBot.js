@@ -10,6 +10,7 @@ const { synthesizeSpeech } = require('../speech/tts');
 const { generateAtcReplyWithFallback, ConversationHistory } = require('../ai/llmProvider');
 const { buildAtcSystemPrompt } = require('../ai/systemPrompt');
 const { findBestScenario, formatScenarioHint } = require('../ai/scenarioMatcher');
+const { resolvePersonaFromTranscript, loadAllPersonas } = require('../ai/personaMatcher');
 const { getFlightPlanContext } = require('../flightplans/store');
 const { getChartContext } = require('../charts/store');
 const { getOceanicTracksContext } = require('../charts/oceanicTracks');
@@ -22,6 +23,17 @@ const { makeLogger } = require('../utils/logger');
 const MIN_TRANSCRIPT_LENGTH = 2;
 const HEARTBEAT_INTERVAL_MS = 60_000; // keeps the monitor dashboard's "online" status fresh during quiet periods
 
+// TEST-ONLY: when set, this bot ignores its own configured persona per
+// transmission and instead plays whichever fleet position the pilot
+// actually addresses (see src/ai/personaMatcher.js) - e.g. saying "Rockford
+// Ground, ..." then later "Rockford Tower, ..." on the SAME bot/channel
+// gets Ground's reply, then Tower's. Lets one deployed bot (one real
+// Discord token) be used to manually test many positions' behavior without
+// standing up the whole fleet. Never set this in the real multi-bot
+// deployment - every other bot still only ever plays its own config/
+// bots.json persona, exactly as before.
+const TEST_DYNAMIC_PERSONA = process.env.TEST_DYNAMIC_PERSONA === 'true';
+
 /**
  * One Discord bot identity acting as a single ATC position (e.g. one
  * airport's Tower or Ground). A fleet of these, each with its own token
@@ -32,11 +44,24 @@ class AtcBot {
     this.config = config;
     this.logger = makeLogger(config.name);
     this.handoff = new HumanHandoff();
-    this.history = new ConversationHistory();
-    this.systemPrompt = buildAtcSystemPrompt(config.persona);
-    this.chartContext = getChartContext(config.persona.airport); // static per airport, fetched once
+    this.activePersona = config.persona;
     this.oceanicTracksContext = getOceanicTracksContext(); // static fleet-wide, fetched once
     this.frequencyContext = getFrequencyContext(); // static fleet-wide, fetched once
+
+    if (TEST_DYNAMIC_PERSONA) {
+      this.logger.warn(
+        'TEST_DYNAMIC_PERSONA is on - this bot will role-play whichever fleet position the pilot ' +
+          'addresses by callsign, ignoring its own configured persona. Never set this in production.'
+      );
+      this.allPersonas = loadAllPersonas();
+      this.promptBundleByCallsign = new Map(); // callsign -> {systemPrompt, chartContext}, built lazily
+      this.historyByCallsign = new Map(); // callsign -> ConversationHistory, kept separate per position
+    } else {
+      this.systemPrompt = buildAtcSystemPrompt(config.persona);
+      this.chartContext = getChartContext(config.persona.airport); // static per airport, fetched once
+      this.history = new ConversationHistory();
+    }
+
     this.player = createAudioPlayer();
     this.processingQueue = Promise.resolve();
     this.connection = null;
@@ -128,6 +153,34 @@ class AtcBot {
     return this.processingQueue;
   }
 
+  // TEST-ONLY (see TEST_DYNAMIC_PERSONA): system prompt + chart context for
+  // a given persona, built lazily and cached per callsign so switching
+  // back to a position already visited this run doesn't rebuild it.
+  _getPromptBundle(persona) {
+    let bundle = this.promptBundleByCallsign.get(persona.callsign);
+    if (!bundle) {
+      bundle = {
+        systemPrompt: buildAtcSystemPrompt(persona),
+        chartContext: getChartContext(persona.airport),
+      };
+      this.promptBundleByCallsign.set(persona.callsign, bundle);
+    }
+    return bundle;
+  }
+
+  // TEST-ONLY: a separate ConversationHistory per persona, so playing
+  // Ground then Tower on the same bot doesn't leak one position's
+  // conversation into the other's context - mirrors actually being on two
+  // different frequencies.
+  _getHistory(persona) {
+    let history = this.historyByCallsign.get(persona.callsign);
+    if (!history) {
+      history = new ConversationHistory();
+      this.historyByCallsign.set(persona.callsign, history);
+    }
+    return history;
+  }
+
   async _handleUtterance(guild, userId, pcmBuffer) {
     if (await this.handoff.shouldStayQuiet(this.config.guildId, this.config.voiceChannelId)) {
       return;
@@ -148,15 +201,29 @@ class AtcBot {
     this.logger.info(`${speakerName}: ${transcript}`);
     await this._log(`🎙️ **${speakerName}:** ${transcript}`);
 
-    this.history.addPilotTransmission(transcript);
+    let systemPrompt = this.systemPrompt;
+    let chartContext = this.chartContext;
+    let history = this.history;
+
+    if (TEST_DYNAMIC_PERSONA) {
+      const matched = resolvePersonaFromTranscript(transcript, this.allPersonas);
+      if (matched && matched.callsign !== this.activePersona.callsign) {
+        this.logger.info(`Switching persona: ${this.activePersona.callsign} -> ${matched.callsign}`);
+        this.activePersona = matched;
+      }
+      ({ systemPrompt, chartContext } = this._getPromptBundle(this.activePersona));
+      history = this._getHistory(this.activePersona);
+    }
+
+    history.addPilotTransmission(transcript);
 
     const flightPlanContext = await getFlightPlanContext();
-    const stripsContext = formatStripsContext(this.config.persona.position);
+    const stripsContext = formatStripsContext(this.activePersona.position);
     const positionsContext = await getPositionsContext();
-    const matchedScenario = findBestScenario(transcript, this.config.persona.position);
+    const matchedScenario = findBestScenario(transcript, this.activePersona.position);
     const scenarioContext = matchedScenario ? formatScenarioHint(matchedScenario) : null;
     const turnContext = [
-      this.chartContext,
+      chartContext,
       this.oceanicTracksContext,
       this.frequencyContext,
       flightPlanContext,
@@ -174,9 +241,9 @@ class AtcBot {
           provider: this.config.ai.provider,
           model: this.config.ai.model,
           fallback: this.config.ai.fallback,
-          systemPrompt: this.systemPrompt,
-          history: this.history.toArray({ contextForLastTurn: turnContext }),
-          position: this.config.persona.position,
+          systemPrompt,
+          history: history.toArray({ contextForLastTurn: turnContext }),
+          position: this.activePersona.position,
         },
         this.logger
       );
@@ -192,9 +259,9 @@ class AtcBot {
     }
 
     if (!reply) return;
-    this.history.addAtcReply(reply);
-    this.logger.info(`${this.config.persona.callsign}: ${reply}`);
-    await this._log(`📻 **${this.config.persona.callsign}:** ${reply}`);
+    history.addAtcReply(reply);
+    this.logger.info(`${this.activePersona.callsign}: ${reply}`);
+    await this._log(`📻 **${this.activePersona.callsign}:** ${reply}`);
 
     await this._speak(reply);
   }
@@ -202,7 +269,7 @@ class AtcBot {
   async _speak(text) {
     let mp3Buffer;
     try {
-      mp3Buffer = await synthesizeSpeech(text, { voice: this.config.persona.ttsVoice });
+      mp3Buffer = await synthesizeSpeech(text, { voice: this.activePersona.ttsVoice });
     } catch (err) {
       this.logger.error('Speech synthesis failed:', err.message);
       return;
