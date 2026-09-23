@@ -6,6 +6,7 @@ import AircraftIconMap from "../src/data/AircraftIconMap.js";
 import AircraftScaleMap from "../src/data/AircraftScaleMap.js";
 import GroundOffsets from "../src/data/GroundOffsets.js";
 import WorldMapAnchorsData from "../src/data/worldMapAnchors.js";
+import WorldMapIslands from "../src/data/worldMapIslands.js";
 import fixes from '../src/data/fixes.js';
 import airportInfo from '../src/data/AirportInfo.js';
 
@@ -2849,15 +2850,29 @@ function fetchMapLayerGround(container) {
         });
 }
 
+// AutoATC adapter: builds a single <path> "d" string for one traced island,
+// using the evenodd fill rule so any interior hole ring (e.g. Grindavik's
+// lake) punches through automatically regardless of winding order.
+function islandShapeToPathData(shape) {
+    const ringToPath = (ring) => 'M' + ring.map(([x, y]) => `${x},${y}`).join(' L') + ' Z';
+    let d = ringToPath(shape.exterior);
+    for (const hole of shape.holes) d += ' ' + ringToPath(hole);
+    return d;
+}
+
 function fetchMapLayer(container) {
-    // AutoATC adapter: coast.svg (a hand-traced vector island layer) is
-    // replaced with a single raster screenshot of the real PTFS world map
-    // (public/assets/world-map.png) - see worldMapAnchorsMap's own comment
-    // near the top of this file for why. No fetch/parse needed: build the
-    // <svg id="map-svg"> shell directly, with a fixed viewBox matching that
-    // image's own pixel space (WORLD_MAP_WIDTH x WORLD_MAP_HEIGHT) rather
-    // than the old auto-fit-to-coast.svg's-bbox scheme - this image IS the
-    // coordinate system now, not something to fit a viewBox around.
+    // AutoATC adapter: coast.svg (a hand-traced vector island layer that
+    // never reliably agreed with the real game map) is replaced with real
+    // island coastlines traced directly from a screenshot of the actual
+    // PTFS world map (public/assets/world-map.png, see worldMapAnchorsMap's
+    // own comment near the top of this file) - water/land color separation,
+    // connected-component labeling and marching-squares contour tracing,
+    // with every baked-in place-name text label manually verified and
+    // excluded (see worldMapIslands.js's generation script in scratch
+    // history). No fetch/parse needed: build the <svg id="map-svg"> shell
+    // directly, with a fixed viewBox matching that image's own pixel space
+    // (WORLD_MAP_WIDTH x WORLD_MAP_HEIGHT) - this is the coordinate system,
+    // not something to fit a viewBox around.
     Promise.resolve()
         .then(async () => {
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -2865,15 +2880,18 @@ function fetchMapLayer(container) {
             svg.setAttribute('viewBox', `0 0 ${WORLD_MAP_WIDTH} ${WORLD_MAP_HEIGHT}`);
             container.appendChild(svg);
 
-            const bg = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-            bg.setAttribute('id', 'world-map-bg');
-            bg.setAttribute('href', 'public/assets/world-map.png');
-            bg.setAttribute('x', '0');
-            bg.setAttribute('y', '0');
-            bg.setAttribute('width', String(WORLD_MAP_WIDTH));
-            bg.setAttribute('height', String(WORLD_MAP_HEIGHT));
-            bg.setAttribute('preserveAspectRatio', 'none');
-            svg.appendChild(bg);
+            const islandsLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            islandsLayer.setAttribute('id', 'world-map-bg');
+            for (const shape of WorldMapIslands) {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', islandShapeToPathData(shape));
+                path.setAttribute('fill', '#333333');
+                path.setAttribute('fill-rule', 'evenodd');
+                path.setAttribute('stroke', '#474747');
+                path.setAttribute('stroke-width', '0.5');
+                islandsLayer.appendChild(path);
+            }
+            svg.appendChild(islandsLayer);
 
             //get viewBox
             const viewBox = svg.viewBox.baseVal;
