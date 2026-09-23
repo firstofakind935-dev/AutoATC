@@ -84,46 +84,14 @@ class AtcBot {
   async _onReady() {
     this.logger.info(`Logged in as ${this.client.user.tag}`);
 
-    const guild = await this.client.guilds.fetch(this.config.guildId);
-    await guild.commands.set(buildSlashCommands()).catch((err) => this.logger.error('Failed to register slash commands:', err.message));
+    this.guild = await this.client.guilds.fetch(this.config.guildId);
+    await this.guild.commands.set(buildSlashCommands()).catch((err) => this.logger.error('Failed to register slash commands:', err.message));
 
     if (this.config.logChannelId) {
-      this.logChannel = await guild.channels.fetch(this.config.logChannelId).catch(() => null);
+      this.logChannel = await this.guild.channels.fetch(this.config.logChannelId).catch(() => null);
     }
 
-    // discord.js's voiceAdapterCreator silently refuses to send the join
-    // request at all if the gateway shard isn't in Ready status yet
-    // (Guild.js: `if (this.shard.status !== Status.Ready) return false`) -
-    // and the client's own 'ready'/'clientReady' event can fire a beat
-    // before that internal shard flag flips, so joining voice from directly
-    // inside this handler can lose the race. When it does, the connection
-    // is immediately dropped to "disconnected" (AdapterUnavailable) before
-    // any listener has a chance to observe the transition, which is
-    // indistinguishable from a silent hang without this guard.
-    await waitForShardReady(guild.shard);
-
-    const joinOptions = {
-      channelId: this.config.voiceChannelId,
-      guildId: this.config.guildId,
-      adapterCreator: guild.voiceAdapterCreator,
-      selfDeaf: false,
-      selfMute: false,
-    };
-    this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
-    this._watchConnectionHealth();
-    this.connection.subscribe(this.player);
-    this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
-
-    const capture = new VoiceCapture(this.connection, {
-      logger: this.logger,
-      getUserIsBot: async (userId) => {
-        const member = await getMember(guild, userId);
-        return member?.user.bot ?? false;
-      },
-    });
-    capture.start((userId, pcmBuffer) => {
-      this._enqueue(() => this._handleUtterance(guild, userId, pcmBuffer));
-    });
+    await this._connectVoice();
 
     await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
 
@@ -132,6 +100,66 @@ class AtcBot {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
+  /**
+   * Joins (or rejoins) this bot's configured voice channel and wires up
+   * capture/playback on the resulting connection. Used both for the
+   * initial join in _onReady and to reconnect from scratch after a lost
+   * connection - see _watchConnectionHealth below, which is the only other
+   * caller. Always leaves this.connection pointing at a working, captured,
+   * health-watched connection, or throws if the whole thing (including
+   * joinVoiceWithRetry's own internal attempts) couldn't recover.
+   */
+  async _connectVoice() {
+    if (this.capture) this.capture.stop();
+
+    // discord.js's voiceAdapterCreator silently refuses to send the join
+    // request at all if the gateway shard isn't in Ready status yet
+    // (Guild.js: `if (this.shard.status !== Status.Ready) return false`) -
+    // and the client's own 'ready'/'clientReady' event can fire a beat
+    // before that internal shard flag flips, so joining voice right after
+    // login can lose the race. When it does, the connection is immediately
+    // dropped to "disconnected" (AdapterUnavailable) before any listener
+    // has a chance to observe the transition, which is indistinguishable
+    // from a silent hang without this guard. Cheap to await again on a
+    // reconnect - the shard is already Ready by then, so this returns
+    // immediately.
+    await waitForShardReady(this.guild.shard);
+
+    const joinOptions = {
+      channelId: this.config.voiceChannelId,
+      guildId: this.config.guildId,
+      adapterCreator: this.guild.voiceAdapterCreator,
+      selfDeaf: false,
+      selfMute: false,
+    };
+    this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
+    this._watchConnectionHealth();
+    this.connection.subscribe(this.player);
+    this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
+
+    this.capture = new VoiceCapture(this.connection, {
+      logger: this.logger,
+      getUserIsBot: async (userId) => {
+        const member = await getMember(this.guild, userId);
+        return member?.user.bot ?? false;
+      },
+    });
+    this.capture.start((userId, pcmBuffer) => {
+      this._enqueue(() => this._handleUtterance(this.guild, userId, pcmBuffer));
+    });
+  }
+
+  /**
+   * A dropped voice connection (network blip, Discord-side hiccup) doesn't
+   * always resolve itself - discord.js gives it a chance to auto-resume
+   * (Signalling/Connecting) but if that doesn't happen within 5s, the
+   * connection is truly gone. Previously this just destroyed it and gave
+   * up: the bot process stayed online (voice is a separate connection from
+   * the main gateway), so nothing ever crashed or restarted, but it also
+   * silently sat outside the channel forever - observed in testing as "the
+   * bot just left" with no error anywhere. Now it destroys and rejoins
+   * from scratch via _connectVoice, same as the initial join.
+   */
   _watchConnectionHealth() {
     this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
@@ -140,8 +168,14 @@ class AtcBot {
           entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000),
         ]);
       } catch {
-        this.logger.warn('Voice connection lost, destroying connection.');
+        this.logger.warn('Voice connection lost. Destroying and attempting to rejoin...');
         this.connection.destroy();
+        try {
+          await this._connectVoice();
+          this.logger.info('Rejoined voice channel after a lost connection.');
+        } catch (err) {
+          this.logger.error(`Failed to rejoin voice channel after a lost connection: ${err.message}`);
+        }
       }
     });
   }
