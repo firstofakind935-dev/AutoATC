@@ -102,7 +102,10 @@ Fill in:
 
 #### Self-hosting speech-to-text / text-to-speech instead of OpenAI
 
-By default, transcription and speech synthesis call OpenAI's hosted APIs.
+By default, transcription and speech synthesis call OpenAI's hosted APIs,
+using `gpt-4o-mini-transcribe` and `gpt-4o-mini-tts` — both cheaper and
+noticeably better than the older `whisper-1`/`tts-1` (whisper-1 was
+observed mishearing aviation callsigns/numbers, e.g. "three" as "tree").
 If you'd rather run your own — e.g. deployed as a service on
 [Railway](https://railway.app) — set `STT_BASE_URL` and/or `TTS_BASE_URL`
 in `.env` to your server's public URL. The client code calls the same
@@ -112,9 +115,11 @@ implements that same contract. Several self-hostable projects are built
 specifically to be drop-in compatible with those endpoints (for example
 `speaches` for STT, and `openedai-speech` for TTS) — deploy one as a
 Railway service from its GitHub repo, grab the public URL Railway gives
-it, and point `STT_BASE_URL`/`TTS_BASE_URL` at it. If your server expects
-a different model name than OpenAI's `whisper-1`/`tts-1`, set
-`STT_MODEL`/`TTS_MODEL`; if it needs its own API key, set
+it, and point `STT_BASE_URL`/`TTS_BASE_URL` at it. Self-hosted servers
+generally won't recognize OpenAI's newer model names, so set
+`STT_MODEL`/`TTS_MODEL` to whatever your server actually expects (often
+back to a Whisper variant / `tts-1`-style name); if it needs its own API
+key, set
 `STT_API_KEY`/`TTS_API_KEY` (otherwise no `Authorization` header is sent).
 `persona.ttsVoice` in `config/bots.json` is passed straight through as the
 `voice` parameter, so use whatever voice name your TTS server expects.

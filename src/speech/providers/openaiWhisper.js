@@ -1,11 +1,16 @@
 const DEFAULT_BASE_URL = 'https://api.openai.com';
 
 /**
- * Sends a WAV buffer to a Whisper-compatible transcription endpoint.
- * Defaults to OpenAI's hosted API, but baseUrl can point at any
- * self-hosted server that implements the same /v1/audio/transcriptions
- * contract (multipart file upload, JSON { text } response) - many
- * self-hostable Whisper servers are built to be drop-in compatible.
+ * Sends a WAV buffer to a Whisper-API-shaped transcription endpoint.
+ * Defaults to OpenAI's hosted API and gpt-4o-mini-transcribe - both
+ * cheaper ($0.003/min vs whisper-1's $0.006/min) and meaningfully more
+ * accurate on the callsign/number-heavy transcripts this app depends on
+ * (whisper-1 was observed mishearing "three" as "tree", "Grindavik" as
+ * "Grinivik", etc.). baseUrl can point at any self-hosted server that
+ * implements the same /v1/audio/transcriptions contract (multipart file
+ * upload, JSON { text } response) - many self-hostable Whisper servers are
+ * built to be drop-in compatible, though at that point you'd typically set
+ * STT_MODEL back to whichever Whisper variant that server actually runs.
  * Returns the transcript text, or an empty string if nothing was said.
  */
 // Whisper has no way to know this is aviation radio traffic unless told -
@@ -22,7 +27,7 @@ const AVIATION_PROMPT =
   'phraseology: taxi, pushback, cleared for takeoff, cleared to land, ' +
   'runway, hold short, roger, wilco, squawk, contact.';
 
-async function transcribe(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model = 'whisper-1', language } = {}) {
+async function transcribe(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model = 'gpt-4o-mini-transcribe', language } = {}) {
   const form = new FormData();
   form.append('file', new Blob([wavBuffer], { type: 'audio/wav' }), 'utterance.wav');
   form.append('model', model);
