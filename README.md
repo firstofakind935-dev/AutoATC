@@ -103,23 +103,34 @@ Fill in:
 #### Self-hosting speech-to-text / text-to-speech instead of OpenAI
 
 By default, transcription and speech synthesis call OpenAI's hosted APIs,
-using `gpt-4o-mini-transcribe` and `gpt-4o-mini-tts` — both cheaper and
+using `gpt-4o-mini-transcribe` and `gpt-4o-mini-tts` - both cheaper and
 noticeably better than the older `whisper-1`/`tts-1` (whisper-1 was
 observed mishearing aviation callsigns/numbers, e.g. "three" as "tree").
-If you'd rather run your own — e.g. deployed as a service on
-[Railway](https://railway.app) — set `STT_BASE_URL` and/or `TTS_BASE_URL`
-in `.env` to your server's public URL. The client code calls the same
+These are pay-per-use, so if you'd rather not pay per call, run your own
+STT/TTS server instead - e.g. deployed as an always-on service on
+[Railway](https://railway.app) - and set `STT_BASE_URL`/`TTS_BASE_URL` in
+`.env` to its public URL. The client code calls the same
 `/v1/audio/transcriptions` and `/v1/audio/speech` request shapes OpenAI
 uses, so this only works out of the box if your self-hosted server
-implements that same contract. Several self-hostable projects are built
-specifically to be drop-in compatible with those endpoints (for example
-`speaches` for STT, and `openedai-speech` for TTS) — deploy one as a
-Railway service from its GitHub repo, grab the public URL Railway gives
-it, and point `STT_BASE_URL`/`TTS_BASE_URL` at it. Self-hosted servers
-generally won't recognize OpenAI's newer model names, so set
-`STT_MODEL`/`TTS_MODEL` to whatever your server actually expects (often
-back to a Whisper variant / `tts-1`-style name); if it needs its own API
-key, set
+implements that same contract; [`speaches`](https://github.com/speaches-ai/speaches)
+is built specifically to be drop-in compatible with both (STT via
+faster-whisper, TTS via Kokoro or Piper) - deploy it as a Railway service
+from its GitHub repo (`ghcr.io/speaches-ai/speaches:latest-cpu`), grab the
+public URL Railway gives it, and point both `STT_BASE_URL` and
+`TTS_BASE_URL` at it. Note this trades OpenAI's per-call pricing for a
+flat always-on hosting cost instead - you pay for that Railway service
+whether or not it's actually being used, unlike OpenAI's API.
+
+Self-hosted servers generally won't recognize OpenAI's newer model names,
+so set `STT_MODEL`/`TTS_MODEL` to whatever your server actually expects.
+For speaches specifically: use `Systran/faster-whisper-large-v3` for
+`STT_MODEL` - **not** `-small` or `-base`, which are fast but noticeably
+inaccurate on aviation phraseology/callsigns (this is exactly what caused
+mishears like "three" transcribed as "tree" in testing); step down to
+`Systran/faster-whisper-medium` only if `large-v3` is too slow/memory-heavy
+for your Railway instance's resources. `speaches-ai/Kokoro-82M-v1.0-ONNX`
+is a solid free `TTS_MODEL` choice - good quality for its size, no need to
+look further. If your self-hosted server needs its own API key, set
 `STT_API_KEY`/`TTS_API_KEY` (otherwise no `Authorization` header is sent).
 `persona.ttsVoice` in `config/bots.json` is passed straight through as the
 `voice` parameter, so use whatever voice name your TTS server expects.
