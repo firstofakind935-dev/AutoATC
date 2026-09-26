@@ -48,7 +48,17 @@ function loadFleetConfig(configPath = DEFAULT_CONFIG_PATH) {
       logger.warn(`Skipping ${where}: env var "${entry.tokenEnv}" is not set.`);
       return;
     }
-    configs.push(validateEntry(entry, index));
+    try {
+      configs.push(validateEntry(entry, index));
+    } catch (err) {
+      // A token being set doesn't mean the rest of the entry is actually
+      // ready yet - e.g. mid-rollout, a Discord application was created
+      // and its token added before config/bots.json's voiceChannelId was
+      // filled in (scripts/create-voice-channels.js) for it. Same spirit
+      // as the missing-token skip above: one not-yet-finished bot
+      // shouldn't take the rest of an already-working fleet down with it.
+      logger.warn(`Skipping ${where}: ${err.message}`);
+    }
   });
 
   return configs;
