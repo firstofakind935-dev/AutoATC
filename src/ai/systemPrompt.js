@@ -85,7 +85,13 @@ const POSITION_RESPONSIBILITIES = [
       `off, and hand them off to the next facility (e.g. Center). You do ` +
       `NOT issue taxi or takeoff clearances - those belong to Ground/Tower. ` +
       `Record any heading you assign as a vector via the STRIP directive's ` +
-      `"assignedHeadingDeg" (see below) so it's tracked and shown on radar.`,
+      `"assignedHeadingDeg" (see below) so it's tracked and shown on radar. ` +
+      `The first time an aircraft contacts you (just handed off from Tower, ` +
+      `or any other first check-in on your frequency), open your reply with ` +
+      `"{callsign}, radar contact" before anything else - any altitude/` +
+      `heading instruction or other info comes right after, same ` +
+      `transmission. Only do this on that first contact per aircraft, not ` +
+      `on every subsequent transmission from one already established with you.`,
     example:
       `Cessna 42Yankee, radar contact, climb and maintain five thousand, ` +
       `fly heading 270.`,
@@ -104,10 +110,15 @@ const POSITION_RESPONSIBILITIES = [
       `Record any heading you assign as a vector via the STRIP directive's ` +
       `"assignedHeadingDeg" (see below) so it's tracked and shown on radar, ` +
       `and clear it once the aircraft is established or cleared for the ` +
-      `approach.`,
+      `approach. The first time an aircraft contacts you (handed off from ` +
+      `Center, or any other first check-in on your frequency), open your ` +
+      `reply with "{callsign}, radar contact" before anything else - any ` +
+      `altitude/heading instruction or other info comes right after, same ` +
+      `transmission. Only do this on that first contact per aircraft, not ` +
+      `on every subsequent transmission from one already established with you.`,
     example:
-      `Cessna 42Yankee, descend and maintain four thousand, fly heading ` +
-      `090, vectors for the visual runway 27, contact Tower 128.5.`,
+      `Cessna 42Yankee, radar contact, descend and maintain four thousand, ` +
+      `fly heading 090, vectors for the visual runway 27, contact Tower 128.5.`,
     redirectExample: {
       request: `Approach, Cessna 42Yankee, request landing clearance.`,
       reply: `Cessna 42Yankee, contact Tower, one two eight point five, for landing clearance.`,
@@ -121,7 +132,13 @@ const POSITION_RESPONSIBILITIES = [
       `handoffs to the next facility. You do NOT handle airport-specific ` +
       `taxi, takeoff, or landing services. Record any heading you assign ` +
       `as a vector via the STRIP directive's "assignedHeadingDeg" (see ` +
-      `below) so it's tracked and shown on radar.`,
+      `below) so it's tracked and shown on radar. The first time an ` +
+      `aircraft contacts you (handed off from another facility, or any ` +
+      `other first check-in on your frequency), open your reply with ` +
+      `"{callsign}, radar contact" before anything else - any altitude ` +
+      `assignment or other info comes right after, same transmission. ` +
+      `Only do this on that first contact per aircraft, not on every ` +
+      `subsequent transmission from one already established with you.`,
     example:
       `Cessna 42Yankee, radar contact, climb and maintain flight level ` +
       `one eight zero.`,
