@@ -610,25 +610,32 @@ For anyone in the community who wants to build their own radar or tool,
 the monitor serves a public developer site at **`/developers`**. It has
 the API docs, a live request explorer against real data, a working demo
 radar, and a downloadable single-file **starter radar**
-(`monitor/developers/starter-radar.html`: a radar scope centred on a
-chosen airport with range rings, data blocks, heading leaders, ATC
-vectors and trails, no dependencies) to copy and build on.
+(`monitor/developers/starter-radar.html`: the whole world with airports,
+data blocks, heading leaders, ATC vectors, trails, pan/zoom, no
+dependencies) to copy and build on.
 
 ```
 GET /api/public/v1/traffic   — every fresh aircraft's location data
+GET /api/public/v1/airports  — every airport's position on the world grid
 ```
 
-No auth, and it sends `Access-Control-Allow-Origin: *`, so any website
-can call it straight from the browser. Same trust tier as the
+No auth, and both send `Access-Control-Allow-Origin: *`, so any website
+can call them straight from the browser. Same trust tier as the
 already-open `/api/dashboard/positions` - live traffic position only.
 Unlike that endpoint, `monitor/publicApi.js` whitelists each field it
 sends, instead of passing the companion app's opaque `position` object
-through, so new private fields never leak by accident. It's location data
-only on purpose: positions are the raw `referenceAirport`/`distanceNm`/
-`bearingDeg`, with no world map image or pixel coordinates on it - what a
-radar draws underneath is up to whoever builds it. The `/v1` prefix is a
-promise to external sites: fields may be added, but a breaking change
-ships as `/v2` alongside.
+through, so new private fields never leak by accident.
+
+It's location data only on purpose - no map imagery. Positions come as
+the raw `referenceAirport`/`distanceNm`/`bearingDeg` plus `xNm`/`yNm` on
+one flat world grid in nautical miles (origin north-west, x east, y
+south), so a radar can show the whole world at once without the world
+map image. The grid is 365Radar's own `worldMapAnchors.js` divided by its
+px-per-nm scale, so both radars agree on where everything is; each
+airport's `placement` (`measured`/`derived`/`estimated`) carries that
+file's confidence through. The `/v1` prefix is a promise to external
+sites: fields may be added, but a breaking change ships as `/v2`
+alongside.
 
 #### Flight strips
 

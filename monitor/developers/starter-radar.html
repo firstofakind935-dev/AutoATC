@@ -4,14 +4,13 @@
   host anywhere (or just open locally) and build your own radar on.
 
   Data comes from AutoATC's public API (see /developers on the monitor
-  service): GET {API_BASE}/api/public/v1/traffic every few seconds. There's
-  no map - every aircraft's position is a distance and bearing from a
-  reference airport, so this draws a classic radar scope centred on one
-  airport and plots the traffic around it.
+  service): GET {API_BASE}/api/public/v1/airports once, then
+  /api/public/v1/traffic every few seconds. Everything is in nautical miles
+  on one flat world grid (x east, y south), so this draws the whole world
+  at once - airports as dots and every aircraft - with no map underneath.
 
   Things to make your own: colors (the :root tokens), the label block in
-  drawAircraft(), range rings, trail length, or draw your own map underneath
-  in draw().
+  drawAircraft(), trail length, or draw your own coastlines in draw().
 -->
 <html lang="en">
 <head>
@@ -21,8 +20,7 @@
 <style>
   :root {
     --bg: #05080d;
-    --scope: #08111b;
-    --ring: #17324a;
+    --grid: #0e1c2a;
     --text: #cfe3d6;
     --dim: #6f8a7d;
     --target: #6dff9c;
@@ -33,11 +31,12 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
     font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow: hidden; }
-  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
   #hud { position: fixed; top: 8px; left: 8px; right: 8px; display: flex; gap: 8px; flex-wrap: wrap;
     align-items: center; pointer-events: none; }
   #hud > * { pointer-events: auto; background: rgba(5, 8, 13, 0.85); border: 1px solid #1d2a38;
-    padding: 4px 8px; border-radius: 4px; color: var(--text); font: inherit; }
+    padding: 4px 8px; border-radius: 4px; }
   #status.err { color: var(--ident); }
   label { display: inline-flex; gap: 4px; align-items: center; }
 </style>
@@ -45,10 +44,10 @@
 <body>
 <canvas id="scope"></canvas>
 <div id="hud">
-  <select id="airport" title="Airport the scope is centred on"></select>
-  <span id="range"></span>
-  <label><input type="checkbox" id="show-trails" checked> trails</label>
   <span id="status">connecting…</span>
+  <label><input type="checkbox" id="show-airports" checked> airports</label>
+  <label><input type="checkbox" id="show-grid" checked> grid</label>
+  <label><input type="checkbox" id="show-trails" checked> trails</label>
 </div>
 <script>
 // Where to pull data from. Leave the placeholder to use the same origin
@@ -62,57 +61,37 @@ const POLL_MS = 3000;
 const TRAIL_POINTS = 20;
 const LEADER_MINUTES = 1; // heading leader line = where the aircraft will be in this many minutes
 const VECTOR_NM = 5;
-const RANGES_NM = [5, 10, 20, 40, 80, 160];
+const GRID_NM = 5;
+const FIT_MARGIN_NM = 3;
 
 const canvas = document.getElementById('scope');
 const ctx = canvas.getContext('2d');
 const statusEl = document.getElementById('status');
-const airportSelect = document.getElementById('airport');
-const rangeEl = document.getElementById('range');
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const checked = (id) => document.getElementById(id).checked;
 
+let world = null;
+let airports = [];
 let aircraft = [];
-let rangeIndex = 2;
-const trails = new Map(); // callsign -> [{distanceNm, bearingDeg}], oldest first
+const trails = new Map(); // callsign -> [{xNm, yNm}], oldest first
+const view = { pxPerNm: 1, offsetX: 0, offsetY: 0 }; // screen = world * pxPerNm + offset
 
-// Polar (distance/bearing from the scope's airport) -> x/y in nautical
-// miles, east and north positive.
-function polarToNm(distanceNm, bearingDeg) {
-  const rad = (bearingDeg * Math.PI) / 180;
-  return { x: distanceNm * Math.sin(rad), y: distanceNm * Math.cos(rad) };
-}
-
-// A point `nm` further along `headingDeg` from `p` (both in nm).
-function project(p, headingDeg, nm) {
-  const rad = (headingDeg * Math.PI) / 180;
-  return { x: p.x + nm * Math.sin(rad), y: p.y + nm * Math.cos(rad) };
-}
-
-function scopeGeometry() {
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  const radiusPx = Math.min(w, h - 40) / 2 - 24; // leave room for the HUD and bearing labels
-  return { cx: w / 2, cy: 40 + (h - 40) / 2, pxPerNm: radiusPx / RANGES_NM[rangeIndex], radiusPx };
-}
-
-function toScreen(p, g) {
-  return { x: g.cx + p.x * g.pxPerNm, y: g.cy - p.y * g.pxPerNm };
+async function getJson(path) {
+  const res = await fetch(API_BASE + path);
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  return res.json();
 }
 
 async function pollTraffic() {
   try {
-    const res = await fetch(`${API_BASE}/api/public/v1/traffic`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    aircraft = data.aircraft.filter((a) => a.referenceAirport && a.distanceNm !== null && a.bearingDeg !== null);
-    updateAirportList();
+    const data = await getJson('/api/public/v1/traffic');
+    aircraft = data.aircraft.filter((a) => a.xNm !== null);
     const seen = new Set();
     for (const a of aircraft) {
       seen.add(a.callsign);
       const trail = trails.get(a.callsign) || [];
       const last = trail[trail.length - 1];
-      if (!last || last.distanceNm !== a.distanceNm || last.bearingDeg !== a.bearingDeg || last.airport !== a.referenceAirport) {
-        trail.push({ airport: a.referenceAirport, distanceNm: a.distanceNm, bearingDeg: a.bearingDeg });
-      }
+      if (!last || last.xNm !== a.xNm || last.yNm !== a.yNm) trail.push({ xNm: a.xNm, yNm: a.yNm });
       if (trail.length > TRAIL_POINTS) trail.shift();
       trails.set(a.callsign, trail);
     }
@@ -120,71 +99,78 @@ async function pollTraffic() {
     statusEl.textContent = `${aircraft.length} aircraft · ${new Date(data.generatedAt).toLocaleTimeString()}`;
     statusEl.className = '';
   } catch (err) {
-    statusEl.textContent = `could not reach ${API_BASE}: ${err.message}`;
+    statusEl.textContent = `data error: ${err.message}`;
     statusEl.className = 'err';
   }
   draw();
 }
 
-// The airport list comes from the traffic itself - every airport some
-// aircraft is currently positioned relative to, busiest first.
-function updateAirportList() {
-  const counts = new Map();
-  for (const a of aircraft) counts.set(a.referenceAirport, (counts.get(a.referenceAirport) || 0) + 1);
-  const current = airportSelect.value || new URLSearchParams(location.search).get('airport');
-  const icaos = [...counts.keys()].sort((x, y) => counts.get(y) - counts.get(x) || x.localeCompare(y));
-  if (current && !counts.has(current)) icaos.push(current);
-  airportSelect.innerHTML = '';
-  if (!icaos.length) airportSelect.add(new Option('no traffic', ''));
-  for (const icao of icaos) airportSelect.add(new Option(`${icao} (${counts.get(icao) || 0})`, icao));
-  if (icaos.length) airportSelect.value = current && icaos.includes(current) ? current : icaos[0];
+function fitToScreen() {
+  if (!world) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight - 40; // room for the HUD
+  // Aircraft can fly past the airports, so leave FIT_MARGIN_NM of sea on every side.
+  view.pxPerNm = Math.min(w / (world.widthNm + 2 * FIT_MARGIN_NM), h / (world.heightNm + 2 * FIT_MARGIN_NM));
+  view.offsetX = (w - world.widthNm * view.pxPerNm) / 2;
+  view.offsetY = 40 + (h - world.heightNm * view.pxPerNm) / 2;
 }
 
-function line(a, b, g, color, dash = []) {
-  const s = toScreen(a, g), e = toScreen(b, g);
+const toScreen = (p) => ({ x: p.xNm * view.pxPerNm + view.offsetX, y: p.yNm * view.pxPerNm + view.offsetY });
+
+// A point `nm` nautical miles from `p` along `headingDeg` (y grows south).
+function project(p, headingDeg, nm) {
+  const rad = (headingDeg * Math.PI) / 180;
+  return { xNm: p.xNm + nm * Math.sin(rad), yNm: p.yNm - nm * Math.cos(rad) };
+}
+
+function line(a, b, color, dash = []) {
+  const s = toScreen(a), e = toScreen(b);
   ctx.strokeStyle = color;
   ctx.setLineDash(dash);
   ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.stroke();
   ctx.setLineDash([]);
 }
 
-function drawScope(g) {
-  const range = RANGES_NM[rangeIndex];
-  ctx.strokeStyle = css('--ring');
-  ctx.fillStyle = css('--dim');
-  ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
-  for (let i = 1; i <= 4; i++) {
-    const nm = (range / 4) * i;
-    ctx.beginPath(); ctx.arc(g.cx, g.cy, nm * g.pxPerNm, 0, Math.PI * 2); ctx.stroke();
-    const at = toScreen(polarToNm(nm, 15), g); // between the 000 and 030 spokes
-    ctx.fillText(`${nm}`, at.x + 3, at.y - 3);
+function drawGrid() {
+  ctx.strokeStyle = css('--grid');
+  ctx.beginPath();
+  // Covers whatever is on screen, not just the world box, so panning never runs off the grid.
+  const x0 = Math.floor(-view.offsetX / view.pxPerNm / GRID_NM) * GRID_NM;
+  const y0 = Math.floor(-view.offsetY / view.pxPerNm / GRID_NM) * GRID_NM;
+  const x1 = (canvas.clientWidth - view.offsetX) / view.pxPerNm;
+  const y1 = (canvas.clientHeight - view.offsetY) / view.pxPerNm;
+  for (let x = x0; x <= x1; x += GRID_NM) {
+    const s = toScreen({ xNm: x, yNm: y0 }), e = toScreen({ xNm: x, yNm: y1 });
+    ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y);
   }
-  for (let deg = 0; deg < 360; deg += 30) {
-    const edge = toScreen(polarToNm(range, deg), g);
-    ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(edge.x, edge.y); ctx.stroke();
-    const label = toScreen(polarToNm(range * 1.04, deg), g);
-    ctx.fillText(String(deg).padStart(3, '0'), label.x - 10, label.y + 4);
+  for (let y = y0; y <= y1; y += GRID_NM) {
+    const s = toScreen({ xNm: x0, yNm: y }), e = toScreen({ xNm: x1, yNm: y });
+    ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y);
   }
-  ctx.fillStyle = css('--airport');
-  ctx.beginPath(); ctx.arc(g.cx, g.cy, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.fillText(airportSelect.value, g.cx + 6, g.cy + 14);
+  ctx.stroke();
 }
 
-function drawAircraft(a, g) {
+function drawScaleBar() {
+  const h = canvas.clientHeight;
+  const len = GRID_NM * view.pxPerNm;
+  ctx.strokeStyle = css('--dim');
+  ctx.fillStyle = css('--dim');
+  ctx.beginPath(); ctx.moveTo(16, h - 16); ctx.lineTo(16 + len, h - 16); ctx.stroke();
+  ctx.fillText(`${GRID_NM} nm`, 16, h - 22);
+}
+
+function drawAircraft(a) {
   const color = a.identing ? css('--ident') : css('--target');
-  const p = polarToNm(a.distanceNm, a.bearingDeg);
-  if (document.getElementById('show-trails').checked) {
+  if (checked('show-trails')) {
     ctx.fillStyle = css('--dim');
     for (const t of (trails.get(a.callsign) || []).slice(0, -1)) {
-      if (t.airport !== a.referenceAirport) continue;
-      const s = toScreen(polarToNm(t.distanceNm, t.bearingDeg), g);
+      const s = toScreen(t);
       ctx.fillRect(s.x - 1, s.y - 1, 2, 2);
     }
   }
-  if (a.headingDeg !== null && a.speedKt) line(p, project(p, a.headingDeg, (a.speedKt / 60) * LEADER_MINUTES), g, color);
-  if (a.assignedHeadingDeg !== null) line(p, project(p, a.assignedHeadingDeg, VECTOR_NM), g, css('--vector'), [4, 3]);
+  if (a.headingDeg !== null && a.speedKt) line(a, project(a, a.headingDeg, (a.speedKt / 60) * LEADER_MINUTES), color);
+  if (a.assignedHeadingDeg !== null) line(a, project(a, a.assignedHeadingDeg, VECTOR_NM), css('--vector'), [4, 3]);
 
-  const s = toScreen(p, g);
+  const s = toScreen(a);
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
@@ -208,27 +194,60 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = css('--bg');
   ctx.fillRect(0, 0, w, h);
-  const g = scopeGeometry();
-  ctx.fillStyle = css('--scope');
-  ctx.beginPath(); ctx.arc(g.cx, g.cy, g.radiusPx, 0, Math.PI * 2); ctx.fill();
-  rangeEl.textContent = `range ${RANGES_NM[rangeIndex]} nm`;
-  if (!airportSelect.value) return;
-  drawScope(g);
-  for (const a of aircraft) if (a.referenceAirport === airportSelect.value) drawAircraft(a, g);
+  if (!world) return;
+
+  if (checked('show-grid')) drawGrid();
+  if (checked('show-airports')) {
+    ctx.fillStyle = css('--airport');
+    ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+    for (const ap of airports) {
+      const s = toScreen(ap);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText(ap.icao, s.x + 5, s.y - 5);
+    }
+  }
+  for (const a of aircraft) drawAircraft(a);
+  drawScaleBar();
 }
 
-// Scroll to change range
+// Pan (drag), zoom (mouse wheel), reset (double-click)
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => {
+  drag = { x: e.clientX, y: e.clientY };
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  view.offsetX += e.clientX - drag.x;
+  view.offsetY += e.clientY - drag.y;
+  drag = { x: e.clientX, y: e.clientY };
+  draw();
+});
+canvas.addEventListener('pointerup', () => { drag = null; canvas.classList.remove('dragging'); });
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  rangeIndex = Math.max(0, Math.min(RANGES_NM.length - 1, rangeIndex + Math.sign(e.deltaY)));
+  const factor = Math.exp(-e.deltaY * 0.0015);
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  view.offsetX = mx - (mx - view.offsetX) * factor;
+  view.offsetY = my - (my - view.offsetY) * factor;
+  view.pxPerNm *= factor;
   draw();
 }, { passive: false });
-airportSelect.addEventListener('change', draw);
-document.getElementById('show-trails').addEventListener('change', draw);
-window.addEventListener('resize', draw);
+canvas.addEventListener('dblclick', () => { fitToScreen(); draw(); });
+for (const id of ['show-airports', 'show-grid', 'show-trails']) document.getElementById(id).addEventListener('change', draw);
+window.addEventListener('resize', () => { fitToScreen(); draw(); });
 
-pollTraffic();
-setInterval(pollTraffic, POLL_MS);
+getJson('/api/public/v1/airports')
+  .then((data) => {
+    world = data.world;
+    airports = data.airports;
+    fitToScreen();
+    pollTraffic();
+    setInterval(pollTraffic, POLL_MS);
+  })
+  .catch((err) => { statusEl.textContent = `could not reach ${API_BASE}: ${err.message}`; statusEl.className = 'err'; });
 </script>
 </body>
 </html>
