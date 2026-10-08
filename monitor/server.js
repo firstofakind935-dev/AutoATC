@@ -3,6 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
+const { createPublicApiRouter } = require('./publicApi');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -450,6 +451,13 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
 // Redirect (not sendFile) so the browser's URL actually becomes
 // /365radar/ - 365radar/index.html uses relative paths (public/style.css,
 // src/main.js, etc.) that must resolve against that directory, not /radar.
+// Public, CORS-enabled read API for community-built radars, plus the
+// /developers site documenting it (docs, live data explorer, a demo radar
+// and a downloadable starter radar). Like /365radar below, both are exempt
+// from dashboard auth - see publicApi.js for exactly what is exposed.
+app.use('/api/public/v1', createPublicApiRouter({ getPositions: freshPositions }));
+app.use('/developers', express.static(path.join(__dirname, 'developers')));
+
 app.get(['/radar', '/radar/'], (req, res) => res.redirect('/365radar/'));
 
 // The 365radar bundle (HTML/CSS/JS, the world map image + anchors, plane

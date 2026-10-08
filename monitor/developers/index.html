@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoATC Radar API</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>AutoATC Radar API</h1>
+    <p class="lede">Live aircraft positions from the AutoATC fleet, free to pull into your own radar,
+      map or tool. No key, no sign-up, works straight from a browser.</p>
+    <nav>
+      <a href="#quickstart">Quick start</a>
+      <a href="#endpoints">Endpoints</a>
+      <a href="#fields">Fields</a>
+      <a href="#explorer">Live explorer</a>
+      <a href="#starter">Starter radar</a>
+      <a href="#rules">Usage notes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="quickstart">
+    <h2>Quick start</h2>
+    <p>Every aircraft already comes with <code>map.x</code>/<code>map.y</code>, pixel coordinates on the
+      shared world map image. Draw the image, put a dot at those coordinates, and you have a radar.</p>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-snippet="js">JavaScript</button>
+      <button class="tab" data-snippet="python">Python</button>
+      <button class="tab" data-snippet="curl">curl</button>
+    </div>
+<pre class="snippet" data-snippet="js"><code>const BASE = '<span class="base"></span>';
+
+async function poll() {
+  const { aircraft } = await fetch(`${BASE}/api/public/v1/traffic`).then(r => r.json());
+  for (const a of aircraft) {
+    if (!a.map) continue;            // position couldn't be placed on the map
+    console.log(a.callsign, a.map.x, a.map.y, a.altitudeFt, a.headingDeg);
+  }
+}
+setInterval(poll, 3000);</code></pre>
+<pre class="snippet" data-snippet="python" hidden><code>import time, requests
+
+BASE = "<span class="base"></span>"
+
+while True:
+    data = requests.get(f"{BASE}/api/public/v1/traffic", timeout=5).json()
+    for a in data["aircraft"]:
+        print(a["callsign"], a["referenceAirport"], a["distanceNm"], a["bearingDeg"])
+    time.sleep(3)</code></pre>
+<pre class="snippet" data-snippet="curl" hidden><code>curl <span class="base"></span>/api/public/v1/traffic
+curl <span class="base"></span>/api/public/v1/airports
+curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></pre>
+  </section>
+
+  <section id="endpoints">
+    <h2>Endpoints</h2>
+    <p>All endpoints are <code>GET</code>, return JSON (except the map image), and send
+      <code>Access-Control-Allow-Origin: *</code>, so you can call them from any website.</p>
+    <table>
+      <thead><tr><th>Endpoint</th><th>What it returns</th><th>Poll</th></tr></thead>
+      <tbody>
+        <tr><td><code>/api/public/v1/traffic</code></td><td>Every aircraft with a fresh position report, plus the map info.</td><td>Every 2–5 s</td></tr>
+        <tr><td><code>/api/public/v1/airports</code></td><td>Every airport's position on the world map, plus the map info.</td><td>Once</td></tr>
+        <tr><td><code>/api/public/v1/map.png</code></td><td>The world map image that <code>map.x</code>/<code>map.y</code> refer to.</td><td>Once</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Map info</h3>
+    <p>Both JSON endpoints include a <code>map</code> object describing the image:</p>
+<pre><code>{
+  "imageUrl": "/api/public/v1/map.png",
+  "width": 937, "height": 706,   // image size in pixels
+  "pxPerNm": 24,                 // pixels per nautical mile
+  "projection": "x = anchor.x + distanceNm * pxPerNm * sin(bearing); y = anchor.y - distanceNm * pxPerNm * cos(bearing)"
+}</code></pre>
+    <p>North is up. Pixel <code>y</code> grows downward. To draw a heading or vector line, step
+      <code>nm × pxPerNm</code> pixels along <code>sin(heading)</code> for x and <code>−cos(heading)</code> for y.</p>
+  </section>
+
+  <section id="fields">
+    <h2>Aircraft fields</h2>
+    <p>Each item in <code>traffic.aircraft</code>. A field is <code>null</code> when it isn't known.</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>callsign</code></td><td>string</td><td>As the pilot entered it, e.g. <code>N42Y</code>.</td></tr>
+        <tr><td><code>aircraftType</code></td><td>string</td><td>e.g. <code>A220</code>.</td></tr>
+        <tr><td><code>altitudeFt</code></td><td>number</td><td>Altitude in feet.</td></tr>
+        <tr><td><code>speedKt</code></td><td>number</td><td>Speed in knots.</td></tr>
+        <tr><td><code>headingDeg</code></td><td>number</td><td>Heading, 0–359.</td></tr>
+        <tr><td><code>squawk</code></td><td>string</td><td>Transponder code, e.g. <code>"2000"</code>.</td></tr>
+        <tr><td><code>identing</code></td><td>boolean</td><td>Pilot pressed IDENT recently. Highlight them.</td></tr>
+        <tr><td><code>map</code></td><td>{x, y}</td><td>Pixel position on <code>map.png</code>. <code>null</code> if it couldn't be placed.</td></tr>
+        <tr><td><code>referenceAirport</code></td><td>string</td><td>ICAO the raw position is measured from.</td></tr>
+        <tr><td><code>distanceNm</code>, <code>bearingDeg</code></td><td>number</td><td>Raw position: distance and bearing from <code>referenceAirport</code>. Use these if you bring your own map.</td></tr>
+        <tr><td><code>fixAgeSec</code></td><td>number</td><td>Seconds since the pilot's last manual position correction. Above ~60 the estimate is drifting; consider fading the target.</td></tr>
+        <tr><td><code>reportAgeMs</code></td><td>number</td><td>How old this report is. Aircraft drop off after 30 s without a report.</td></tr>
+        <tr><td><code>assignedHeadingDeg</code></td><td>number</td><td>Heading ATC has vectored this aircraft onto, if any.</td></tr>
+        <tr><td><code>vectorReason</code></td><td>string</td><td>Why, e.g. <code>"vectors ILS 25C"</code>.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="explorer">
+    <h2>Live explorer</h2>
+    <p>This is the real data, right now.</p>
+    <div class="explorer-bar">
+      <select id="explorer-endpoint">
+        <option value="/api/public/v1/traffic">/api/public/v1/traffic</option>
+        <option value="/api/public/v1/airports">/api/public/v1/airports</option>
+      </select>
+      <button id="explorer-run">Send request</button>
+      <span id="explorer-meta" class="dim"></span>
+    </div>
+    <pre id="explorer-output" class="output"><code>Press "Send request".</code></pre>
+  </section>
+
+  <section id="starter">
+    <h2>Starter radar</h2>
+    <p>A complete radar in one HTML file, with no libraries and no build step. It has the map, airports,
+      data blocks, heading leader lines, ATC vectors, history trails, pan and zoom.
+      Download it, open it in a browser, and start changing it.</p>
+    <p>
+      <button id="download-starter" class="primary">Download starter-radar.html</button>
+      <a href="starter-radar.html" target="_blank" rel="noopener">Open full screen</a>
+    </p>
+    <div class="demo"><iframe src="starter-radar.html" title="Starter radar, live"></iframe></div>
+    <p class="dim">Drag to pan, scroll to zoom, double-click to reset. The download is already pointed at this server.
+      To aim a copy somewhere else, add <code>?api=https://other-server</code> to its URL.</p>
+  </section>
+
+  <section id="rules">
+    <h2>Usage notes</h2>
+    <ul>
+      <li><strong>Poll every 2 seconds or slower.</strong> Positions only update every few seconds, so faster polling just costs everyone bandwidth.</li>
+      <li><strong>Positions are estimates.</strong> They come from each pilot's companion app reading their own game screen, so they can drift. Don't present them as exact.</li>
+      <li><strong>Only pilots running the companion app appear.</strong> Everyone else is invisible to this API.</li>
+      <li><strong>v1 won't break.</strong> Fields may be added, but existing ones won't be renamed or removed. A breaking change would ship as <code>/v2</code> alongside it.</li>
+      <li><strong>Airport placement varies in accuracy.</strong> Each airport in <code>/airports</code> has a <code>confidence</code> note. <code>direct</code> means it was measured on the image; <code>fitted-only</code> is a rough estimate.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="wrap dim">Part of <a href="https://github.com/firstofakind935-dev/autoatc">AutoATC</a>.
+  Want a full controller workstation instead? See <a href="/radar">365Radar</a>.</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

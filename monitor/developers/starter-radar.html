@@ -1,0 +1,233 @@
+<!doctype html>
+<!--
+  AutoATC starter radar - a single, dependency-free HTML file you can copy,
+  host anywhere (or just open locally) and build your own radar on.
+
+  Data comes from AutoATC's public API (see /developers on the monitor
+  service): GET {API_BASE}/api/public/v1/traffic every few seconds, plus
+  /airports and /map.png once. Every aircraft already carries `map.x`/`map.y`
+  in world-map.png pixel space, so drawing it is just "put a dot there".
+
+  Things to make your own: colors (the :root tokens), the label block in
+  drawAircraft(), the history trail length, extra layers in draw().
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starter Radar</title>
+<style>
+  :root {
+    --bg: #05080d;
+    --scope: #0a1420;
+    --text: #cfe3d6;
+    --dim: #6f8a7d;
+    --target: #6dff9c;
+    --vector: #ffbf47;
+    --ident: #ff6b6b;
+    --airport: #7aa7ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+  #hud { position: fixed; top: 8px; left: 8px; right: 8px; display: flex; gap: 12px; flex-wrap: wrap;
+    align-items: center; pointer-events: none; }
+  #hud > * { pointer-events: auto; background: rgba(5, 8, 13, 0.8); border: 1px solid #1d2a38;
+    padding: 4px 8px; border-radius: 4px; }
+  #status.err { color: var(--ident); }
+  label { display: inline-flex; gap: 4px; align-items: center; }
+</style>
+</head>
+<body>
+<canvas id="scope"></canvas>
+<div id="hud">
+  <span id="status">connecting…</span>
+  <label><input type="checkbox" id="show-map" checked> map</label>
+  <label><input type="checkbox" id="show-airports" checked> airports</label>
+  <label><input type="checkbox" id="show-trails" checked> trails</label>
+</div>
+<script>
+// Where to pull data from. Leave the placeholder to use the same origin
+// this page is served from, or pass ?api=https://your-monitor.example in
+// the URL to point it anywhere at runtime.
+const API_BASE_DEFAULT = '__AUTOATC_API_BASE__';
+const API_BASE = (new URLSearchParams(location.search).get('api')
+  || (API_BASE_DEFAULT.startsWith('__') ? location.origin : API_BASE_DEFAULT)).replace(/\/$/, '');
+
+const POLL_MS = 3000;
+const TRAIL_POINTS = 20;
+const LEADER_MINUTES = 1; // heading leader line = where the aircraft will be in this many minutes
+const VECTOR_NM = 5;
+
+const canvas = document.getElementById('scope');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+let mapInfo = null;
+let mapImage = null;
+let airports = [];
+let aircraft = [];
+const trails = new Map(); // callsign -> [{x, y}], oldest first
+const view = { scale: 1, offsetX: 0, offsetY: 0 }; // screen = map * scale + offset
+
+async function getJson(path) {
+  const res = await fetch(API_BASE + path);
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  return res.json();
+}
+
+async function loadStatic() {
+  const data = await getJson('/api/public/v1/airports');
+  mapInfo = data.map;
+  airports = data.airports;
+  mapImage = new Image();
+  mapImage.onload = draw;
+  mapImage.src = API_BASE + mapInfo.imageUrl;
+  fitToScreen();
+}
+
+async function pollTraffic() {
+  try {
+    const data = await getJson('/api/public/v1/traffic');
+    aircraft = data.aircraft;
+    const seen = new Set();
+    for (const a of aircraft) {
+      if (!a.map) continue;
+      seen.add(a.callsign);
+      const trail = trails.get(a.callsign) || [];
+      const last = trail[trail.length - 1];
+      if (!last || last.x !== a.map.x || last.y !== a.map.y) trail.push({ ...a.map });
+      if (trail.length > TRAIL_POINTS) trail.shift();
+      trails.set(a.callsign, trail);
+    }
+    for (const callsign of trails.keys()) if (!seen.has(callsign)) trails.delete(callsign);
+    statusEl.textContent = `${aircraft.length} aircraft · ${new Date(data.generatedAt).toLocaleTimeString()}`;
+    statusEl.className = '';
+  } catch (err) {
+    statusEl.textContent = `data error: ${err.message}`;
+    statusEl.className = 'err';
+  }
+  draw();
+}
+
+function fitToScreen() {
+  if (!mapInfo) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  view.scale = Math.min(w / mapInfo.width, h / mapInfo.height);
+  view.offsetX = (w - mapInfo.width * view.scale) / 2;
+  view.offsetY = (h - mapInfo.height * view.scale) / 2;
+}
+
+const toScreen = (p) => ({ x: p.x * view.scale + view.offsetX, y: p.y * view.scale + view.offsetY });
+
+// A point `nm` nautical miles from `p` along `headingDeg`, in map pixels.
+function project(p, headingDeg, nm) {
+  const rad = (headingDeg * Math.PI) / 180;
+  const d = nm * mapInfo.pxPerNm;
+  return { x: p.x + d * Math.sin(rad), y: p.y - d * Math.cos(rad) };
+}
+
+function line(a, b, color, dash = []) {
+  const s = toScreen(a), e = toScreen(b);
+  ctx.strokeStyle = color;
+  ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawAircraft(a) {
+  const color = a.identing ? css('--ident') : css('--target');
+  if (document.getElementById('show-trails').checked) {
+    ctx.fillStyle = css('--dim');
+    for (const p of (trails.get(a.callsign) || []).slice(0, -1)) {
+      const s = toScreen(p);
+      ctx.fillRect(s.x - 1, s.y - 1, 2, 2);
+    }
+  }
+  if (a.headingDeg !== null && a.speedKt) {
+    line(a.map, project(a.map, a.headingDeg, (a.speedKt / 60) * LEADER_MINUTES), color);
+  }
+  if (a.assignedHeadingDeg !== null) {
+    line(a.map, project(a.map, a.assignedHeadingDeg, VECTOR_NM), css('--vector'), [4, 3]);
+  }
+  const s = toScreen(a.map);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
+  ctx.lineWidth = 1;
+
+  // Classic three-line data block: callsign / altitude (hundreds) + speed / type
+  const alt = a.altitudeFt === null ? '---' : String(Math.round(a.altitudeFt / 100)).padStart(3, '0');
+  const spd = a.speedKt === null ? '--' : Math.round(a.speedKt / 10);
+  ctx.fillStyle = color;
+  ctx.font = '12px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillText(a.callsign, s.x + 10, s.y - 10);
+  ctx.fillText(`${alt} ${spd}`, s.x + 10, s.y + 3);
+  ctx.fillStyle = css('--dim');
+  ctx.fillText(a.aircraftType || '', s.x + 10, s.y + 16);
+}
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = css('--scope');
+  ctx.fillRect(0, 0, w, h);
+  if (!mapInfo) return;
+
+  if (mapImage?.complete && document.getElementById('show-map').checked) {
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(mapImage, view.offsetX, view.offsetY, mapInfo.width * view.scale, mapInfo.height * view.scale);
+    ctx.globalAlpha = 1;
+  }
+  if (document.getElementById('show-airports').checked) {
+    ctx.fillStyle = css('--airport');
+    ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+    for (const ap of airports) {
+      const s = toScreen(ap);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText(ap.icao, s.x + 5, s.y - 5);
+    }
+  }
+  for (const a of aircraft) if (a.map) drawAircraft(a);
+}
+
+// Pan (drag) and zoom (mouse wheel)
+let drag = null;
+canvas.addEventListener('pointerdown', (e) => {
+  drag = { x: e.clientX, y: e.clientY };
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  view.offsetX += e.clientX - drag.x;
+  view.offsetY += e.clientY - drag.y;
+  drag = { x: e.clientX, y: e.clientY };
+  draw();
+});
+canvas.addEventListener('pointerup', () => { drag = null; canvas.classList.remove('dragging'); });
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = Math.exp(-e.deltaY * 0.0015);
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  view.offsetX = mx - (mx - view.offsetX) * factor;
+  view.offsetY = my - (my - view.offsetY) * factor;
+  view.scale *= factor;
+  draw();
+}, { passive: false });
+canvas.addEventListener('dblclick', () => { fitToScreen(); draw(); });
+for (const id of ['show-map', 'show-airports', 'show-trails']) document.getElementById(id).addEventListener('change', draw);
+window.addEventListener('resize', () => { fitToScreen(); draw(); });
+
+loadStatic()
+  .then(() => { pollTraffic(); setInterval(pollTraffic, POLL_MS); })
+  .catch((err) => { statusEl.textContent = `could not reach ${API_BASE}: ${err.message}`; statusEl.className = 'err'; });
+</script>
+</body>
+</html>
