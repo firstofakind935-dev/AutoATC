@@ -70,7 +70,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   overflow: hidden;
-  aspect-ratio: 937 / 706;
+  aspect-ratio: 4 / 3;
   max-height: 70vh;
   width: 100%;
 }

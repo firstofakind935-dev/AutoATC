@@ -15,15 +15,14 @@ for (const tab of document.querySelectorAll('.tab')) {
 const explorerOutput = document.querySelector('#explorer-output code');
 const explorerMeta = document.getElementById('explorer-meta');
 document.getElementById('explorer-run').addEventListener('click', async () => {
-  const path = document.getElementById('explorer-endpoint').value;
+  const path = '/api/public/v1/traffic';
   explorerMeta.textContent = 'Loading…';
   const started = performance.now();
   try {
     const res = await fetch(path);
     const body = await res.json();
     const ms = Math.round(performance.now() - started);
-    const count = Array.isArray(body.aircraft) ? `, ${body.aircraft.length} aircraft`
-      : Array.isArray(body.airports) ? `, ${body.airports.length} airports` : '';
+    const count = Array.isArray(body.aircraft) ? `, ${body.aircraft.length} aircraft` : '';
     explorerMeta.textContent = `HTTP ${res.status} in ${ms} ms${count}`;
     explorerOutput.textContent = JSON.stringify(body, null, 2);
   } catch (err) {

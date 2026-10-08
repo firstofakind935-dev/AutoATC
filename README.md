@@ -606,31 +606,29 @@ GET /api/dashboard/flightstrips — live flight strips, same auth story
 
 #### Public radar data API (build your own radar)
 
-For anyone in the community who wants to build their own radar, map, or
-tool, the monitor serves a public developer site at **`/developers`**. It
-has the API docs, a live request explorer against real data, a working
-demo radar, and a downloadable single-file **starter radar**
-(`monitor/developers/starter-radar.html`: map, airports, data blocks,
-heading leaders, ATC vectors, trails, pan/zoom, no dependencies) to copy
-and build on.
+For anyone in the community who wants to build their own radar or tool,
+the monitor serves a public developer site at **`/developers`**. It has
+the API docs, a live request explorer against real data, a working demo
+radar, and a downloadable single-file **starter radar**
+(`monitor/developers/starter-radar.html`: a radar scope centred on a
+chosen airport with range rings, data blocks, heading leaders, ATC
+vectors and trails, no dependencies) to copy and build on.
 
 ```
-GET /api/public/v1/traffic   — every fresh aircraft, with map.x/map.y already computed
-GET /api/public/v1/airports  — every airport's pixel anchor on the world map
-GET /api/public/v1/map.png   — the world map image those coordinates refer to
+GET /api/public/v1/traffic   — every fresh aircraft's location data
 ```
 
-All three need no auth and send `Access-Control-Allow-Origin: *`, so any
-website can call them straight from the browser. Same trust tier as the
+No auth, and it sends `Access-Control-Allow-Origin: *`, so any website
+can call it straight from the browser. Same trust tier as the
 already-open `/api/dashboard/positions` - live traffic position only.
 Unlike that endpoint, `monitor/publicApi.js` whitelists each field it
 sends, instead of passing the companion app's opaque `position` object
-through, so new private fields never leak by accident. It also does the
-same polar-to-pixel projection 365Radar does (using the same
-`worldMapAnchors.js`), so third parties don't have to re-derive it. The
-raw `referenceAirport`/`distanceNm`/`bearingDeg` are included too, for
-anyone bringing their own map. The `/v1` prefix is a promise to external
-sites: fields may be added, but a breaking change ships as `/v2` alongside.
+through, so new private fields never leak by accident. It's location data
+only on purpose: positions are the raw `referenceAirport`/`distanceNm`/
+`bearingDeg`, with no world map image or pixel coordinates on it - what a
+radar draws underneath is up to whoever builds it. The `/v1` prefix is a
+promise to external sites: fields may be added, but a breaking change
+ships as `/v2` alongside.
 
 #### Flight strips
 

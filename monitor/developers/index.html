@@ -14,7 +14,7 @@
       map or tool. No key, no sign-up, works straight from a browser.</p>
     <nav>
       <a href="#quickstart">Quick start</a>
-      <a href="#endpoints">Endpoints</a>
+      <a href="#endpoints">Endpoint</a>
       <a href="#fields">Fields</a>
       <a href="#explorer">Live explorer</a>
       <a href="#starter">Starter radar</a>
@@ -26,8 +26,8 @@
 <main class="wrap">
   <section id="quickstart">
     <h2>Quick start</h2>
-    <p>Every aircraft already comes with <code>map.x</code>/<code>map.y</code>, pixel coordinates on the
-      shared world map image. Draw the image, put a dot at those coordinates, and you have a radar.</p>
+    <p>Each aircraft's position is a distance and bearing from a reference airport. Pick an airport,
+      plot every aircraft around it, and you have a radar. Bring your own map if you want one.</p>
     <div class="tabs" role="tablist">
       <button class="tab active" data-snippet="js">JavaScript</button>
       <button class="tab" data-snippet="python">Python</button>
@@ -38,8 +38,7 @@
 async function poll() {
   const { aircraft } = await fetch(`${BASE}/api/public/v1/traffic`).then(r => r.json());
   for (const a of aircraft) {
-    if (!a.map) continue;            // position couldn't be placed on the map
-    console.log(a.callsign, a.map.x, a.map.y, a.altitudeFt, a.headingDeg);
+    console.log(a.callsign, a.referenceAirport, a.distanceNm, a.bearingDeg, a.altitudeFt);
   }
 }
 setInterval(poll, 3000);</code></pre>
@@ -52,34 +51,32 @@ while True:
     for a in data["aircraft"]:
         print(a["callsign"], a["referenceAirport"], a["distanceNm"], a["bearingDeg"])
     time.sleep(3)</code></pre>
-<pre class="snippet" data-snippet="curl" hidden><code>curl <span class="base"></span>/api/public/v1/traffic
-curl <span class="base"></span>/api/public/v1/airports
-curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></pre>
+<pre class="snippet" data-snippet="curl" hidden><code>curl <span class="base"></span>/api/public/v1/traffic</code></pre>
   </section>
 
   <section id="endpoints">
-    <h2>Endpoints</h2>
-    <p>All endpoints are <code>GET</code>, return JSON (except the map image), and send
-      <code>Access-Control-Allow-Origin: *</code>, so you can call them from any website.</p>
-    <table>
-      <thead><tr><th>Endpoint</th><th>What it returns</th><th>Poll</th></tr></thead>
-      <tbody>
-        <tr><td><code>/api/public/v1/traffic</code></td><td>Every aircraft with a fresh position report, plus the map info.</td><td>Every 2–5 s</td></tr>
-        <tr><td><code>/api/public/v1/airports</code></td><td>Every airport's position on the world map, plus the map info.</td><td>Once</td></tr>
-        <tr><td><code>/api/public/v1/map.png</code></td><td>The world map image that <code>map.x</code>/<code>map.y</code> refer to.</td><td>Once</td></tr>
-      </tbody>
-    </table>
-
-    <h3>Map info</h3>
-    <p>Both JSON endpoints include a <code>map</code> object describing the image:</p>
+    <h2>Endpoint</h2>
+    <p><code>GET /api/public/v1/traffic</code> returns every aircraft with a fresh position report.
+      It's JSON, needs no key, and sends <code>Access-Control-Allow-Origin: *</code>, so you can call it
+      from any website. Poll it every 2–5 seconds.</p>
 <pre><code>{
-  "imageUrl": "/api/public/v1/map.png",
-  "width": 937, "height": 706,   // image size in pixels
-  "pxPerNm": 24,                 // pixels per nautical mile
-  "projection": "x = anchor.x + distanceNm * pxPerNm * sin(bearing); y = anchor.y - distanceNm * pxPerNm * cos(bearing)"
+  "generatedAt": "2026-10-08T11:24:22.364Z",
+  "aircraft": [
+    { "callsign": "N42Y", "aircraftType": "A220",
+      "referenceAirport": "IRFD", "distanceNm": 12, "bearingDeg": 230,
+      "altitudeFt": 4400, "speedKt": 240, "headingDeg": 270, ... }
+  ]
 }</code></pre>
-    <p>North is up. Pixel <code>y</code> grows downward. To draw a heading or vector line, step
-      <code>nm × pxPerNm</code> pixels along <code>sin(heading)</code> for x and <code>−cos(heading)</code> for y.</p>
+
+    <h3>Plotting a position</h3>
+    <p><code>bearingDeg</code> is degrees clockwise from north, measured from <code>referenceAirport</code>.
+      To turn it into x/y in nautical miles from that airport (east and north positive):</p>
+<pre><code>x = distanceNm * sin(bearingDeg)
+y = distanceNm * cos(bearingDeg)</code></pre>
+    <p>Then scale nautical miles to pixels however your radar likes. Heading and vector lines work the
+      same way: step along <code>sin(heading)</code>, <code>cos(heading)</code> from the aircraft.
+      Aircraft near different airports use different reference airports, so either show one airport at a
+      time (like the starter radar) or place the airports yourself.</p>
   </section>
 
   <section id="fields">
@@ -95,9 +92,9 @@ curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></p
         <tr><td><code>headingDeg</code></td><td>number</td><td>Heading, 0–359.</td></tr>
         <tr><td><code>squawk</code></td><td>string</td><td>Transponder code, e.g. <code>"2000"</code>.</td></tr>
         <tr><td><code>identing</code></td><td>boolean</td><td>Pilot pressed IDENT recently. Highlight them.</td></tr>
-        <tr><td><code>map</code></td><td>{x, y}</td><td>Pixel position on <code>map.png</code>. <code>null</code> if it couldn't be placed.</td></tr>
-        <tr><td><code>referenceAirport</code></td><td>string</td><td>ICAO the raw position is measured from.</td></tr>
-        <tr><td><code>distanceNm</code>, <code>bearingDeg</code></td><td>number</td><td>Raw position: distance and bearing from <code>referenceAirport</code>. Use these if you bring your own map.</td></tr>
+        <tr><td><code>referenceAirport</code></td><td>string</td><td>ICAO code of the airport the position is measured from.</td></tr>
+        <tr><td><code>distanceNm</code></td><td>number</td><td>Distance from <code>referenceAirport</code> in nautical miles.</td></tr>
+        <tr><td><code>bearingDeg</code></td><td>number</td><td>Bearing from <code>referenceAirport</code>, degrees clockwise from north.</td></tr>
         <tr><td><code>fixAgeSec</code></td><td>number</td><td>Seconds since the pilot's last manual position correction. Above ~60 the estimate is drifting; consider fading the target.</td></tr>
         <tr><td><code>reportAgeMs</code></td><td>number</td><td>How old this report is. Aircraft drop off after 30 s without a report.</td></tr>
         <tr><td><code>assignedHeadingDeg</code></td><td>number</td><td>Heading ATC has vectored this aircraft onto, if any.</td></tr>
@@ -110,10 +107,7 @@ curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></p
     <h2>Live explorer</h2>
     <p>This is the real data, right now.</p>
     <div class="explorer-bar">
-      <select id="explorer-endpoint">
-        <option value="/api/public/v1/traffic">/api/public/v1/traffic</option>
-        <option value="/api/public/v1/airports">/api/public/v1/airports</option>
-      </select>
+      <code>GET /api/public/v1/traffic</code>
       <button id="explorer-run">Send request</button>
       <span id="explorer-meta" class="dim"></span>
     </div>
@@ -122,15 +116,16 @@ curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></p
 
   <section id="starter">
     <h2>Starter radar</h2>
-    <p>A complete radar in one HTML file, with no libraries and no build step. It has the map, airports,
-      data blocks, heading leader lines, ATC vectors, history trails, pan and zoom.
+    <p>A complete radar in one HTML file, with no libraries and no build step. It's a radar scope
+      centred on an airport you pick, with range rings, data blocks, heading leader lines, ATC vectors
+      and history trails.
       Download it, open it in a browser, and start changing it.</p>
     <p>
       <button id="download-starter" class="primary">Download starter-radar.html</button>
       <a href="starter-radar.html" target="_blank" rel="noopener">Open full screen</a>
     </p>
     <div class="demo"><iframe src="starter-radar.html" title="Starter radar, live"></iframe></div>
-    <p class="dim">Drag to pan, scroll to zoom, double-click to reset. The download is already pointed at this server.
+    <p class="dim">Pick the airport at the top left, and scroll to change range. The download is already pointed at this server.
       To aim a copy somewhere else, add <code>?api=https://other-server</code> to its URL.</p>
   </section>
 
@@ -141,7 +136,6 @@ curl -o world-map.png <span class="base"></span>/api/public/v1/map.png</code></p
       <li><strong>Positions are estimates.</strong> They come from each pilot's companion app reading their own game screen, so they can drift. Don't present them as exact.</li>
       <li><strong>Only pilots running the companion app appear.</strong> Everyone else is invisible to this API.</li>
       <li><strong>v1 won't break.</strong> Fields may be added, but existing ones won't be renamed or removed. A breaking change would ship as <code>/v2</code> alongside it.</li>
-      <li><strong>Airport placement varies in accuracy.</strong> Each airport in <code>/airports</code> has a <code>confidence</code> note. <code>direct</code> means it was measured on the image; <code>fitted-only</code> is a rough estimate.</li>
     </ul>
   </section>
 </main>
