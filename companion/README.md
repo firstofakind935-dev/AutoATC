@@ -147,14 +147,14 @@ the plan), or pick one at the top:
 | Boeing CDU | 707-777, MD-11/90, P-8, E-3 | MCP: A/T ARM, SPEED, LNAV, VNAV, HDG SEL, ALT HOLD, V/S, CMD A | RTE page, type it, press **2L** (CO ROUTE), then **EXEC** |
 | Boeing 787 CDU | 787 | Same MCP as the Boeing CDU | Same as the Boeing CDU |
 | Bombardier FMS | CRJ700, Q400, Learjet, A220 | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, YD, A/T | FPL page, **2L** (RTE ID), then **EXEC** |
-| Embraer MCDU | E190 | Guidance panel, same buttons (FLCH, VS/FPA) | RTE page, **2L** (LOAD RTE), then **EXEC** |
+| Embraer MCDU | E190 | Guidance panel, same buttons (FLCH, VS/FPA) | RTE page, **2L** (LOAD RTE) - no EXEC, as on the real unit |
 | Default FMS | Everything else - An-225, C-130, fighters, light aircraft, helicopters... | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, A/T | ROUTE page, **2L** (PLAN ID), then **EXEC** |
 
-The Airbus, A350/A380, Boeing and 787 units are drawn from photos of the
-real ones: the A320-family MCDU, the A350's FMS pages on the MFD with the
-KCCU keyboard, the 777-style CDU (also used for the 737-777), and the
-787's CDU, which is drawn on the lower display with a keypad panel beside
-it.
+The Airbus, A350/A380, Boeing, 787 and Embraer units are drawn from
+photos of the real ones: the A320-family MCDU, the A350's FMS pages on the
+MFD with the KCCU keyboard, the 777-style CDU (also used for the 737-777),
+the 787's CDU, which is drawn on the lower display with a keypad panel
+beside it, and the E-Jet MCDU.
 
 The A350/A380 has no line select keys, like the real aircraft: each line's
 left and right halves are fields you click. Click a field and type, then

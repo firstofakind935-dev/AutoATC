@@ -536,18 +536,28 @@ const SKINS = {
       ['PREV', 'up'], ['NEXT', 'down'], ['', null], ['', null], ['', null], ['', null],
     ],
   },
+  // Layout from an E-Jet (Honeywell Primus Epic) MCDU: blue-grey unit,
+  // PERF/NAV/PREV/FPL/PROG/RTE/CB with BRT-DIM, then MENU/DLK/NEXT/TRS/RADIO
+  // and the big knob; six-wide letters with the last two rows shifted
+  // right, and a four-wide number pad. No EXEC key - changes go in
+  // straight away, as on the real unit.
   embraer: {
     name: 'Embraer MCDU',
-    execRequired: true,
+    execRequired: false,
+    actPrefix: false,
     eraseLabel: '<CANCEL',
-    colors: { active: 'magenta', legs: 'green' },
+    colors: { active: 'magenta', legs: 'cyan' },
     labels: { coRoute: 'LOAD RTE' },
-    titles: { rte: 'RTE', legs: 'LEGS', prog: 'PROGRESS', perf: 'PERF', dir: 'DIRECT TO', menu: 'MENU' },
+    titles: { rte: 'ROUTE', legs: 'ACTIVE FLT PLAN', prog: 'PROGRESS', perf: 'PERFORMANCE', dir: 'DIRECT TO', menu: 'NAV INDEX' },
+    keyCols: 8,
     keys: [
-      ['NAV', 'menu'], ['RTE', 'rte'], ['PERF', 'perf'], ['PROG', 'prog'], ['DEP ARR', null], ['DIR', 'dir'],
-      ['RADIO', null], ['TRS', null], ['MENU', 'menu'], ['CB', null], ['EXEC', 'exec'], ['', null],
-      ['PREV', 'up'], ['NEXT', 'down'], ['', null], ['', null], ['', null], ['', null],
+      ['PERF', 'perf'], ['NAV', 'menu'], ['PREV', 'up', 'boxed'], ['FPL', 'legs'], ['PROG', 'prog'], ['RTE', 'rte'], ['CB', null], ['BRT DIM', 'noop', 'small'],
+      ['MENU', 'menu'], ['DLK', null], ['NEXT', 'down', 'boxed'], ['', 'blank'], ['TRS', null], ['RADIO', null], ['', null], ['', 'knob'],
     ],
+    alpha: [...'ABCDEF', ...'GHIJKL', ...'MNOPQR', '', ...'STUVW', '', 'X', 'Y', 'Z', 'DEL', 'CLR'],
+    alphaCols: 6,
+    numeric: ['1', '2', '3', '+/-', '4', '5', '6', '.', '7', '8', '9', '', '/', '0', 'SP', ''],
+    numericCols: 4,
   },
   // Default FMS: a neutral unit for every aircraft without a
   // manufacturer style of its own (An-225, C-130, fighters, light aircraft...).
@@ -572,6 +582,7 @@ function goPage(page) {
 }
 
 const DEFAULT_ALPHA = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'SP', 'DEL', '/', 'CLR'];
+const DEFAULT_NUMERIC = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '+/-'];
 // Key actions that do nothing on purpose: lighting controls and blank keys.
 const INERT_KEYS = new Set(['noop', 'blank', 'knob']);
 
@@ -838,6 +849,9 @@ function buildView() {
     })),
     fkeyCols: s.keyCols || 6,
     alpha: s.alpha || DEFAULT_ALPHA,
+    alphaCols: s.alphaCols || null,
+    numeric: s.numeric || DEFAULT_NUMERIC,
+    numericCols: s.numericCols || 3,
     annunciators: s.annunciators || [],
     execLit: Boolean(ui.pending),
     panel: buildPanel(skinId),

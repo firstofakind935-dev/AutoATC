@@ -14,7 +14,6 @@
 
 (function (root) {
   const $ = (id) => document.getElementById(id);
-  const NUMERIC = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '+/-'];
 
   function escapeHtml(text) {
     return String(text).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -24,6 +23,7 @@
   let dispatch = () => {};
   let lastFkeys = '';
   let lastAlpha = '';
+  let lastNumeric = '';
   let lastAnnun = '';
 
   /** Builds the fixed parts (line select keys, keypad) and wires input. */
@@ -37,13 +37,6 @@
         b.addEventListener('click', () => dispatch({ type: 'lsk', id: `${side}${i}` }));
         el.append(b);
       }
-    }
-    for (const ch of NUMERIC) {
-      const b = document.createElement('button');
-      b.className = 'key num';
-      b.textContent = ch;
-      b.addEventListener('click', () => dispatch({ type: 'key', ch }));
-      $('numeric').append(b);
     }
     // Function keys, letters (each style has its own set) and the autopilot
     // panel are redrawn when they change, so they're wired once here by
@@ -62,10 +55,12 @@
       if (e.target.closest('.mfd-clear')) return dispatch({ type: 'clear-info' });
       return null;
     });
-    $('alpha').addEventListener('click', (e) => {
-      const b = e.target.closest('button[data-ch]');
-      if (b) dispatch({ type: 'key', ch: b.dataset.ch });
-    });
+    for (const id of ['alpha', 'numeric']) {
+      $(id).addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-ch]');
+        if (b) dispatch({ type: 'key', ch: b.dataset.ch });
+      });
+    }
     $('ap-panel').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-id]');
       if (b) dispatch({ type: 'panel', id: b.dataset.id, action: b.dataset.action, big: e.shiftKey });
@@ -156,10 +151,23 @@
     }
     for (const exec of document.querySelectorAll('.fkey.exec')) exec.classList.toggle('lit', Boolean(vm.execLit));
 
-    const alpha = JSON.stringify(vm.alpha);
+    // Letter and number keys: each style has its own set and arrangement
+    // ('' leaves a gap, as on the real unit).
+    const alpha = JSON.stringify([vm.alpha, vm.alphaCols]);
     if (alpha !== lastAlpha) {
       lastAlpha = alpha;
-      $('alpha').innerHTML = vm.alpha.map((ch) => `<button class="key ${ch.length > 1 ? 'small' : ''}" data-ch="${escapeHtml(ch)}">${ch === 'OVFY' ? 'OVFY<br>△' : escapeHtml(ch)}</button>`).join('');
+      $('alpha').innerHTML = vm.alpha.map((ch) => (ch
+        ? `<button class="key ${ch.length > 1 ? 'small' : ''}" data-ch="${escapeHtml(ch)}">${ch === 'OVFY' ? 'OVFY<br>△' : escapeHtml(ch)}</button>`
+        : '<span class="key spacer"></span>')).join('');
+      $('alpha').style.gridTemplateColumns = vm.alphaCols ? `repeat(${vm.alphaCols}, 1fr)` : '';
+    }
+    const numeric = JSON.stringify([vm.numeric, vm.numericCols]);
+    if (numeric !== lastNumeric) {
+      lastNumeric = numeric;
+      $('numeric').innerHTML = vm.numeric.map((ch) => (ch
+        ? `<button class="key num" data-ch="${escapeHtml(ch)}">${escapeHtml(ch)}</button>`
+        : '<span class="key num spacer"></span>')).join('');
+      $('numeric').style.gridTemplateColumns = vm.numericCols !== 3 ? `repeat(${vm.numericCols}, 34px)` : '';
     }
 
     const annun = JSON.stringify(vm.annunciators);
