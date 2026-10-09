@@ -44,6 +44,7 @@ const KEYMAP_LABELS = {
 // (An-225, C-130, fighters, light aircraft...) gets the Default FMS.
 const HUD_TYPE_SKINS = [
   [/airbus a220/i, 'bombardier'], // designed as the Bombardier CSeries
+  [/airbus a3[58]0/i, 'a350'],
   [/airbus|a330 mrtt/i, 'airbus'],
   [/boeing 787/i, 'boeing787'],
   [/boeing|douglas md|\bc40\b|kc-?7[06]7|707af1|747af1|dreamlifter|\bp8\b|c-32|e-3 sentry|ec-18b/i, 'boeing'],
@@ -245,7 +246,7 @@ const row = (labelL, dataL, labelR = [], dataR = []) => ({ label: [labelL, label
 const viaText = (p) => p.route.replace(/\bDCT\b/g, ' ').trim().replace(/\s+/g, ' ') || 'DIRECT';
 
 function routePage(s) {
-  if (s === SKINS.airbus) return airbusInitPage(s);
+  if (s.initPage === 'airbus') return airbusInitPage(s);
   const p = ui.pending?.kind === 'route' ? ui.pending.plan : ui.plan;
   const box = (n) => c('□'.repeat(n), 'amber');
   const pendingRoute = ui.pending?.kind === 'route';
@@ -271,11 +272,11 @@ function routePage(s) {
 }
 
 // Airbus INIT A: CO RTE on 1L, FROM/TO on 1R, CRZ FL on 6L.
-function airbusInitPage() {
+function airbusInitPage(s) {
   const p = ui.plan;
   const box = (n) => c('□'.repeat(n), 'amber');
   return {
-    title: 'INIT',
+    title: s.titles.rte,
     rows: rows([
       row([c('CO RTE', 'label')], [ui.coRoute ? c(ui.coRoute, 'big cyan') : box(10)], [c('FROM/TO', 'label')], [p ? c(`${p.origin.icao}/${p.destination.icao}`, 'big cyan') : box(9)]),
       row([c('ALTN/CO RTE', 'label')], [c('----/---------', 'dim')], [c('', '')], [c('', '')]),
@@ -321,6 +322,9 @@ function legsPage(s) {
     );
   });
   const pendingDir = ui.pending?.kind === 'dir';
+  // The last line always sits on the 6th line select key, however few
+  // waypoints are showing above it.
+  while (list.length < 5) list.push(blankRow());
   list.push(pendingDir
     ? row([], [c(s.eraseLabel, 'white')], [], [c(s.execRequired ? 'EXEC>' : 'INSERT*', 'amber')])
     : row([c('', '')], [c(`DEST ${ui.plan.destination.icao}`, 'white')], [], [c(`${fmtNm(Fms.distanceToDestination(ui.fms, ui.telemetry || waypoints[0]))}NM`, 'white')]));
@@ -340,7 +344,9 @@ function legsPage(s) {
   lsk.L6 = () => (pendingDir ? erasePending() : null);
   lsk.R6 = () => (pendingDir ? (s.execRequired ? flash('PRESS EXEC') : execPending()) : null);
   return {
-    title: `${pendingDir ? 'MOD' : 'ACT'} ${s.titles.legs}`,
+    title: s.actPrefix === false
+      ? `${s.titles.legs}${pendingDir ? ' (TMPY)' : ''}`
+      : `${pendingDir ? 'MOD' : 'ACT'} ${s.titles.legs}`,
     titleRight: `${Math.floor(ui.scroll / 5) + 1}/${Math.max(1, Math.ceil((waypoints.length - Math.max(0, activeIndex - 1)) / 5))}`,
     rows: rows(list),
     lsk,
@@ -431,6 +437,7 @@ const PAGES = { rte: routePage, legs: legsPage, prog: progPage, perf: perfPage, 
 const SKINS = {
   airbus: {
     name: 'Airbus MCDU',
+    initPage: 'airbus',
     execRequired: false,
     eraseLabel: '<ERASE',
     colors: { active: 'white', legs: 'green' },
@@ -447,6 +454,33 @@ const SKINS = {
     ],
     alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', '/', 'SP', 'OVFY', 'CLR'],
     annunciators: [['FM1', ''], ['IND', ''], ['RDY', 'on'], ['', ''], ['FM2', '']],
+  },
+  // A350 / A380: no MCDU. The FMS is a set of pages on the MFD - tabs
+  // across the top, a title bar, fields and buttons clicked with the
+  // trackball - typed into from the KCCU (QWERTY keyboard, page keys, number
+  // pad). Here each page's left/right lines are clickable fields: click one
+  // to put what you typed into it (or press ENT after clicking it).
+  a350: {
+    name: 'A350/A380 MFD',
+    execRequired: false,
+    screenStyle: 'mfd',
+    initPage: 'airbus',
+    actPrefix: false,
+    eraseLabel: 'ERASE',
+    colors: { active: 'white', legs: 'green' },
+    labels: { coRoute: 'CO RTE' },
+    titles: { rte: 'ACTIVE/INIT', legs: 'ACTIVE/F-PLN', prog: 'POSITION/MONITOR', perf: 'ACTIVE/PERF', dir: 'ACTIVE/F-PLN/DIRECT TO', menu: 'DATA/STATUS' },
+    keyCols: 7,
+    keys: [
+      // MFD tabs (drawn across the top of the display)
+      ['ACTIVE', 'legs', 'tab'], ['POSITION', 'prog', 'tab'], ['SEC INDEX', null, 'tab'], ['DATA', 'menu', 'tab'],
+      // KCCU page keys
+      ['ESC', 'clrinfo'], ['↑', 'up', 'arrow'], ['DIR', 'dir'], ['PERF', 'perf'], ['INIT', 'rte'], ['NAV AID', null], ['C/L MENU', null],
+      ['CLR INFO', 'clrinfo'], ['↓', 'down', 'arrow'], ['F-PLN', 'legs'], ['DEST', 'airport'], ['SEC INDEX', null], ['SURV', null], ['ATC COM', null],
+      // display selection keys beside the trackball
+      ['OIS', 'noop', 'nav'], ['ND', 'noop', 'nav'], ['MFD', 'noop', 'nav on'], ['MAIL BOX', 'noop', 'nav'], ['◀◀', 'up', 'nav'], ['▶▶', 'down', 'nav'],
+    ],
+    alpha: [...'QWERTYUIOP', '←', ...'ASDFGHJKL', 'NOTE PAD', '/', ...'ZXCVBNM', 'SPACE', 'ENT'],
   },
   boeing: {
     name: 'Boeing CDU',
@@ -543,6 +577,10 @@ const INERT_KEYS = new Set(['noop', 'blank', 'knob']);
 
 function onFunctionKey(action) {
   if (INERT_KEYS.has(action)) return null;
+  if (action === 'clrinfo') {
+    ui.message = null;
+    return render();
+  }
   if (!action) return flash('NOT AVAILABLE');
   if (PAGES[action]) return goPage(action);
   if (action === 'exec') return ui.pending ? execPending() : null;
@@ -558,6 +596,7 @@ function onFunctionKey(action) {
 }
 
 function onLsk(id) {
+  ui.selectedField = id; // the A350's ENT key puts the entry into the last field clicked
   const page = PAGES[ui.page](skin());
   const handler = page.lsk?.[id];
   if (!handler) return;
@@ -567,8 +606,13 @@ function onLsk(id) {
   render();
 }
 
-function onKey(key) {
-  if (key === 'OVFY') return flash('NOT AVAILABLE'); // overfly - no fly-over waypoints in PTFS
+// KCCU keys that mean the same as MCDU ones.
+const KEY_ALIASES = { '←': 'CLR', SPACE: 'SP' };
+
+function onKey(rawKey) {
+  const key = KEY_ALIASES[rawKey] || rawKey;
+  if (key === 'OVFY' || key === 'NOTE PAD') return flash('NOT AVAILABLE'); // no fly-over waypoints / notepad here
+  if (key === 'ENT') return ui.selectedField ? onLsk(ui.selectedField) : flash('SELECT A FIELD');
   if (ui.message) ui.message = null;
   if (key === 'CLR') ui.scratch = ui.scratch.slice(0, -1);
   else if (key === 'DEL') ui.scratch = '';
@@ -655,7 +699,7 @@ function panelFor(skinId) {
   const altKnob = (extra = {}) => knob({ label: 'ALT', value: s.altFt, step: 100, bigStep: 1000, set: (v) => (s.altFt = clampAlt(v)), ...extra });
   const vsKnob = (extra = {}) => knob({ label: 'V/S', value: `${s.vsFpm > 0 ? '+' : ''}${s.vsFpm}`, step: 100, bigStep: 500, set: (v) => (s.vsFpm = Math.max(-6000, Math.min(6000, v))), raw: () => s.vsFpm, ...extra });
 
-  if (skinId === 'airbus') {
+  if (skinId === 'airbus' || skinId === 'a350') {
     return [
       spdKnob({ managed: ap.speedMode === 'MANAGED', push: () => { ap.speedMode = 'MANAGED'; }, pull: () => { ap.speedMode = 'SEL'; } }),
       button('LOC', false, () => flash('NOT AVAILABLE')),
@@ -703,7 +747,7 @@ function fmaColumns(skinId) {
   const vnavPhase = ui.guidance?.phase;
   const managedVert = { CLB: 'CLB', CRZ: 'ALT CRZ', DES: 'DES', APP: 'DES', DONE: 'ALT' }[vnavPhase] || 'CLB';
   const vsText = `V/S ${ap.selected.vsFpm > 0 ? '+' : ''}${ap.selected.vsFpm}`;
-  if (skinId === 'airbus') {
+  if (skinId === 'airbus' || skinId === 'a350') {
     return [
       ap.autothrottle ? 'SPEED' : '',
       ap.vertical === 'VNAV' ? managedVert : ap.vertical === 'VS' ? vsText : 'ALT',
@@ -773,6 +817,8 @@ function buildView() {
   return {
     skin: skinId,
     screen: {
+      style: s.screenStyle || 'mcdu',
+      selected: ui.selectedField || null,
       title: page.title,
       titleRight: page.titleRight || '',
       rows: page.rows,
@@ -786,9 +832,9 @@ function buildView() {
     fkeys: s.keys.map(([label, action, opts = '']) => ({
       label,
       exec: action === 'exec',
-      group: opts.includes('nav') ? 'nav' : 'main',
+      group: opts.includes('nav') ? 'nav' : opts.includes('tab') ? 'tab' : 'main',
       kind: action === 'knob' ? 'knob' : action === 'blank' ? 'blank' : label ? 'key' : 'spacer',
-      cls: opts.replace('nav', '').trim(),
+      cls: opts.replace('nav', '').replace('tab', '').trim(),
     })),
     fkeyCols: s.keyCols || 6,
     alpha: s.alpha || DEFAULT_ALPHA,
@@ -806,12 +852,13 @@ function render() {
   api?.publishFmsView?.(vm);
 }
 
-const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-', 'OVFY']));
+const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-', 'OVFY', '←', 'SPACE', 'NOTE PAD', 'ENT']));
 
 /** The one entry point for every cockpit input - local clicks and remotes. */
 function handleInput(msg) {
   if (!msg || typeof msg !== 'object') return;
   if (msg.type === 'lsk' && /^[LR][1-6]$/.test(msg.id)) return onLsk(msg.id);
+  if (msg.type === 'clear-info') return onFunctionKey('clrinfo');
   if (msg.type === 'key' && KEYPAD.has(msg.ch)) return onKey(msg.ch);
   if (msg.type === 'fkey' && Number.isInteger(msg.index)) {
     const key = skin().keys[msg.index];

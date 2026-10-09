@@ -20,7 +20,7 @@ const CATEGORIES = {
 };
 
 // [icao, name, category, fms]. fms picks the companion's MCDU/CDU style:
-// airbus, boeing, boeing787, bombardier or embraer, or generic - the neutral Default
+// airbus, a350 (A350/A380), boeing, boeing787, bombardier or embraer, or generic - the neutral Default
 // FMS for every aircraft without a manufacturer style of its own. A pilot
 // can still switch in the FMS window.
 const TYPES = [
@@ -28,8 +28,8 @@ const TYPES = [
   ['A332', 'A330 MRTT', 'widebody', 'airbus'],
   ['A333', 'Airbus A330', 'widebody', 'airbus'],
   ['A343', 'Airbus A340', 'widebody', 'airbus'],
-  ['A359', 'Airbus A350', 'widebody', 'airbus'],
-  ['A388', 'Airbus A380', 'widebody', 'airbus'],
+  ['A359', 'Airbus A350', 'widebody', 'a350'],
+  ['A388', 'Airbus A380', 'widebody', 'a350'],
   ['A3ST', 'Airbus Beluga', 'widebody', 'airbus'],
   // The A220 was designed as the Bombardier CSeries and keeps that cockpit.
   ['BCS1', 'Airbus A220', 'regionaljet', 'bombardier'],

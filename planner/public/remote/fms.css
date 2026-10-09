@@ -352,3 +352,84 @@ body[data-skin="airbus"] .alpha .key:is([data-ch="E"], [data-ch="N"], [data-ch="
 body[data-skin="boeing"] .alpha .key:is([data-ch="E"], [data-ch="N"], [data-ch="S"], [data-ch="W"]) {
   box-shadow: inset 0 0 0 4px var(--alnum), inset 0 0 0 6px var(--alnum-text);
 }
+
+/* ---------- A350 / A380: FMS pages on the MFD + KCCU, from a photo ---------- */
+body[data-skin="a350"] {
+  --key: #23262b;
+  --key-text: #ece8dc;
+  --alnum: #23262b;
+  --alnum-text: #ece8dc;
+  --scr-bg: #05070a;
+  --kccu-top: #aab7c3;
+  --kccu-bottom: #8a99a7;
+}
+body[data-skin="a350"] .mcdu { width: 640px; padding: 0; background: none; box-shadow: none; }
+body[data-skin="a350"] .lsk-col { display: none; }
+body[data-skin="a350"] .mcdu-screen-row { margin-bottom: 12px; }
+body[data-skin="a350"] .screen {
+  display: flex; flex-direction: column; padding: 0; min-height: 430px; font-size: 13px;
+  border: 10px solid #2b3036; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.mfd-top { display: flex; gap: 4px; padding: 6px 6px 4px; align-items: center; }
+.mfd-fms { color: #3fd2ff; background: #000; border: 1px solid #6f7a85; padding: 2px 8px; font-size: 14px; white-space: nowrap; }
+.mfd-tab { flex: 1; background: #46505b; color: #f2f2f2; border: 1px solid #7b8691; border-radius: 2px; font: 12px var(--font-screen); padding: 4px 2px; white-space: nowrap; }
+.mfd-tab:hover { background: #56616d; }
+.caret { font-size: 9px; }
+.mfd-title { display: flex; justify-content: space-between; background: #c3c9cf; color: #111; padding: 2px 8px; margin: 0 6px; font-size: 14px; }
+.mfd-body {
+  flex: 1; margin: 8px 6px 4px; border: 1px solid #5f6a75; border-radius: 6px; padding: 4px 6px;
+  display: flex; flex-direction: column; justify-content: space-around;
+}
+.mfd-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mfd-field {
+  background: none; border: 1px solid transparent; border-radius: 3px; color: var(--scr-white); font: inherit; text-transform: uppercase;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 3px 6px; min-height: 42px; cursor: pointer; text-align: left;
+}
+.mfd-field.right { align-items: flex-end; text-align: right; }
+.mfd-field:hover { border-color: #6f7a85; }
+.mfd-field.selected { border-color: #3fd2ff; box-shadow: inset 0 0 0 1px #3fd2ff; }
+.mfd-field.empty { visibility: hidden; }
+.mfd-field.action { justify-content: center; }
+.mfd-label { font-size: 11px; color: #e8e8e8; min-height: 13px; }
+.mfd-value { font-size: 15px; }
+.mfd-btn { background: #59636f; border: 1px solid #8a95a0; border-radius: 4px; padding: 4px 10px; color: #fff; font-size: 12px; }
+.mfd-bottom { display: flex; align-items: center; gap: 8px; padding: 6px; }
+.mfd-clear { background: #46505b; color: #f2f2f2; border: 1px solid #7b8691; border-radius: 2px; font: 10px/1.1 var(--font-screen); padding: 3px 8px; }
+.mfd-entry { min-width: 150px; min-height: 24px; border: 1px solid #3fd2ff; color: #3fd2ff; padding: 3px 8px; font-size: 14px; }
+body[data-skin="a350"] .mfd-msg.amber { background: #ffb02e; color: #000; padding: 2px 8px; font-size: 13px; }
+body[data-skin="a350"] .mfd-msg.white { color: #fff; }
+
+/* KCCU */
+body[data-skin="a350"] .fkeys {
+  margin: 0; padding: 14px 16px 8px; gap: 6px; border-radius: 10px 10px 0 0;
+  background: linear-gradient(var(--kccu-top), #9daab7);
+}
+body[data-skin="a350"] .fkey { height: 30px; border-radius: 4px; font-size: 9.5px; box-shadow: 0 2px 0 #15171a; }
+body[data-skin="a350"] .fkey.arrow { font-size: 14px; }
+body[data-skin="a350"] .keypad {
+  flex-direction: column-reverse; gap: 14px; padding: 8px 16px 18px; border-radius: 0 0 10px 10px;
+  background: linear-gradient(#9daab7, var(--kccu-bottom)); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+body[data-skin="a350"] .alpha { grid-template-columns: repeat(11, 1fr); gap: 5px; }
+body[data-skin="a350"] .alpha .key { height: 32px; border-radius: 4px; font-size: 13px; box-shadow: 0 2px 0 #15171a; }
+body[data-skin="a350"] .alpha .key:is([data-ch="NOTE PAD"], [data-ch="SPACE"]) { grid-column: span 2; font-size: 9px; }
+body[data-skin="a350"] .keypad-left { order: 0; flex-direction: row; align-items: center; gap: 18px; width: auto; }
+body[data-skin="a350"] .navkeys { order: 0; grid-template-columns: repeat(2, 64px); }
+body[data-skin="a350"] .navkeys .fkey { height: 28px; }
+body[data-skin="a350"] .navkeys .fkey.on { outline: 1px solid #ece8dc; outline-offset: -4px; }
+body[data-skin="a350"] .keypad-left::after {
+  content: ""; order: 1; flex: 0 0 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #d3dce4, #93a0ad 55%, #6c7884);
+  box-shadow: inset 0 -6px 12px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+body[data-skin="a350"] .numeric { order: 2; margin-left: auto; }
+
+@media (max-width: 760px) {
+  body[data-skin="a350"] .mcdu { width: 100%; }
+  body[data-skin="a350"] .screen { min-height: 0; font-size: 12px; }
+  body[data-skin="a350"] .mfd-tab { font-size: 9px; }
+  body[data-skin="a350"] .alpha { gap: 3px; }
+  body[data-skin="a350"] .alpha .key { font-size: 11px; height: 30px; }
+  body[data-skin="a350"] .keypad-left::after { display: none; }
+  body[data-skin="a350"] .fkeys, body[data-skin="a350"] .keypad { padding-left: 8px; padding-right: 8px; }
+}

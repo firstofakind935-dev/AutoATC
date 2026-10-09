@@ -9,6 +9,7 @@
 //
 // Messages: {type:'lsk', id:'L1'..'R6'} {type:'fkey', index}
 //           {type:'key', ch} {type:'panel', id, action, big}
+//           {type:'clear-info'} (the A350 MFD's CLEAR INFO button)
 // where panel action is click | inc | dec | push | pull.
 
 (function (root) {
@@ -53,6 +54,14 @@
         if (b) dispatch({ type: 'fkey', index: Number(b.dataset.index) });
       });
     }
+    $('screen').addEventListener('click', (e) => {
+      const field = e.target.closest('[data-lsk]');
+      if (field) return dispatch({ type: 'lsk', id: field.dataset.lsk });
+      const tab = e.target.closest('[data-index]');
+      if (tab) return dispatch({ type: 'fkey', index: Number(tab.dataset.index) });
+      if (e.target.closest('.mfd-clear')) return dispatch({ type: 'clear-info' });
+      return null;
+    });
     $('alpha').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-ch]');
       if (b) dispatch({ type: 'key', ch: b.dataset.ch });
@@ -82,7 +91,8 @@
     });
   }
 
-  function renderScreen(screen) {
+  function renderScreen(screen, tabs) {
+    if (screen.style === 'mfd') return renderMfdScreen(screen, tabs);
     let html = `<div class="line title"><span class="center">${escapeHtml(screen.title)}</span><span class="right small">${escapeHtml(screen.titleRight || '')}</span></div>`;
     for (const r of screen.rows) {
       html += `<div class="line label-line"><span>${cells(r.label[0])}</span><span>${cells(r.label[1])}</span></div>`;
@@ -91,6 +101,36 @@
     const sp = screen.scratch.text ? `<span class="${escapeHtml(screen.scratch.cls || '')}">${escapeHtml(screen.scratch.text)}</span>` : '&nbsp;';
     html += `<div class="line scratch">${sp}</div>`;
     $('screen').innerHTML = html;
+    return null;
+  }
+
+  // A350/A380 MFD page: tabs, title bar, then each line's left and right
+  // halves as clickable fields (each acts as that line select key), and a
+  // bottom bar with CLEAR INFO, the typed entry and any message.
+  const isAction = (list) => /^[<].|[>*•]$/.test(list.map(([t]) => t).join('').trim());
+  function mfdField(id, label, data, selected) {
+    const text = data.map(([t]) => t).join('').trim();
+    if (!text && !label.length) return '<div class="mfd-field empty"></div>';
+    const action = isAction(data);
+    const cls = `mfd-field ${action ? 'action' : ''} ${selected ? 'selected' : ''} ${id[0] === 'R' ? 'right' : ''}`;
+    const body = action
+      ? `<span class="mfd-btn">${escapeHtml(text.replace(/^<|[>*]$/g, '').trim())}${/[*>]$/.test(text) ? ' •' : ''}</span>`
+      : `<span class="mfd-label">${cells(label)}</span><span class="mfd-value">${cells(data)}</span>`;
+    return `<button class="${cls}" data-lsk="${id}">${body}</button>`;
+  }
+  function renderMfdScreen(screen, tabs) {
+    const tabHtml = tabs.map(({ k, i }) => `<button class="mfd-tab" data-index="${i}">${escapeHtml(k.label)} <span class="caret">▾</span></button>`).join('');
+    let html = `<div class="mfd-top"><span class="mfd-fms">FMS 1 <span class="caret">▾</span></span>${tabHtml}</div>`;
+    html += `<div class="mfd-title"><span>${escapeHtml(screen.title)}</span><span>${escapeHtml(screen.titleRight || '')}</span></div><div class="mfd-body">`;
+    screen.rows.forEach((r, n) => {
+      html += `<div class="mfd-row">${mfdField(`L${n + 1}`, r.label[0], r.data[0], screen.selected === `L${n + 1}`)}${mfdField(`R${n + 1}`, r.label[1], r.data[1], screen.selected === `R${n + 1}`)}</div>`;
+    });
+    const msg = screen.scratch.cls === 'amber' || screen.scratch.cls === 'white';
+    html += `</div><div class="mfd-bottom"><button class="mfd-clear" data-key="CLR INFO">CLEAR<br>INFO</button>`
+      + `<span class="mfd-entry">${msg ? '' : escapeHtml(screen.scratch.text)}</span>`
+      + `<span class="mfd-msg ${msg ? screen.scratch.cls : ''}">${msg ? escapeHtml(screen.scratch.text) : ''}</span></div>`;
+    $('screen').innerHTML = html;
+    return null;
   }
 
   function keyHtml(k, i) {
@@ -106,7 +146,9 @@
       lastFkeys = key;
       const main = [];
       const nav = [];
-      vm.fkeys.forEach((k, i) => (k.group === 'nav' ? nav : main).push(keyHtml(k, i)));
+      vm.fkeys.forEach((k, i) => {
+        if (k.group !== 'tab') (k.group === 'nav' ? nav : main).push(keyHtml(k, i));
+      });
       $('fkeys').innerHTML = main.join('');
       $('fkeys').style.gridTemplateColumns = `repeat(${vm.fkeyCols}, 1fr)`;
       $('navkeys').innerHTML = nav.join('');
@@ -133,7 +175,7 @@
     if (item.type === 'button') {
       return `<button class="ap-btn ${item.lit ? 'lit' : ''} ${escapeHtml(item.cls || '')}" data-id="${item.id}" data-action="click">${escapeHtml(item.label)}</button>`;
     }
-    const value = item.managed && skin === 'airbus' ? '---•' : item.value;
+    const value = item.managed && (skin === 'airbus' || skin === 'a350') ? '---•' : item.value;
     const btn = (action, text, title) => `<button data-id="${item.id}" data-action="${action}" title="${escapeHtml(title)}">${escapeHtml(text)}</button>`;
     return `<div class="knob"><div class="knob-label">${escapeHtml(item.label)}</div>`
       + `<div class="knob-window ${item.managed ? 'managed' : ''}" data-id="${item.id}">${escapeHtml(value)}</div>`
@@ -162,7 +204,7 @@
   /** Draws everything from a view model built by fms.js's buildView(). */
   function render(vm) {
     document.body.dataset.skin = vm.skin;
-    renderScreen(vm.screen);
+    renderScreen(vm.screen, vm.fkeys.map((k, i) => ({ k, i })).filter(({ k }) => k.group === 'tab'));
     renderKeys(vm);
     $('ap-panel').innerHTML = vm.panel.map((i) => panelItemHtml(i, vm.skin)).join('');
     $('fma').innerHTML = vm.fma.cols.map((text, i) => `<div class="fma-col ${i === 3 ? 'ap' : ''}">${escapeHtml(text || '')}</div>`).join('')

@@ -55,3 +55,7 @@ body[data-skin="boeing787"] .mcdu { max-width: none; }
 @media (min-width: 900px) {
   body[data-skin="boeing787"] .panes { grid-template-columns: minmax(640px, 720px) 1fr; }
 }
+body[data-skin="a350"] .mcdu { max-width: none; }
+@media (min-width: 900px) {
+  body[data-skin="a350"] .panes { grid-template-columns: minmax(620px, 680px) 1fr; }
+}
