@@ -131,6 +131,69 @@ and is added to the message list behind the "Messages" button in the top
 bar, which also shows an unread count. This is one-directional for now -
 there's no way to type a reply back to ATC yet.
 
+## FMS and autopilot
+
+Click **FMS / Autopilot** in the control window's sidebar to open a third
+window: an MCDU/FMS with the matching autopilot panel above it, which can
+fly the aircraft along a route made in the [flight planner](../planner/).
+
+**The FMS style follows your aircraft** (from the HUD's aircraft name, or
+the plan), or pick one at the top:
+
+| Style | Aircraft | Autopilot panel | Route import |
+|---|---|---|---|
+| Airbus MCDU | A320-A380, Beluga, ATR | FCU: SPD/HDG/ALT/V/S knobs (push = managed, pull = selected), AP1/AP2, A/THR | INIT page, type plan ID or callsign, press **1L** (CO RTE) |
+| Boeing CDU | 7x7, MD-11/90, most others | MCP: A/T ARM, SPEED, LNAV, VNAV, HDG SEL, ALT HOLD, V/S, CMD A | RTE page, type it, press **2L** (CO ROUTE), then **EXEC** |
+| Bombardier FMS | CRJ700, Q400, Learjet, A220 | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, YD, A/T | FPL page, **2L** (RTE ID), then **EXEC** |
+| Embraer MCDU | E190 | Guidance panel, same buttons (FLCH, VS/FPA) | RTE page, **2L** (LOAD RTE), then **EXEC** |
+
+Pages, in each style's own names: route/INIT, LEGS/F-PLN (scroll with the
+arrows or PREV/NEXT), PROGRESS, PERF/VNAV/CRZ (type an altitude and press
+the CRZ ALT line to change cruise) and DIRECT TO. Direct-to works like the
+real units: Airbus DIR page then **INSERT\***; Boeing/Bombardier/Embraer
+type the waypoint onto the first LEGS line (or the DIR page) then **EXEC**.
+You can type on the on-screen keypad or your keyboard.
+
+**How it flies.** Every tracking update (heading, altitude and speed off
+the HUD, plus the dead-reckoned position), the FMS works out the heading to
+fly to stay on the route (LNAV), the altitude/vertical speed for the
+climb, cruise and descent profile (VNAV), and the speed for the phase of
+flight. The autopilot compares how fast heading, altitude and speed are
+*actually* changing with how fast they *should* be, and taps the matching
+key - roll, pitch or throttle - for longer the bigger the gap. Short taps,
+never held keys, so one bad HUD reading can only cause one small input. It
+disconnects itself after 30 seconds without tracking data.
+
+**Before you fly with it:**
+
+1. Open **Settings** in the FMS window and set the **Flight planner URL**
+   (your planner service, e.g. `https://your-planner.up.railway.app`).
+2. Set **Game controls** to the keys PTFS actually uses for roll, pitch and
+   throttle. The defaults (arrow keys, W/S) are a guess - use each **Test**
+   button (it presses the key 3 seconds later, so click into PTFS) to check.
+3. Set the control window's **Report interval** to 2 seconds while the
+   autopilot flies - it only gets new information that often, so 5 seconds
+   makes it slow to react.
+4. The FMS window starts in **DRY RUN**: the autopilot shows what it would
+   press but presses nothing. Switch to **LIVE** to let it press keys. Keys
+   go to whichever window has keyboard focus, so keep PTFS focused - while
+   LIVE and engaged, the FMS window stops taking keyboard focus (its
+   buttons still work with the mouse) so clicking it doesn't steal focus
+   from the game.
+
+macOS needs Accessibility permission for the app (System Settings >
+Privacy & Security > Accessibility). Linux needs `xdotool` installed.
+Windows needs nothing extra.
+
+**Risk:** Roblox's rules can treat outside software that automates gameplay
+as a violation. LIVE mode is that, and using it is at each player's own
+risk to their account.
+
+**Untested in the real game.** The control logic is tested against a
+simple simulated aircraft (see `test/fms-autopilot.test.js` at the repo
+root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
+`lib/autopilot.js` (pulse lengths, dead bands) once it does.
+
 ## Module layout
 
 - `lib/coords.js` - lat/lon parsing, flat-earth distance/bearing math.
@@ -142,6 +205,12 @@ there's no way to type a reply back to ATC yet.
 - `lib/airports.js` - loads airport coordinates from `data/charts/*.json`,
   finds the nearest one to a given position.
 - `lib/uploader.js` - POSTs a position estimate to the Monitor service.
+- `lib/fms.js` - flight plan state, leg sequencing, direct-to, and
+  LNAV/VNAV/speed guidance (also loaded directly by the FMS window).
+- `lib/autopilot.js` - autopilot modes and the rate-based controller that
+  turns targets into key taps (also loaded directly by the FMS window).
+- `lib/keySender.js` - presses keys in the focused window (Windows
+  SendInput via PowerShell, macOS System Events, Linux xdotool).
 - `main.js` - creates both windows, relays messages between them, and
   hosts the desktop-capture/settings/airports IPC handlers.
 - `preload.js` - exposes IPC calls and direct `lib/` logic to both
@@ -150,6 +219,8 @@ there's no way to type a reply back to ATC yet.
   above.
 - `renderer/overlay.html` / `overlay.js` - the transparent overlay window
   described above.
+- `renderer/fms.html` / `fms.js` / `fms.css` - the FMS / autopilot window:
+  the four MCDU styles, autopilot panels and flight mode annunciator.
 
 ## Accuracy caveats
 

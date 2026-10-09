@@ -1,0 +1,1368 @@
+{
+ "generatedBy": "scripts/build-navdata.js",
+ "note": "Airports are chart positions. Waypoints/VORs are converted from 24radar map coordinates with a fitted transform - see fit.residualsNm for how far each fitting airport landed from its chart position.",
+ "fit": {
+  "airports": 19,
+  "medianErrorNm": 2.3,
+  "maxErrorNm": 9.44,
+  "residualsNm": {
+   "IBLT": 2.53,
+   "IBTH": 2.17,
+   "IDCS": 1.46,
+   "IGAR": 9.44,
+   "IHEN": 3.05,
+   "IIAB": 3.33,
+   "IJAF": 0.5,
+   "ILAR": 2.3,
+   "ILKL": 0.9,
+   "IMLR": 2.32,
+   "IPAP": 2.13,
+   "IPPH": 5.21,
+   "IRFD": 2.88,
+   "ISAU": 5.74,
+   "ISCM": 0.74,
+   "ISKP": 1.83,
+   "ITKO": 1.44,
+   "ITRC": 2.57,
+   "IZOL": 0.74
+  }
+ },
+ "airports": [
+  {
+   "icao": "IBAR",
+   "name": "Barra Airport",
+   "lat": 41.63333,
+   "lon": 0.18,
+   "elevationFt": 0,
+   "runways": []
+  },
+  {
+   "icao": "IBLT",
+   "name": "Boltic Airfield",
+   "lat": 41.645,
+   "lon": -0.05667,
+   "elevationFt": 1238,
+   "runways": [
+    {
+     "id": "1",
+     "headingDeg": 14
+    },
+    {
+     "id": "19",
+     "headingDeg": 194
+    }
+   ]
+  },
+  {
+   "icao": "IBRD",
+   "name": "Bird Island Airfield",
+   "lat": 41.92833,
+   "lon": -0.00667,
+   "elevationFt": 3,
+   "runways": [
+    {
+     "id": "8",
+     "headingDeg": 80
+    },
+    {
+     "id": "26",
+     "headingDeg": 260
+    }
+   ]
+  },
+  {
+   "icao": "IBTH",
+   "name": "Saint Barthélemy",
+   "lat": 41.84667,
+   "lon": 0.07,
+   "elevationFt": 9,
+   "runways": [
+    {
+     "id": "27",
+     "headingDeg": 270
+    },
+    {
+     "id": "09",
+     "headingDeg": 90
+    }
+   ]
+  },
+  {
+   "icao": "IDCS",
+   "name": "Saba Airport",
+   "lat": 42.05,
+   "lon": 0.01667,
+   "elevationFt": 65,
+   "runways": [
+    {
+     "id": "25",
+     "headingDeg": 251
+    },
+    {
+     "id": "7",
+     "headingDeg": 71
+    }
+   ]
+  },
+  {
+   "icao": "IGAR",
+   "name": "Air Base Garry",
+   "lat": 41.53167,
+   "lon": 0.115,
+   "elevationFt": 138,
+   "runways": [
+    {
+     "id": "4",
+     "headingDeg": 42
+    },
+    {
+     "id": "22",
+     "headingDeg": 222
+    }
+   ]
+  },
+  {
+   "icao": "IGCG",
+   "name": "Grindavik Coast Guard Station",
+   "lat": 41.87167,
+   "lon": -0.17667,
+   "elevationFt": 0,
+   "runways": []
+  },
+  {
+   "icao": "IHEN",
+   "name": "Henstridge Airfield",
+   "lat": 41.61667,
+   "lon": 0.12667,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "35",
+     "headingDeg": 352
+    },
+    {
+     "id": "17",
+     "headingDeg": 172
+    }
+   ]
+  },
+  {
+   "icao": "IIAB",
+   "name": "McConnell AFB",
+   "lat": 41.53167,
+   "lon": 0.115,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "9L",
+     "headingDeg": 95
+    },
+    {
+     "id": "9R",
+     "headingDeg": 95
+    },
+    {
+     "id": "27R",
+     "headingDeg": 275
+    },
+    {
+     "id": "27L",
+     "headingDeg": 275
+    }
+   ]
+  },
+  {
+   "icao": "IJAF",
+   "name": "Al Najaf",
+   "lat": 41.82333,
+   "lon": 0.27333,
+   "elevationFt": 0,
+   "runways": [
+    {
+     "id": "7",
+     "headingDeg": 71
+    },
+    {
+     "id": "25",
+     "headingDeg": 251
+    }
+   ]
+  },
+  {
+   "icao": "IKFL",
+   "name": "Keflavik Intl.",
+   "lat": 41.74167,
+   "lon": -0.21833,
+   "elevationFt": 37,
+   "runways": [
+    {
+     "id": "16",
+     "headingDeg": 157
+    },
+    {
+     "id": "7",
+     "headingDeg": 67
+    },
+    {
+     "id": "34",
+     "headingDeg": 337
+    },
+    {
+     "id": "25",
+     "headingDeg": 247
+    }
+   ]
+  },
+  {
+   "icao": "ILAR",
+   "name": "Larnaca Intl.",
+   "lat": 41.65833,
+   "lon": 0.14667,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "6",
+     "headingDeg": 64
+    },
+    {
+     "id": "24",
+     "headingDeg": 244
+    }
+   ]
+  },
+  {
+   "icao": "ILKL",
+   "name": "Lukla Airport",
+   "lat": 41.90667,
+   "lon": 0.15333,
+   "elevationFt": 954,
+   "runways": [
+    {
+     "id": "9",
+     "headingDeg": 89
+    },
+    {
+     "id": "27",
+     "headingDeg": 269
+    }
+   ]
+  },
+  {
+   "icao": "IMLR",
+   "name": "Mellor Intl.",
+   "lat": 41.66,
+   "lon": -0.09833,
+   "elevationFt": 40,
+   "runways": [
+    {
+     "id": "25",
+     "headingDeg": 246
+    },
+    {
+     "id": "7",
+     "headingDeg": 66
+    }
+   ]
+  },
+  {
+   "icao": "IPAP",
+   "name": "Paphos Intl.",
+   "lat": 41.655,
+   "lon": 0.20167,
+   "elevationFt": 95,
+   "runways": [
+    {
+     "id": "35",
+     "headingDeg": 354
+    },
+    {
+     "id": "17",
+     "headingDeg": 174
+    }
+   ]
+  },
+  {
+   "icao": "IPPH",
+   "name": "Perth Intl.",
+   "lat": 41.83167,
+   "lon": 0.08667,
+   "elevationFt": 26,
+   "runways": [
+    {
+     "id": "29",
+     "headingDeg": 291
+    },
+    {
+     "id": "33",
+     "headingDeg": 331
+    },
+    {
+     "id": "11",
+     "headingDeg": 111
+    },
+    {
+     "id": "15",
+     "headingDeg": 151
+    }
+   ]
+  },
+  {
+   "icao": "IRFD",
+   "name": "Greater Rockford",
+   "lat": 41.62833,
+   "lon": -0.01333,
+   "elevationFt": 3,
+   "runways": [
+    {
+     "id": "25C",
+     "headingDeg": 247
+    },
+    {
+     "id": "25R",
+     "headingDeg": 247
+    },
+    {
+     "id": "25L",
+     "headingDeg": 247
+    },
+    {
+     "id": "7L",
+     "headingDeg": 67
+    },
+    {
+     "id": "7C",
+     "headingDeg": 67
+    },
+    {
+     "id": "7R",
+     "headingDeg": 67
+    }
+   ]
+  },
+  {
+   "icao": "ISAU",
+   "name": "Sauthemptona Airport",
+   "lat": 41.68333,
+   "lon": -0.19167,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "8",
+     "headingDeg": 81
+    },
+    {
+     "id": "26",
+     "headingDeg": 261
+    }
+   ]
+  },
+  {
+   "icao": "ISCM",
+   "name": "RAF Scampton",
+   "lat": 41.85167,
+   "lon": 0.22167,
+   "elevationFt": 0,
+   "runways": [
+    {
+     "id": "13",
+     "headingDeg": 126
+    },
+    {
+     "id": "31",
+     "headingDeg": 306
+    }
+   ]
+  },
+  {
+   "icao": "ISKP",
+   "name": "Skopelos Airfield",
+   "lat": 41.75833,
+   "lon": 0.17,
+   "elevationFt": 0,
+   "runways": [
+    {
+     "id": "23",
+     "headingDeg": 231
+    },
+    {
+     "id": "5",
+     "headingDeg": 51
+    }
+   ]
+  },
+  {
+   "icao": "ITEY",
+   "name": "Pingeyri Airport",
+   "lat": 41.78,
+   "lon": -0.20667,
+   "elevationFt": 229,
+   "runways": [
+    {
+     "id": "31",
+     "headingDeg": 313
+    },
+    {
+     "id": "13",
+     "headingDeg": 133
+    }
+   ]
+  },
+  {
+   "icao": "ITKO",
+   "name": "Tokyo Intl.",
+   "lat": 41.98667,
+   "lon": -0.00333,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "2",
+     "headingDeg": 20
+    },
+    {
+     "id": "20",
+     "headingDeg": 200
+    },
+    {
+     "id": "31",
+     "headingDeg": 307
+    },
+    {
+     "id": "13",
+     "headingDeg": 127
+    }
+   ]
+  },
+  {
+   "icao": "ITRC",
+   "name": "Training Centre",
+   "lat": 41.58,
+   "lon": -0.01,
+   "elevationFt": 3,
+   "runways": [
+    {
+     "id": "36",
+     "headingDeg": 360
+    },
+    {
+     "id": "18",
+     "headingDeg": 180
+    }
+   ]
+  },
+  {
+   "icao": "IUFO",
+   "name": "UFO Base",
+   "lat": 41.84667,
+   "lon": 0.085,
+   "elevationFt": 1,
+   "runways": [
+    {
+     "id": "8",
+     "headingDeg": 76
+    },
+    {
+     "id": "26",
+     "headingDeg": 226
+    }
+   ]
+  },
+  {
+   "icao": "IZOL",
+   "name": "Izolirani Intl.",
+   "lat": 41.80167,
+   "lon": 0.26833,
+   "elevationFt": 0,
+   "runways": [
+    {
+     "id": "10",
+     "headingDeg": 106
+    },
+    {
+     "id": "28",
+     "headingDeg": 286
+    }
+   ]
+  },
+  {
+   "icao": "SHV",
+   "name": "Sea Haven Seaplane Base",
+   "lat": 41.92833,
+   "lon": 0.15333,
+   "elevationFt": 0,
+   "runways": [
+    {
+     "id": "4",
+     "headingDeg": 43
+    }
+   ]
+  },
+  {
+   "icao": "TVO",
+   "name": "Tavaro Seabase",
+   "lat": 41.83667,
+   "lon": -0.17667,
+   "elevationFt": 0,
+   "runways": []
+  }
+ ],
+ "fixes": [
+  {
+   "ident": "SHELL",
+   "type": "WPT",
+   "lat": 41.97536,
+   "lon": -0.07898
+  },
+  {
+   "ident": "NIKON",
+   "type": "WPT",
+   "lat": 41.99856,
+   "lon": -0.00975
+  },
+  {
+   "ident": "CHILY",
+   "type": "WPT",
+   "lat": 42.00247,
+   "lon": 0.06594
+  },
+  {
+   "ident": "SHIBA",
+   "type": "WPT",
+   "lat": 41.96755,
+   "lon": -0.03994
+  },
+  {
+   "ident": "LETSE",
+   "type": "WPT",
+   "lat": 41.96502,
+   "lon": 0.02614
+  },
+  {
+   "ident": "HONDA",
+   "type": "WPT",
+   "lat": 41.97477,
+   "lon": 0.08
+  },
+  {
+   "ident": "ASTRO",
+   "type": "WPT",
+   "lat": 41.93085,
+   "lon": -0.02654
+  },
+  {
+   "ident": "HME",
+   "type": "VOR",
+   "lat": 41.94435,
+   "lon": 0.00841
+  },
+  {
+   "ident": "GULEG",
+   "type": "WPT",
+   "lat": 41.8982,
+   "lon": -0.0578
+  },
+  {
+   "ident": "PIPER",
+   "type": "WPT",
+   "lat": 41.90155,
+   "lon": -0.01602
+  },
+  {
+   "ident": "ONDER",
+   "type": "WPT",
+   "lat": 41.89681,
+   "lon": 0.02123
+  },
+  {
+   "ident": "KNIFE",
+   "type": "WPT",
+   "lat": 41.91248,
+   "lon": 0.0555
+  },
+  {
+   "ident": "TUDEP",
+   "type": "WPT",
+   "lat": 41.86113,
+   "lon": -0.02911
+  },
+  {
+   "ident": "ALLRY",
+   "type": "WPT",
+   "lat": 41.88012,
+   "lon": 0.07976
+  },
+  {
+   "ident": "CRAZY",
+   "type": "WPT",
+   "lat": 41.985,
+   "lon": 0.13855
+  },
+  {
+   "ident": "WOTAN",
+   "type": "WPT",
+   "lat": 41.98824,
+   "lon": 0.21456
+  },
+  {
+   "ident": "WAGON",
+   "type": "WPT",
+   "lat": 41.97855,
+   "lon": 0.26113
+  },
+  {
+   "ident": "COC",
+   "type": "VOR",
+   "lat": 41.93892,
+   "lon": 0.12342
+  },
+  {
+   "ident": "WELLS",
+   "type": "WPT",
+   "lat": 41.94095,
+   "lon": 0.16952
+  },
+  {
+   "ident": "SQUID",
+   "type": "WPT",
+   "lat": 41.94993,
+   "lon": 0.2254
+  },
+  {
+   "ident": "ZESTA",
+   "type": "WPT",
+   "lat": 41.94347,
+   "lon": 0.27421
+  },
+  {
+   "ident": "TINDR",
+   "type": "WPT",
+   "lat": 41.90708,
+   "lon": 0.09996
+  },
+  {
+   "ident": "PER",
+   "type": "VOR",
+   "lat": 41.90314,
+   "lon": 0.12722
+  },
+  {
+   "ident": "BTM",
+   "type": "VOR",
+   "lat": 41.90511,
+   "lon": 0.16712
+  },
+  {
+   "ident": "NOONU",
+   "type": "WPT",
+   "lat": 41.90478,
+   "lon": 0.1912
+  },
+  {
+   "ident": "KELLA",
+   "type": "WPT",
+   "lat": 41.90751,
+   "lon": 0.21547
+  },
+  {
+   "ident": "STRAX",
+   "type": "WPT",
+   "lat": 41.88045,
+   "lon": 0.10847
+  },
+  {
+   "ident": "ORG",
+   "type": "VOR",
+   "lat": 41.87463,
+   "lon": 0.14057
+  },
+  {
+   "ident": "TALIS",
+   "type": "WPT",
+   "lat": 41.86075,
+   "lon": 0.17486
+  },
+  {
+   "ident": "SISTA",
+   "type": "WPT",
+   "lat": 41.87195,
+   "lon": 0.20623
+  },
+  {
+   "ident": "UDMUG",
+   "type": "WPT",
+   "lat": 41.89527,
+   "lon": 0.29513
+  },
+  {
+   "ident": "ROSMO",
+   "type": "WPT",
+   "lat": 41.86116,
+   "lon": 0.24294
+  },
+  {
+   "ident": "LLIME",
+   "type": "WPT",
+   "lat": 41.86621,
+   "lon": 0.31037
+  },
+  {
+   "ident": "CAMEL",
+   "type": "WPT",
+   "lat": 41.82706,
+   "lon": 0.15316
+  },
+  {
+   "ident": "DUNKS",
+   "type": "WPT",
+   "lat": 41.83117,
+   "lon": 0.18763
+  },
+  {
+   "ident": "HOT",
+   "type": "VOR",
+   "lat": 41.83002,
+   "lon": 0.22286
+  },
+  {
+   "ident": "MORRD",
+   "type": "WPT",
+   "lat": 41.82818,
+   "lon": 0.29563
+  },
+  {
+   "ident": "CYRIL",
+   "type": "WPT",
+   "lat": 41.79414,
+   "lon": 0.17945
+  },
+  {
+   "ident": "TRE",
+   "type": "VOR",
+   "lat": 41.80008,
+   "lon": 0.22087
+  },
+  {
+   "ident": "NJF",
+   "type": "VOR",
+   "lat": 41.81194,
+   "lon": 0.27185
+  },
+  {
+   "ident": "IZO",
+   "type": "VOR",
+   "lat": 41.78966,
+   "lon": 0.26691
+  },
+  {
+   "ident": "DIZ",
+   "type": "VOR",
+   "lat": 41.79017,
+   "lon": 0.28633
+  },
+  {
+   "ident": "DOGGO",
+   "type": "WPT",
+   "lat": 41.76434,
+   "lon": 0.22515
+  },
+  {
+   "ident": "ABSRS",
+   "type": "WPT",
+   "lat": 41.78394,
+   "lon": 0.31799
+  },
+  {
+   "ident": "BILLO",
+   "type": "WPT",
+   "lat": 41.75222,
+   "lon": 0.27916
+  },
+  {
+   "ident": "JUSTY",
+   "type": "WPT",
+   "lat": 41.71762,
+   "lon": 0.23698
+  },
+  {
+   "ident": "DET",
+   "type": "VOR",
+   "lat": 41.71513,
+   "lon": 0.27793
+  },
+  {
+   "ident": "CHAIN",
+   "type": "WPT",
+   "lat": 41.71574,
+   "lon": 0.31838
+  },
+  {
+   "ident": "RENTS",
+   "type": "WPT",
+   "lat": 41.67234,
+   "lon": 0.17442
+  },
+  {
+   "ident": "GRASS",
+   "type": "WPT",
+   "lat": 41.64639,
+   "lon": 0.13745
+  },
+  {
+   "ident": "KIN",
+   "type": "VOR",
+   "lat": 41.64562,
+   "lon": 0.19472
+  },
+  {
+   "ident": "JACKI",
+   "type": "WPT",
+   "lat": 41.63899,
+   "lon": 0.21583
+  },
+  {
+   "ident": "DEBUG",
+   "type": "WPT",
+   "lat": 41.65023,
+   "lon": 0.27931
+  },
+  {
+   "ident": "LCK",
+   "type": "VOR",
+   "lat": 41.61519,
+   "lon": 0.15286
+  },
+  {
+   "ident": "PFO",
+   "type": "VOR",
+   "lat": 41.60853,
+   "lon": 0.19807
+  },
+  {
+   "ident": "BOBUX",
+   "type": "WPT",
+   "lat": 41.61128,
+   "lon": 0.24395
+  },
+  {
+   "ident": "NUBER",
+   "type": "WPT",
+   "lat": 41.61616,
+   "lon": 0.31851
+  },
+  {
+   "ident": "AQWRT",
+   "type": "WPT",
+   "lat": 41.58486,
+   "lon": 0.12439
+  },
+  {
+   "ident": "CAN",
+   "type": "VOR",
+   "lat": 41.56407,
+   "lon": 0.09793
+  },
+  {
+   "ident": "FORIA",
+   "type": "WPT",
+   "lat": 41.5448,
+   "lon": 0.0817
+  },
+  {
+   "ident": "DIR",
+   "type": "VOR",
+   "lat": 41.53866,
+   "lon": 0.11089
+  },
+  {
+   "ident": "HUT",
+   "type": "VOR",
+   "lat": 41.57965,
+   "lon": 0.19589
+  },
+  {
+   "ident": "MUONE",
+   "type": "WPT",
+   "lat": 41.57237,
+   "lon": 0.23813
+  },
+  {
+   "ident": "JAZZR",
+   "type": "WPT",
+   "lat": 41.57941,
+   "lon": 0.27925
+  },
+  {
+   "ident": "FORCE",
+   "type": "WPT",
+   "lat": 41.5199,
+   "lon": 0.15218
+  },
+  {
+   "ident": "MASEV",
+   "type": "WPT",
+   "lat": 41.52746,
+   "lon": 0.19485
+  },
+  {
+   "ident": "ALTRS",
+   "type": "WPT",
+   "lat": 41.53323,
+   "lon": 0.22741
+  },
+  {
+   "ident": "CAWZE",
+   "type": "WPT",
+   "lat": 41.74761,
+   "lon": 0.14215
+  },
+  {
+   "ident": "DEL",
+   "type": "VOR",
+   "lat": 41.73477,
+   "lon": 0.1868
+  },
+  {
+   "ident": "CLR",
+   "type": "VOR",
+   "lat": 41.7081,
+   "lon": 0.14908
+  },
+  {
+   "ident": "ANYMS",
+   "type": "WPT",
+   "lat": 41.6842,
+   "lon": 0.12058
+  },
+  {
+   "ident": "GERLD",
+   "type": "WPT",
+   "lat": 41.84503,
+   "lon": -0.02978
+  },
+  {
+   "ident": "RENDR",
+   "type": "WPT",
+   "lat": 41.84295,
+   "lon": -0.00989
+  },
+  {
+   "ident": "JOOPY",
+   "type": "WPT",
+   "lat": 41.85691,
+   "lon": 0.03635
+  },
+  {
+   "ident": "PROBE",
+   "type": "WPT",
+   "lat": 41.82488,
+   "lon": 0.00994
+  },
+  {
+   "ident": "DINER",
+   "type": "WPT",
+   "lat": 41.83171,
+   "lon": 0.06576
+  },
+  {
+   "ident": "ROM",
+   "type": "VOR",
+   "lat": 41.84099,
+   "lon": 0.09106
+  },
+  {
+   "ident": "WELSH",
+   "type": "WPT",
+   "lat": 41.78809,
+   "lon": -0.00978
+  },
+  {
+   "ident": "RES",
+   "type": "VOR",
+   "lat": 41.79577,
+   "lon": 0.0468
+  },
+  {
+   "ident": "VOX",
+   "type": "VOR",
+   "lat": 41.80783,
+   "lon": 0.10353
+  },
+  {
+   "ident": "INDEX",
+   "type": "WPT",
+   "lat": 41.77165,
+   "lon": 0.01693
+  },
+  {
+   "ident": "GAVIN",
+   "type": "WPT",
+   "lat": 41.77075,
+   "lon": 0.07737
+  },
+  {
+   "ident": "SILVA",
+   "type": "WPT",
+   "lat": 41.7793,
+   "lon": 0.13142
+  },
+  {
+   "ident": "OCEEN",
+   "type": "WPT",
+   "lat": 41.75383,
+   "lon": 0.10317
+  },
+  {
+   "ident": "ENDER",
+   "type": "WPT",
+   "lat": 41.75193,
+   "lon": -0.05091
+  },
+  {
+   "ident": "SUNST",
+   "type": "WPT",
+   "lat": 41.72298,
+   "lon": -0.07628
+  },
+  {
+   "ident": "KENED",
+   "type": "WPT",
+   "lat": 41.74267,
+   "lon": -0.0095
+  },
+  {
+   "ident": "SETHR",
+   "type": "WPT",
+   "lat": 41.73333,
+   "lon": 0.06274
+  },
+  {
+   "ident": "BUCFA",
+   "type": "WPT",
+   "lat": 41.70775,
+   "lon": -0.04813
+  },
+  {
+   "ident": "KUNAV",
+   "type": "WPT",
+   "lat": 41.71039,
+   "lon": -0.00908
+  },
+  {
+   "ident": "SAWPE",
+   "type": "WPT",
+   "lat": 41.68923,
+   "lon": -0.08722
+  },
+  {
+   "ident": "ICTAM",
+   "type": "WPT",
+   "lat": 41.6923,
+   "lon": -0.01806
+  },
+  {
+   "ident": "HAWFA",
+   "type": "WPT",
+   "lat": 41.70231,
+   "lon": 0.00833
+  },
+  {
+   "ident": "MLR",
+   "type": "VOR",
+   "lat": 41.67502,
+   "lon": -0.04703
+  },
+  {
+   "ident": "BLA",
+   "type": "VOR",
+   "lat": 41.68318,
+   "lon": 0.0089
+  },
+  {
+   "ident": "QUEEN",
+   "type": "WPT",
+   "lat": 41.6843,
+   "lon": 0.0356
+  },
+  {
+   "ident": "BEANS",
+   "type": "WPT",
+   "lat": 41.64419,
+   "lon": -0.08448
+  },
+  {
+   "ident": "LOGAN",
+   "type": "WPT",
+   "lat": 41.6415,
+   "lon": -0.05062
+  },
+  {
+   "ident": "LAVNO",
+   "type": "WPT",
+   "lat": 41.6769,
+   "lon": 0.05747
+  },
+  {
+   "ident": "ATPEV",
+   "type": "WPT",
+   "lat": 41.68647,
+   "lon": 0.0724
+  },
+  {
+   "ident": "RFD",
+   "type": "VOR",
+   "lat": 41.65745,
+   "lon": 0.02879
+  },
+  {
+   "ident": "JAMSI",
+   "type": "WPT",
+   "lat": 41.65586,
+   "lon": 0.08924
+  },
+  {
+   "ident": "MOGTA",
+   "type": "WPT",
+   "lat": 41.6335,
+   "lon": -0.0077
+  },
+  {
+   "ident": "GRY",
+   "type": "VOR",
+   "lat": 41.63013,
+   "lon": -0.03094
+  },
+  {
+   "ident": "EXMOR",
+   "type": "WPT",
+   "lat": 41.60812,
+   "lon": -0.04451
+  },
+  {
+   "ident": "PEPUL",
+   "type": "WPT",
+   "lat": 41.60547,
+   "lon": 0.00592
+  },
+  {
+   "ident": "TRN",
+   "type": "VOR",
+   "lat": 41.60455,
+   "lon": 0.03545
+  },
+  {
+   "ident": "GODLU",
+   "type": "WPT",
+   "lat": 41.62362,
+   "lon": 0.0632
+  },
+  {
+   "ident": "LAZER",
+   "type": "WPT",
+   "lat": 41.61694,
+   "lon": 0.08603
+  },
+  {
+   "ident": "EMJAY",
+   "type": "WPT",
+   "lat": 41.55975,
+   "lon": -0.02446
+  },
+  {
+   "ident": "ODOKU",
+   "type": "WPT",
+   "lat": 41.56929,
+   "lon": 0.02894
+  },
+  {
+   "ident": "TRELN",
+   "type": "WPT",
+   "lat": 41.51078,
+   "lon": -0.00204
+  },
+  {
+   "ident": "REAPR",
+   "type": "WPT",
+   "lat": 41.52716,
+   "lon": 0.04082
+  },
+  {
+   "ident": "HACKE",
+   "type": "WPT",
+   "lat": 41.61367,
+   "lon": -0.21407
+  },
+  {
+   "ident": "GEORG",
+   "type": "WPT",
+   "lat": 41.60679,
+   "lon": -0.17347
+  },
+  {
+   "ident": "KRT",
+   "type": "VOR",
+   "lat": 41.59249,
+   "lon": -0.20077
+  },
+  {
+   "ident": "SAU",
+   "type": "VOR",
+   "lat": 41.58258,
+   "lon": -0.17616
+  },
+  {
+   "ident": "SEEKS",
+   "type": "WPT",
+   "lat": 41.59798,
+   "lon": -0.13087
+  },
+  {
+   "ident": "HECKS",
+   "type": "WPT",
+   "lat": 41.55673,
+   "lon": -0.22383
+  },
+  {
+   "ident": "PACKT",
+   "type": "WPT",
+   "lat": 41.55203,
+   "lon": -0.18938
+  },
+  {
+   "ident": "BAR",
+   "type": "VOR",
+   "lat": 41.57208,
+   "lon": -0.13733
+  },
+  {
+   "ident": "ALDER",
+   "type": "WPT",
+   "lat": 41.56305,
+   "lon": -0.08874
+  },
+  {
+   "ident": "STACK",
+   "type": "WPT",
+   "lat": 41.54042,
+   "lon": -0.14375
+  },
+  {
+   "ident": "WASTE",
+   "type": "WPT",
+   "lat": 41.50492,
+   "lon": -0.19196
+  },
+  {
+   "ident": "HOGGS",
+   "type": "WPT",
+   "lat": 41.52691,
+   "lon": -0.09528
+  },
+  {
+   "ident": "BULLY",
+   "type": "WPT",
+   "lat": 41.91031,
+   "lon": -0.11528
+  },
+  {
+   "ident": "FROOT",
+   "type": "WPT",
+   "lat": 41.86312,
+   "lon": -0.14567
+  },
+  {
+   "ident": "EURAD",
+   "type": "WPT",
+   "lat": 41.86201,
+   "lon": -0.0842
+  },
+  {
+   "ident": "BOBOS",
+   "type": "WPT",
+   "lat": 41.82302,
+   "lon": -0.17697
+  },
+  {
+   "ident": "BLANK",
+   "type": "WPT",
+   "lat": 41.83174,
+   "lon": -0.07133
+  },
+  {
+   "ident": "THENR",
+   "type": "WPT",
+   "lat": 41.80989,
+   "lon": -0.14596
+  },
+  {
+   "ident": "ACRES",
+   "type": "WPT",
+   "lat": 41.78934,
+   "lon": -0.19899
+  },
+  {
+   "ident": "YOUTH",
+   "type": "WPT",
+   "lat": 41.79445,
+   "lon": -0.11033
+  },
+  {
+   "ident": "UWAIS",
+   "type": "WPT",
+   "lat": 41.75726,
+   "lon": -0.22341
+  },
+  {
+   "ident": "GVK",
+   "type": "VOR",
+   "lat": 41.75428,
+   "lon": -0.16559
+  },
+  {
+   "ident": "HAW",
+   "type": "VOR",
+   "lat": 41.77261,
+   "lon": -0.1462
+  },
+  {
+   "ident": "EZYDB",
+   "type": "WPT",
+   "lat": 41.77712,
+   "lon": -0.06925
+  },
+  {
+   "ident": "GOL",
+   "type": "VOR",
+   "lat": 41.74493,
+   "lon": -0.18692
+  },
+  {
+   "ident": "FRANK",
+   "type": "WPT",
+   "lat": 41.71501,
+   "lon": -0.22038
+  },
+  {
+   "ident": "CELAR",
+   "type": "WPT",
+   "lat": 41.71287,
+   "lon": -0.13366
+  },
+  {
+   "ident": "THACC",
+   "type": "WPT",
+   "lat": 41.66796,
+   "lon": -0.22059
+  },
+  {
+   "ident": "SHREK",
+   "type": "WPT",
+   "lat": 41.67081,
+   "lon": -0.17714
+  },
+  {
+   "ident": "SPACE",
+   "type": "WPT",
+   "lat": 41.66877,
+   "lon": -0.13148
+  }
+ ]
+}

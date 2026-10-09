@@ -1,0 +1,148 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { buildPlan } = require('../planner/lib/plan');
+const Fms = require('../companion/lib/fms');
+const Autopilot = require('../companion/lib/autopilot');
+
+// --- FMS --------------------------------------------------------------------
+
+test('a fresh plan is flying to its first waypoint after the origin', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO' });
+  const fms = Fms.load(plan);
+  assert.equal(Fms.activeWaypoint(fms).ident, plan.waypoints[1].ident);
+});
+
+test('waypoints sequence when reached, and the last one marks arrival', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO' });
+  const fms = Fms.load(plan);
+  for (const wpt of plan.waypoints.slice(1)) {
+    assert.equal(Fms.sequence(fms, { lat: wpt.lat, lon: wpt.lon }, 250).ident, wpt.ident);
+  }
+  assert.equal(fms.arrived, true);
+});
+
+test('LNAV steers back toward the course when off to one side', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'ISAU', destination: 'IZOL' });
+  const fms = Fms.load(plan);
+  const from = plan.waypoints[0];
+  const g = Fms.guidance(fms, { lat: from.lat + 0.01, lon: from.lon }, { altFt: 2000, speedKt: 250 });
+  // Course is roughly east; 0.6 nm north of it means steer right (south of the track).
+  assert.ok(g.lnav.xtkNm < 0, 'north of an eastbound course is left of it');
+  assert.ok(Fms.angleDiff(g.lnav.headingDeg, g.lnav.desiredTrackDeg) > 0, 'correction turns right');
+});
+
+test('VNAV climbs to cruise, then descends on the path', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 4000 });
+  const fms = Fms.load(plan);
+  const start = plan.waypoints[0];
+  const climb = Fms.guidance(fms, { lat: start.lat, lon: start.lon }, { altFt: 500, speedKt: 200 });
+  assert.equal(climb.phase, 'CLB');
+  assert.equal(climb.vnav.targetAltFt, 4000);
+  // Fly the plan down to its last leg, then check just short of the end.
+  for (const wpt of plan.waypoints.slice(1, -1)) Fms.sequence(fms, { lat: wpt.lat, lon: wpt.lon }, 250);
+  const dest = plan.waypoints[plan.waypoints.length - 1];
+  const near = Fms.guidance(fms, { lat: dest.lat - 0.08, lon: dest.lon }, { altFt: 4000, speedKt: 300 });
+  assert.ok(near.vnav.targetAltFt < 4000, 'below cruise on the descent path');
+});
+
+test('DIRECT TO a waypoint not in the plan inserts it ahead', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO' });
+  const fms = Fms.load(plan);
+  const navdata = require('../planner/data/navdata.json');
+  const fix = navdata.fixes.find((f) => !plan.waypoints.some((w) => w.ident === f.ident));
+  Fms.directTo(fms, fix.ident, { lat: plan.waypoints[0].lat, lon: plan.waypoints[0].lon }, navdata);
+  assert.equal(Fms.activeWaypoint(fms).ident, fix.ident);
+  assert.equal(fms.legFrom.ident, 'PPOS');
+  assert.throws(() => Fms.directTo(fms, 'NOPE1', { lat: 0, lon: 0 }, navdata), /NOT IN DATA BASE/);
+});
+
+// --- Autopilot --------------------------------------------------------------
+
+test('autopilot does nothing until it has two samples, and nothing when disengaged', () => {
+  const ap = Autopilot.create();
+  ap.selected.headingDeg = 90;
+  assert.deepEqual(Autopilot.update(ap, { headingDeg: 0, altFt: 3000, speedKt: 250, atMs: 0 }, null, 0).commands, []);
+  assert.deepEqual(Autopilot.update(ap, { headingDeg: 0, altFt: 3000, speedKt: 250, atMs: 3000 }, null, 3000).commands, []);
+  ap.engaged = true;
+  const out = Autopilot.update(ap, { headingDeg: 0, altFt: 3000, speedKt: 250, atMs: 6000 }, null, 6000);
+  assert.deepEqual(out.commands.map((c) => [c.axis, c.direction]), [['roll', 1]]);
+});
+
+test('autopilot disconnects itself when tracking data stops', () => {
+  const ap = Autopilot.create();
+  ap.engaged = true;
+  Autopilot.update(ap, { headingDeg: 0, altFt: 3000, speedKt: 250, atMs: 0 }, null, 0);
+  const out = Autopilot.update(ap, null, null, 31000);
+  assert.equal(out.disconnected, true);
+  assert.equal(ap.engaged, false);
+});
+
+test('VNAV never climbs through the altitude selected on the panel', () => {
+  const ap = Autopilot.create();
+  ap.vertical = 'VNAV';
+  ap.selected.altFt = 3000;
+  const tg = Autopilot.targets(ap, { vnav: { targetAltFt: 9000, verticalSpeedFpm: 2000 } });
+  assert.equal(tg.altFt, 3000);
+});
+
+// --- Closed loop: autopilot + FMS flying a simple simulated aircraft ---------
+//
+// Not PTFS - a rough stand-in so the control logic is exercised end to end:
+// holding a roll key changes bank, pitch changes vertical speed, throttle
+// changes thrust. The autopilot only sees heading/altitude/speed every 3 s,
+// rounded like the HUD, exactly what the companion app gives it.
+
+function simulateFlight(plan, { seconds = 1200, sampleEveryS = 3 } = {}) {
+  const KEY_RATES = { roll: 20, pitch: 1500, throttle: 0.25 }; // per second held
+  const g = 9.81;
+  const start = plan.waypoints[0];
+  const sim = { lat: start.lat, lon: start.lon, hdg: 0, bank: 0, alt: 1000, vs: 0, speed: 220, throttle: 0.6 };
+  const holds = { roll: 0, pitch: 0, throttle: 0 }; // signed seconds left
+
+  const fms = Fms.load(plan);
+  const ap = Autopilot.create();
+  Object.assign(ap, { engaged: true, autothrottle: true, lateral: 'LNAV', vertical: 'VNAV', speedMode: 'MANAGED' });
+  ap.selected.altFt = plan.profile.cruiseAltFt;
+
+  let maxXtk = 0;
+  let maxAltOverCruise = 0;
+  const dt = 0.1;
+  for (let t = 0; t < seconds; t += dt) {
+    for (const axis of Object.keys(holds)) {
+      if (!holds[axis]) continue;
+      const step = Math.sign(holds[axis]) * Math.min(dt, Math.abs(holds[axis]));
+      if (axis === 'roll') sim.bank = Math.max(-35, Math.min(35, sim.bank + step * KEY_RATES.roll));
+      if (axis === 'pitch') sim.vs = Math.max(-4000, Math.min(4000, sim.vs + step * KEY_RATES.pitch));
+      if (axis === 'throttle') sim.throttle = Math.max(0, Math.min(1, sim.throttle + step * KEY_RATES.throttle));
+      holds[axis] -= step;
+      if (Math.abs(holds[axis]) < 1e-9) holds[axis] = 0;
+    }
+    const turnRate = ((g * Math.tan((sim.bank * Math.PI) / 180)) / (sim.speed * 0.5144)) * (180 / Math.PI);
+    sim.hdg = (((sim.hdg + turnRate * dt) % 360) + 360) % 360;
+    sim.alt += (sim.vs / 60) * dt;
+    sim.speed += (sim.throttle * 500 - sim.speed - sim.vs / 100) * 0.05 * dt;
+    const nm = (sim.speed / 3600) * dt;
+    sim.lat += (nm * Math.cos((sim.hdg * Math.PI) / 180)) / 60;
+    sim.lon += (nm * Math.sin((sim.hdg * Math.PI) / 180)) / (60 * Math.cos((sim.lat * Math.PI) / 180));
+
+    const tick = Math.round(t * 10);
+    if (tick % (sampleEveryS * 10) !== 0) continue;
+    const sample = { headingDeg: Math.round(sim.hdg), altFt: Math.round(sim.alt / 10) * 10, speedKt: Math.round(sim.speed), atMs: tick * 100 };
+    const guidance = Fms.guidance(fms, { lat: sim.lat, lon: sim.lon }, sample);
+    if (fms.arrived) return { arrived: true, maxXtk, maxAltOverCruise, minutes: t / 60, sim };
+    if (guidance.lnav && fms.activeIndex > 1) maxXtk = Math.max(maxXtk, Math.abs(guidance.lnav.xtkNm));
+    maxAltOverCruise = Math.max(maxAltOverCruise, sim.alt - plan.profile.cruiseAltFt);
+    for (const c of Autopilot.update(ap, sample, guidance, sample.atMs).commands) holds[c.axis] = (c.direction * c.ms) / 1000;
+  }
+  return { arrived: false, maxXtk, maxAltOverCruise, minutes: seconds / 60, sim };
+}
+
+for (const [origin, destination, type] of [['IRFD', 'ITKO', 'A320'], ['ISAU', 'IZOL', 'B738'], ['IPPH', 'ILAR', 'E190']]) {
+  test(`closed loop: autopilot flies ${type} ${origin} -> ${destination} along the route`, () => {
+    const plan = buildPlan({ callsign: 'SIM1', aircraftType: type, origin, destination, cruiseAltFt: 5000 });
+    const result = simulateFlight(plan);
+    assert.ok(result.arrived, `did not reach ${destination} (ended at ${JSON.stringify(result.sim)})`);
+    assert.ok(result.maxXtk < 1.5, `wandered ${result.maxXtk.toFixed(2)} nm off the route`);
+    assert.ok(result.maxAltOverCruise < 600, `overshot cruise by ${Math.round(result.maxAltOverCruise)} ft`);
+  });
+}

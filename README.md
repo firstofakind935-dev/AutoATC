@@ -818,6 +818,50 @@ act on a pilot's reported altitude/position if they're still squawking the
 2000 default despite already being on frequency for service, or squawking
 something other than what their own flight strip shows was assigned.
 
+### Flight planner (SimBrief-style)
+
+`planner/` is a separate web service - its own Railway service, like the
+monitor - where pilots plan a flight and get a briefing: a route through
+PTFS's waypoints and VORs, cruise altitude, top of climb/descent, a nav
+log, times and fuel. Each plan gets a 6-character **plan ID**; pilots type
+that (or their callsign) into the companion app's MCDU/FMS to import the
+route, and the companion's autopilot can then fly it. See the companion
+README's "FMS and autopilot" section.
+
+```
+cd planner
+npm install
+npm start          # runs locally on :3100 by default
+```
+
+On Railway: **Deploy from GitHub repo**, set the service's root directory
+to `planner/`, generate a public domain, and put that URL into the
+companion FMS window's Settings. Plans are saved to `planner/data/plans.json`
+- on Railway that's wiped on each deploy unless you attach a volume and
+set `PLANS_FILE` to a path on it. Plans expire after 7 days.
+
+```
+POST /api/plans          {callsign, aircraftType, origin, destination, cruiseAltFt?, route?}
+GET  /api/plans/:id      a plan by ID
+GET  /api/plans?callsign= the latest plan for a callsign
+GET  /api/navdata        every airport and waypoint/VOR
+GET  /api/aircraft       aircraft types, with which FMS style each uses
+```
+
+**Navdata.** Airports come from `data/charts`. Waypoints/VORs only exist
+in 365Radar's `fixes.js`, in 24radar's own map coordinates, so
+`scripts/build-navdata.js` converts them into the same lat/lon the
+companion app tracks in, by fitting a transform on the airports both
+share. The fit is not exact: most airports land within 2-3 nm of their
+chart position, the worst (IGAR) about 9 nm off - the per-airport error is
+written into `planner/data/navdata.json` (`fit.residualsNm`). Re-run the
+script after changing charts or fixes.
+
+**Routes** chain waypoints with no leg over 9 nm (PTFS has no airways,
+SIDs or STARs), or follow a route the pilot types. **Performance** is per
+aircraft category (airliner, regional jet, turboprop, light aircraft...)
+in `planner/lib/aircraft.js` - game estimates, not real dispatch figures.
+
 ## Known limitations
 
 - **Not tested against live Discord voice in this environment** — this

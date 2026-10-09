@@ -73,6 +73,7 @@ async function saveSettingsFromForm() {
 }
 
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
+document.getElementById('openFmsBtn').addEventListener('click', () => window.companion.openFms());
 
 // ---------- Display picker + overlay ----------
 
@@ -421,6 +422,17 @@ async function trackTick() {
 
   const now = Date.now();
   currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts, atMs: now });
+
+  // For the FMS/autopilot window, if it's open (relayed by main.js).
+  window.companion.sendTelemetry({
+    lat: currentFix.world.lat,
+    lon: currentFix.world.lon,
+    headingDeg: heading,
+    speedKt: info.speedKts,
+    altFt: info.altitudeFt,
+    aircraftType: info.aircraftType,
+    atMs: now,
+  });
 
   const nearest = await window.companion.nearestAirport(airports, currentFix.world);
   const fixAgeSec = (now - lastCorrectionAtMs) / 1000;

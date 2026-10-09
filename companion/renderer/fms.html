@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src *; style-src 'self' 'unsafe-inline'">
+<title>FMS / Autopilot</title>
+<link rel="stylesheet" href="fms.css">
+</head>
+<body>
+<header class="topbar">
+  <label class="field">FMS
+    <select id="skin-select">
+      <option value="auto">Auto (from aircraft)</option>
+      <option value="airbus">Airbus MCDU</option>
+      <option value="boeing">Boeing CDU</option>
+      <option value="bombardier">Bombardier FMS</option>
+      <option value="embraer">Embraer MCDU</option>
+    </select>
+  </label>
+  <span id="trk-status" class="pill">NO TRACKING DATA</span>
+  <button id="live-toggle" class="pill-btn dry">DRY RUN</button>
+  <button id="settings-toggle" class="pill-btn">Settings</button>
+</header>
+
+<div id="fma" class="fma" aria-label="Flight mode annunciator"></div>
+<div id="ap-panel" class="ap-panel" aria-label="Autopilot panel"></div>
+
+<main class="lower">
+  <div id="mcdu" class="mcdu">
+    <div class="mcdu-screen-row">
+      <div class="lsk-col" id="lsk-left"></div>
+      <div class="screen" id="screen" aria-live="polite"></div>
+      <div class="lsk-col" id="lsk-right"></div>
+    </div>
+    <div class="fkeys" id="fkeys"></div>
+    <div class="keypad">
+      <div class="alpha" id="alpha"></div>
+      <div class="numeric" id="numeric"></div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <section id="status-panel" class="side-card">
+      <h3>Aircraft</h3>
+      <dl class="readout" id="readout"></dl>
+      <h3>Autopilot inputs <span class="dim" id="input-mode"></span></h3>
+      <ol class="log" id="ap-log"></ol>
+    </section>
+
+    <section id="settings-panel" class="side-card" hidden>
+      <h3>Settings</h3>
+      <label class="field">Flight planner URL
+        <input id="planner-url" placeholder="https://your-planner.up.railway.app">
+      </label>
+      <h3>Game controls</h3>
+      <p class="dim small">The keys the autopilot presses in PTFS. Check each one matches your game controls: click Test, then quickly click into PTFS and watch the aircraft.</p>
+      <div id="keymap"></div>
+      <div class="row">
+        <button id="save-settings" class="btn">Save</button>
+        <span id="settings-msg" class="dim small"></span>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<dialog id="live-dialog">
+  <h3>Let the autopilot press keys?</h3>
+  <p>In LIVE mode the autopilot presses your configured keys in whatever window has keyboard focus. Keep PTFS focused while it flies.</p>
+  <p><strong>Roblox's rules can treat outside software that automates gameplay as a violation. You use this at your own risk to your account.</strong></p>
+  <p class="dim small">You can switch back to DRY RUN at any time. In DRY RUN the autopilot only shows what it would press.</p>
+  <form method="dialog" class="row">
+    <button value="cancel" class="btn secondary">Stay in DRY RUN</button>
+    <button value="ok" class="btn danger">Go LIVE</button>
+  </form>
+</dialog>
+
+<script src="../lib/fms.js"></script>
+<script src="../lib/autopilot.js"></script>
+<script src="fms.js"></script>
+</body>
+</html>

@@ -51,6 +51,17 @@ contextBridge.exposeInMainWorld('companion', {
   getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
   focusControlWindow: () => ipcRenderer.invoke('focus-control'),
 
+  // FMS / autopilot window (renderer/fms.html)
+  openFms: () => ipcRenderer.invoke('open-fms'),
+  sendTelemetry: (sample) => ipcRenderer.send('telemetry', sample),
+  onTelemetry: (callback) => ipcRenderer.on('telemetry', (event, sample) => callback(sample)),
+  loadFmsSettings: () => ipcRenderer.invoke('load-fms-settings'),
+  saveFmsSettings: (settings) => ipcRenderer.invoke('save-fms-settings', settings),
+  autopilotKeyNames: () => ipcRenderer.invoke('autopilot-key-names'),
+  autopilotPress: (key, ms) => ipcRenderer.invoke('autopilot-press', { key, ms }),
+  autopilotReleaseAll: () => ipcRenderer.invoke('autopilot-release-all'),
+  setFmsPassthrough: (on) => ipcRenderer.invoke('fms-set-passthrough', on),
+
   // Control window <-> overlay window messaging, relayed through main
   // (they're separate renderer processes and can't reach each other
   // directly).

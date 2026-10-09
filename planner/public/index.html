@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoATC Flight Planner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <h1>AutoATC <span>Flight Planner</span></h1>
+    <form id="lookup" class="lookup">
+      <input id="lookup-id" placeholder="Plan ID" maxlength="6" autocomplete="off" aria-label="Open a plan by ID">
+      <button>Open</button>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" id="planner">
+    <h2>New flight plan</h2>
+    <form id="plan-form">
+      <label>Callsign <input name="callsign" required maxlength="10" placeholder="N42Y" autocomplete="off"></label>
+      <label>Aircraft <select name="aircraftType" required></select></label>
+      <label>Departure <select name="origin" required></select></label>
+      <label>Arrival <select name="destination" required></select></label>
+      <label>Cruise altitude <input name="cruiseAltFt" type="number" step="500" min="0" placeholder="Auto"></label>
+      <label class="wide">Route <input name="route" placeholder="Leave blank to find one, or type waypoints: SHELL NIKON" autocomplete="off"></label>
+      <div class="wide actions">
+        <button class="primary" type="submit">Generate flight plan</button>
+        <span id="form-error" class="error" role="alert"></span>
+      </div>
+    </form>
+  </section>
+
+  <section id="ofp" hidden>
+    <div class="card id-card">
+      <div>
+        <div class="dim">Plan ID — type this into your FMS</div>
+        <div id="plan-id" class="plan-id"></div>
+      </div>
+      <div class="dim small" id="fms-hint"></div>
+    </div>
+
+    <div class="card">
+      <div class="summary" id="summary"></div>
+      <div class="route-text"><span class="dim">Route</span> <code id="route-text"></code></div>
+      <ul id="warnings" class="warnings"></ul>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Route map</h3>
+        <svg id="map" role="img" aria-label="Route map"></svg>
+      </div>
+      <div class="card">
+        <h3>Fuel <span class="dim small">KG</span></h3>
+        <table id="fuel"></table>
+        <h3>Times</h3>
+        <table id="times"></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Navigation log</h3>
+      <div class="scroll"><table id="navlog"></table></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap dim small">Routes use PTFS waypoints and VORs. There are no airways, SIDs or STARs. Fuel and times are game estimates, not real dispatch figures.</footer>
+<script src="app.js"></script>
+</body>
+</html>

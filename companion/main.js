@@ -4,8 +4,12 @@ const fs = require('fs');
 const { fork } = require('child_process');
 
 const { loadAirports } = require('./lib/airports');
+const { createKeySender, KEY_NAMES } = require('./lib/keySender');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
+// The FMS window keeps its own settings file, so it and the control window
+// never overwrite each other's settings with a stale copy.
+const FMS_SETTINGS_PATH = path.join(app.getPath('userData'), 'fms-settings.json');
 
 function loadSettings() {
   try {
@@ -15,9 +19,17 @@ function loadSettings() {
   }
 }
 
-function saveSettings(settings) {
-  fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true });
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+function saveSettings(settings, file = SETTINGS_PATH) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2));
+}
+
+function loadFmsSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(FMS_SETTINGS_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
 }
 
 const PRELOAD_WEB_PREFS = {
@@ -34,6 +46,8 @@ const PRELOAD_WEB_PREFS = {
 
 let controlWindow = null;
 let overlayWindow = null;
+let fmsWindow = null;
+let keySender = null; // created on the first autopilot key press
 
 function createControlWindow() {
   controlWindow = new BrowserWindow({
@@ -47,6 +61,34 @@ function createControlWindow() {
   controlWindow.on('closed', () => {
     controlWindow = null;
     if (overlayWindow) overlayWindow.close();
+    if (fmsWindow) fmsWindow.close();
+  });
+}
+
+// The MCDU/FMS + autopilot panel (renderer/fms.html). Opened from the
+// control window; receives each tracking update relayed below.
+function openFmsWindow() {
+  if (fmsWindow) {
+    fmsWindow.show();
+    fmsWindow.focus();
+    return;
+  }
+  fmsWindow = new BrowserWindow({
+    width: 900,
+    height: 820,
+    minWidth: 760,
+    minHeight: 640,
+    alwaysOnTop: true,
+    title: 'FMS / Autopilot',
+    backgroundColor: '#15181d',
+    webPreferences: PRELOAD_WEB_PREFS,
+  });
+  fmsWindow.loadFile(path.join(__dirname, 'renderer', 'fms.html'));
+  if (process.env.COMPANION_DEVTOOLS) fmsWindow.webContents.openDevTools({ mode: 'detach' });
+  fmsWindow.on('closed', () => {
+    fmsWindow = null;
+    // Never leave a key held down with nothing left to release it.
+    if (keySender) keySender.releaseAll();
   });
 }
 
@@ -129,6 +171,32 @@ ipcMain.handle('get-screen-sources', async () => {
 });
 
 ipcMain.handle('load-settings', () => loadSettings());
+ipcMain.handle('load-fms-settings', () => loadFmsSettings());
+ipcMain.handle('save-fms-settings', (event, settings) => {
+  saveSettings(settings, FMS_SETTINGS_PATH);
+  return true;
+});
+
+ipcMain.handle('open-fms', () => openFmsWindow());
+// Each tracking update from the control window, for the FMS/autopilot.
+ipcMain.on('telemetry', (event, sample) => {
+  if (fmsWindow) fmsWindow.webContents.send('telemetry', sample);
+});
+
+ipcMain.handle('autopilot-key-names', () => KEY_NAMES);
+ipcMain.handle('autopilot-press', (event, { key, ms }) => {
+  if (!keySender) keySender = createKeySender();
+  keySender.press(key, ms);
+});
+ipcMain.handle('autopilot-release-all', () => {
+  if (keySender) keySender.releaseAll();
+});
+// While the autopilot is flying, the FMS window stops taking keyboard focus
+// (mouse clicks still work), so clicking its buttons doesn't pull focus
+// away from the game the autopilot is pressing keys in.
+ipcMain.handle('fms-set-passthrough', (event, on) => {
+  if (fmsWindow) fmsWindow.setFocusable(!on);
+});
 ipcMain.handle('save-settings', (event, settings) => {
   saveSettings(settings);
   return true;
