@@ -2227,9 +2227,7 @@ const API_URL = 'https://tico09.com/api/v1/controllers';
 
 async function fetchATCData(url) {
     try {
-        const response = url === defaultURL 
-            ? await fetch(url) 
-            : await fetch(url, { headers: { 'uniqueid': uniqueUserId } });
+        const response = await fetch(url); // fork change: no per-user id header sent anywhere
 
         if (!response.ok) throw new Error(`Erro ao buscar dados: ${response.status}`);
         return await response.json();
@@ -2251,7 +2249,9 @@ async function fetchATCDataAndUpdate() {
 
     // Fork change: only the public ATC24 API is used (the original also tried
     // its author's private backend first).
-    data = null;
+    data = await fetchATCData('/api/atc24/controllers');
+    if (!data) data = await fetchATCData(defaultURL);
+    if (!data) data = await fetchATCData('https://24data.ptfs.app/controllers');
 
     if (!settingsValues.showOnlineATC) {
         onlineATCs = {};
@@ -2291,12 +2291,12 @@ async function fetchATCDataAndUpdate() {
             }
         }
     } else {
-        if (!window.location.href.includes('DEV')) {
-            await showMessage('Server Error', 'Couldn’t get the info from the server, please check your internet connection.', 'Retry');
-            await fetchATCDataAndUpdate();
-        }
+        // Fork change: no blocking retry pop-up; the map and aircraft keep
+        // working and the controller list is tried again next cycle.
         PTFSAPI = null;
         processATCData(PTFSAPI);
+        document.querySelector('.mapUpdateTime .time').textContent = ` ${getTime()} (ATC list unavailable)`;
+        setTimeout(() => { const t = document.getElementById('mapUpdateTime'); t.style.backgroundColor = 'rgba(32, 32, 36, 1)'; t.style.color = ''; }, 150);
     }
 
     document.querySelector('.mapUpdateTime .time').textContent = ` ${getTime()}`;

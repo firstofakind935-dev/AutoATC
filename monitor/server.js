@@ -461,6 +461,23 @@ app.use('/developers', express.static(path.join(__dirname, 'developers')));
 // /radar is the 24SPY-based radar (a modified fork of 24SPY by tiaguinho_2009,
 // non-commercial licence - see public/radar/LICENSE.md and README). The older
 // 365Radar controller workstation stays at /365radar/.
+// Online-controller list for /radar, fetched server-side (a browser can be
+// blocked by CORS or by the upstream) and cached briefly. Tries both paths the
+// ATC24 API has been seen at.
+let atc24Cache = { at: 0, body: null };
+app.get('/api/atc24/controllers', async (req, res) => {
+  if (atc24Cache.body && Date.now() - atc24Cache.at < 8000) return res.json(atc24Cache.body);
+  for (const url of ['https://24data.ptfs.app/controllers', 'https://24data.ptfs.app/api/controllers']) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) continue;
+      const body = await r.json();
+      if (Array.isArray(body)) { atc24Cache = { at: Date.now(), body }; return res.json(body); }
+    } catch (e) { /* try the next one */ }
+  }
+  if (atc24Cache.body) return res.json(atc24Cache.body); // stale beats nothing
+  res.status(502).json({ error: 'ATC24 controller list unavailable' });
+});
 app.use('/radar', express.static(path.join(__dirname, 'public', 'radar')));
 
 // The 365radar bundle (HTML/CSS/JS, the world map image + anchors, plane
