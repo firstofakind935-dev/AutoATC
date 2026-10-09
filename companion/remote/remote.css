@@ -1,0 +1,51 @@
+/* Phone / tablet layout for the remote FMS, on top of fms.css. */
+
+html, body { min-height: 100%; }
+body { padding-bottom: env(safe-area-inset-bottom); -webkit-tap-highlight-color: transparent; }
+button { touch-action: manipulation; }
+
+.pairing { max-width: 360px; margin: 18vh auto 0; padding: 0 16px; text-align: center; }
+.pairing h1 { font-size: 22px; margin-bottom: 6px; }
+.pairing form { display: flex; gap: 8px; margin-top: 18px; }
+.pairing input {
+  flex: 1; min-width: 0; font: 600 26px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 6px; text-align: center;
+  background: #0f1216; color: var(--text); border: 1px solid #2c323b; border-radius: 8px; padding: 10px;
+}
+.error { color: var(--bad); min-height: 1.4em; }
+
+.topbar { position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.topbar .pill-btn { margin-left: auto; }
+
+.tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
+.tab { flex: 1; padding: 9px 0; border: 1px solid #2c323b; border-bottom: 0; border-radius: 8px 8px 0 0; background: #1a1e24; color: var(--dim); font-weight: 600; }
+.tab.active { background: #232830; color: var(--text); }
+
+.panes { padding: 12px; }
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* The MCDU fills the phone's width. */
+.mcdu { width: 100%; max-width: 460px; margin: 0 auto; padding: 10px 8px 12px; }
+.screen { font-size: clamp(12px, 3.9vw, 17px); min-height: 0; aspect-ratio: 4 / 3.6; }
+.screen .big { font-size: inherit; }
+.line { min-height: 0; }
+.line.label-line { font-size: 0.72em; }
+.lsk-col { gap: 0; justify-content: space-around; padding-top: 7%; padding-bottom: 7%; }
+.lsk { width: 30px; height: 26px; }
+.fkey { height: 38px; font-size: 9.5px; }
+.key { height: 36px; }
+.key.num { width: 38px; height: 38px; }
+.numeric { grid-template-columns: repeat(3, 38px); }
+
+.ap-panel { border-radius: 8px; gap: 12px; }
+.knob-window { font-size: 24px; min-width: 88px; }
+.knob-controls button { min-width: 38px; min-height: 34px; font-size: 14px; }
+.ap-btn { min-width: 64px; min-height: 40px; }
+
+/* Tablets and wider: everything at once, no tabs. */
+@media (min-width: 900px) {
+  .tabs { display: none; }
+  .panes { display: grid; grid-template-columns: minmax(380px, 460px) 1fr; gap: 14px; align-items: start; }
+  .pane, .pane.active { display: block; }
+  .pane[data-pane="ap"] { grid-column: 1 / -1; }
+}

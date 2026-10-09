@@ -6,6 +6,7 @@ const { fork } = require('child_process');
 const { loadAirports } = require('./lib/airports');
 const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
 const { createMouseSteer } = require('./lib/mouseSteer');
+const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
@@ -50,6 +51,22 @@ let overlayWindow = null;
 let fmsWindow = null;
 let inputSender = null; // created on the first autopilot input
 let mouseSteer = null;
+let remoteServer = null; // phone/tablet control - see lib/remoteServer.js
+
+function getRemoteServer() {
+  if (!remoteServer) {
+    remoteServer = createRemoteServer({
+      // Inputs from a phone go to the FMS window, exactly like its own clicks.
+      onInput: (message) => {
+        if (fmsWindow) fmsWindow.webContents.send('remote-input', message);
+      },
+      onClients: (count) => {
+        if (fmsWindow) fmsWindow.webContents.send('remote-clients', count);
+      },
+    });
+  }
+  return remoteServer;
+}
 
 function getInputSender() {
   if (!inputSender) inputSender = createInputSender();
@@ -117,6 +134,8 @@ function openFmsWindow() {
     fmsWindow = null;
     // Never leave a key held down with nothing left to release it.
     if (inputSender) inputSender.releaseAll();
+    // Remote control drives the FMS window - nothing to control without it.
+    if (remoteServer) remoteServer.stop();
   });
 }
 
@@ -224,6 +243,15 @@ ipcMain.handle('autopilot-recenter', (event, center) => {
 // Where the cursor is now - the FMS settings capture the straight-and-level
 // center point with this.
 ipcMain.handle('autopilot-cursor', () => screen.getCursorScreenPoint());
+// Phone / tablet remote control.
+ipcMain.on('fms-view', (event, view) => {
+  if (remoteServer && remoteServer.running) remoteServer.publish(view);
+});
+ipcMain.handle('remote-start', (event, { port, code }) => getRemoteServer().start({ port, pairingCode: code }));
+ipcMain.handle('remote-stop', () => remoteServer && remoteServer.stop());
+ipcMain.handle('remote-set-code', (event, code) => remoteServer && remoteServer.setCode(code));
+ipcMain.handle('remote-new-code', () => newPairingCode());
+
 ipcMain.handle('autopilot-release-all', () => {
   if (inputSender) inputSender.releaseAll();
 });

@@ -75,6 +75,18 @@
       </div>
       <p class="dim small">Keys the autopilot presses. Test presses the key 3 s later, so click into PTFS and watch the aircraft.</p>
       <div id="keymap"></div>
+      <h3>Phone / tablet control</h3>
+      <label class="check"><input id="remote-enabled" type="checkbox"> Allow control from a phone or tablet on this Wi-Fi</label>
+      <div id="remote-info" hidden>
+        <p class="small">On your phone, open <strong id="remote-urls"></strong></p>
+        <div class="row tight">
+          <span class="small">Pairing code</span>
+          <strong id="remote-code" class="pair-code"></strong>
+          <button id="remote-new-code" class="btn secondary small">New code</button>
+        </div>
+        <p class="dim small" id="remote-clients">No devices connected</p>
+      </div>
+      <p class="dim small" id="remote-error"></p>
       <div class="row">
         <button id="save-settings" class="btn">Save</button>
         <span id="settings-msg" class="dim small"></span>
@@ -96,6 +108,7 @@
 
 <script src="../lib/fms.js"></script>
 <script src="../lib/autopilot.js"></script>
+<script src="fmsView.js"></script>
 <script src="fms.js"></script>
 </body>
 </html>

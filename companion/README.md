@@ -209,6 +209,35 @@ simple simulated aircraft (see `test/fms-autopilot.test.js` at the repo
 root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
 `lib/autopilot.js` (pulse lengths, dead bands) once it does.
 
+## Phone / tablet control
+
+Work the MCDU and autopilot panel from a phone or tablet instead of the PC -
+so your hand never touches the PC's mouse, which PTFS steers with (and
+which disconnects the autopilot when moved).
+
+1. In the FMS window, open **Settings** and tick **Allow control from a
+   phone or tablet on this Wi-Fi**. It shows an address like
+   `http://192.168.1.23:8765` and a 6-digit **pairing code**.
+2. On the phone (same Wi-Fi as the PC), open that address and enter the
+   code. The phone remembers it. To use it like an app, add the page to
+   your home screen (Share > Add to Home Screen on iPhone; menu > Add to
+   Home screen on Android).
+3. The phone shows the same MCDU, autopilot panel and mode annunciator as
+   the PC window, live - tabs on a phone, everything at once on a tablet.
+   Both stay in sync; either can be used at any time.
+
+Safety: it's off until you turn it on, and only reachable on your own
+network - nothing goes over the internet. Every request needs the pairing
+code; **New code** disconnects every device; ten wrong codes from one
+device lock it out for a minute. A phone can switch the autopilot to DRY
+RUN but never to LIVE - going LIVE is only possible at the PC, behind its
+warning.
+
+The first time you turn it on, Windows may ask whether to allow the
+companion app through the firewall - allow it on **private** networks, or
+the phone can't connect. If port 8765 is taken by another program, the
+settings say so.
+
 ## Module layout
 
 - `lib/coords.js` - lat/lon parsing, flat-earth distance/bearing math.
@@ -228,6 +257,10 @@ root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
   SendInput via PowerShell, macOS System Events/CoreGraphics, Linux xdotool).
 - `lib/mouseSteer.js` - pitch/bank nudges via the cursor, and the
   "pilot moved the mouse" override.
+- `lib/remoteServer.js` - the phone/tablet remote-control web server
+  (pairing code, live view updates, inputs).
+- `remote/` - the page phones and tablets open (plus its manifest/icon for
+  Add to Home Screen).
 - `main.js` - creates both windows, relays messages between them, and
   hosts the desktop-capture/settings/airports IPC handlers.
 - `preload.js` - exposes IPC calls and direct `lib/` logic to both
@@ -238,6 +271,9 @@ root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
   described above.
 - `renderer/fms.html` / `fms.js` / `fms.css` - the FMS / autopilot window:
   the four MCDU styles, autopilot panels and flight mode annunciator.
+  `fms.js` builds a plain view of the cockpit and handles every input in
+  one place; `renderer/fmsView.js` draws that view - used by both the FMS
+  window and the remote page, so they always match.
 
 ## Accuracy caveats
 

@@ -63,6 +63,14 @@ contextBridge.exposeInMainWorld('companion', {
   autopilotSteer: (command) => ipcRenderer.invoke('autopilot-steer', command),
   autopilotRecenter: (center) => ipcRenderer.invoke('autopilot-recenter', center),
   autopilotCursor: () => ipcRenderer.invoke('autopilot-cursor'),
+  // Phone / tablet remote control (lib/remoteServer.js)
+  publishFmsView: (view) => ipcRenderer.send('fms-view', view),
+  onRemoteInput: (callback) => ipcRenderer.on('remote-input', (event, message) => callback(message)),
+  onRemoteClients: (callback) => ipcRenderer.on('remote-clients', (event, count) => callback(count)),
+  remoteStart: (options) => ipcRenderer.invoke('remote-start', options),
+  remoteStop: () => ipcRenderer.invoke('remote-stop'),
+  remoteSetCode: (code) => ipcRenderer.invoke('remote-set-code', code),
+  remoteNewCode: () => ipcRenderer.invoke('remote-new-code'),
   setFmsPassthrough: (on) => ipcRenderer.invoke('fms-set-passthrough', on),
 
   // Control window <-> overlay window messaging, relayed through main

@@ -59,6 +59,9 @@ const settings = {
   mouseCenter: null, // {x, y} screen point where the aircraft flies straight and level
   mouseDeflectionPx: 120, // how far off center a nudge moves the cursor
   invertPitch: false,
+  remoteEnabled: false, // phone/tablet control (lib/remoteServer.js)
+  remotePort: 8765,
+  remoteCode: null,
   live: false,
 };
 const ap = Autopilot.create();
@@ -652,165 +655,117 @@ function fmaColumns(skinId) {
   return [ap.autothrottle ? 'SPD' : '', ap.lateral === 'LNAV' ? 'LNAV' : 'HDG', ap.vertical === 'VNAV' ? 'VPTH' : ap.vertical === 'VS' ? 'VS' : 'ALT', [ap.engaged ? 'AP' : '', ap.engaged ? 'YD' : ''].filter(Boolean).join(' ')];
 }
 
-// ---------------------------------------------------------------- rendering
+// ---------------------------------------------------------------- view model + input
+//
+// Everything on screen comes from buildView(), a plain object fmsView.js
+// draws - here, and on the remote-control page (sent via main.js). Every
+// input, from this window or a remote, arrives as a message at
+// handleInput(), so both control the same aircraft identically.
 
-function cells(list) {
-  return list.map(([text, cls]) => `<span class="${cls}">${escapeHtml(text)}</span>`).join('');
-}
-function escapeHtml(text) {
-  return text.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-}
+const panelHandlers = new Map(); // panel control id -> its knob/button definition
 
-function renderScreen(s) {
-  const page = PAGES[ui.page](s);
-  let html = `<div class="line title"><span class="center">${escapeHtml(page.title)}</span><span class="right small">${escapeHtml(page.titleRight || '')}</span></div>`;
-  for (const r of page.rows) {
-    html += `<div class="line label-line"><span>${cells(r.label[0])}</span><span>${cells(r.label[1])}</span></div>`;
-    html += `<div class="line"><span>${cells(r.data[0])}</span><span>${cells(r.data[1])}</span></div>`;
-  }
-  const sp = ui.message ? `<span class="${ui.message === 'LOADING...' ? 'white' : 'amber'}">${escapeHtml(ui.message)}</span>` : escapeHtml(ui.scratch);
-  html += `<div class="line scratch">${sp || '&nbsp;'}</div>`;
-  $('screen').innerHTML = html;
-}
-
-function renderKeys(s) {
-  const left = $('lsk-left');
-  const right = $('lsk-right');
-  if (!left.childElementCount) {
-    for (let i = 1; i <= 6; i++) {
-      for (const [side, el] of [['L', left], ['R', right]]) {
-        const b = document.createElement('button');
-        b.className = 'lsk';
-        b.setAttribute('aria-label', `Line select ${i}${side}`);
-        b.addEventListener('click', () => onLsk(`${side}${i}`));
-        el.append(b);
-      }
-    }
-    const alpha = $('alpha');
-    for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').concat(['SP', 'DEL', '/', 'CLR'])) {
-      const b = document.createElement('button');
-      b.className = `key ${ch.length > 1 ? 'small' : ''}`;
-      b.textContent = ch;
-      b.addEventListener('click', () => onKey(ch));
-      alpha.append(b);
-    }
-    const numeric = $('numeric');
-    for (const ch of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '+/-']) {
-      const b = document.createElement('button');
-      b.className = 'key num';
-      b.textContent = ch;
-      b.addEventListener('click', () => onKey(ch));
-      numeric.append(b);
-    }
-  }
-  const fkeys = $('fkeys');
-  if (fkeys.dataset.skin !== currentSkinId()) {
-    fkeys.dataset.skin = currentSkinId();
-    fkeys.innerHTML = '';
-    for (const [label, action] of s.keys) {
-      const b = document.createElement('button');
-      b.className = `fkey ${label ? '' : 'blank'} ${action === 'exec' ? 'exec' : ''}`;
-      b.textContent = label;
-      b.disabled = !label;
-      if (label) b.addEventListener('click', () => onFunctionKey(action));
-      fkeys.append(b);
-    }
-  }
-  const exec = fkeys.querySelector('.exec');
-  if (exec) exec.classList.toggle('lit', Boolean(ui.pending));
-}
-
-function renderPanel(skinId) {
-  const panel = $('ap-panel');
-  panel.innerHTML = '';
-  const make = (item) => {
-    if (item.type === 'group') {
-      const g = document.createElement('div');
-      g.className = 'group';
-      item.items.forEach((i) => g.append(make(i)));
-      return g;
-    }
-    if (item.type === 'button') {
-      const b = document.createElement('button');
-      b.className = `ap-btn ${item.lit ? 'lit' : ''} ${item.cls}`;
-      b.textContent = item.label;
-      b.addEventListener('click', () => {
-        item.onClick();
-        render();
-      });
-      return b;
-    }
-    const k = document.createElement('div');
-    k.className = 'knob';
-    const value = item.managed && skinId === 'airbus' ? '---•' : String(item.value);
-    k.innerHTML = `<div class="knob-label">${item.label}</div><div class="knob-window ${item.managed ? 'managed' : ''}">${escapeHtml(value)}</div><div class="knob-controls"></div>`;
-    const controls = k.querySelector('.knob-controls');
-    const current = () => Number(String(item.raw ? item.raw() : item.value).replace(/[^\d-]/g, ''));
-    const adjust = (delta) => {
-      item.set(current() + delta);
-      render();
+function buildPanel(skinId) {
+  panelHandlers.clear();
+  let next = 0;
+  const serialize = (item) => {
+    if (item.type === 'group') return { type: 'group', items: item.items.map(serialize) };
+    const id = `c${next++}`;
+    panelHandlers.set(id, item);
+    if (item.type === 'button') return { type: 'button', id, label: item.label, lit: Boolean(item.lit), cls: item.cls || '' };
+    return {
+      type: 'knob', id, label: item.label, value: String(item.value), managed: Boolean(item.managed),
+      step: item.step, bigStep: item.bigStep,
+      pushLabel: item.push ? item.pushLabel : null, pullLabel: item.pull ? item.pullLabel : null,
     };
-    const add = (text, fn, title) => {
-      const b = document.createElement('button');
-      b.textContent = text;
-      b.title = title;
-      b.addEventListener('click', fn);
-      controls.append(b);
-    };
-    add('−', (e) => adjust(-(e.shiftKey ? item.bigStep : item.step)), `-${item.step} (Shift: -${item.bigStep})`);
-    add('+', (e) => adjust(e.shiftKey ? item.bigStep : item.step), `+${item.step} (Shift: +${item.bigStep})`);
-    if (item.push) add(item.pushLabel, () => { item.push(); render(); }, 'Push (managed)');
-    if (item.pull) add(item.pullLabel, () => { item.pull(); render(); }, 'Pull (selected)');
-    k.querySelector('.knob-window').addEventListener('wheel', (e) => {
-      e.preventDefault();
-      adjust((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? item.bigStep : item.step));
-    }, { passive: false });
-    return k;
   };
-  panelFor(skinId).forEach((item) => panel.append(make(item)));
+  return panelFor(skinId).map(serialize);
 }
 
-function renderFma(skinId) {
-  const cols = fmaColumns(skinId);
-  $('fma').innerHTML = cols.map((text, i) => `<div class="fma-col ${i === 3 ? 'ap' : ''}">${escapeHtml(text || '')}</div>`).join('')
-    + (ap.disconnectReason ? `<div class="fma-warn">${escapeHtml(ap.disconnectReason)}</div>` : '');
-}
-
-function renderStatus() {
+function buildStatus() {
   const t = ui.telemetry;
   const age = t ? Math.round((Date.now() - t.atMs) / 1000) : null;
-  const status = $('trk-status');
-  status.textContent = t ? `TRACKING ${age}s ago` : 'NO TRACKING DATA';
-  status.className = `pill ${t && age < 15 ? 'good' : 'bad'}`;
-
   const g = ui.guidance;
   const tg = Autopilot.targets(ap, g);
-  const items = [
-    ['Aircraft', t?.aircraftType || '—'],
-    ['Heading', t ? `${pad3(t.headingDeg)}°` : '—', `target ${pad3(tg.headingDeg)}°`],
-    ['Altitude', t?.altFt != null ? `${t.altFt} ft` : '—', `target ${tg.altFt} ft`],
-    ['Speed', t?.speedKt != null ? `${t.speedKt} kt` : '—', `target ${tg.speedKt} kt`],
-    ['Next waypoint', g?.lnav ? `${g.lnav.toIdent} ${fmtNm(g.lnav.toDistanceNm)} nm` : '—'],
-    ['Phase', g?.phase || '—'],
-  ];
-  $('readout').innerHTML = items.map(([k, v, extra]) => `<dt>${k}</dt><dd>${escapeHtml(String(v))}${extra ? ` <span class="dim">${escapeHtml(extra)}</span>` : ''}</dd>`).join('');
-  $('input-mode').textContent = settings.live ? '(LIVE — sent to game)' : '(DRY RUN — not sent)';
-  $('ap-log').innerHTML = ui.lastInputs.map((l) => `<li>${escapeHtml(l)}</li>`).join('') || '<li class="dim">None yet</li>';
+  return {
+    trackText: t ? `TRACKING ${age}s ago` : 'NO TRACKING DATA',
+    trackGood: Boolean(t && age < 15),
+    readout: [
+      ['Aircraft', t?.aircraftType || '—'],
+      ['Heading', t ? `${pad3(t.headingDeg)}°` : '—', `target ${pad3(tg.headingDeg)}°`],
+      ['Altitude', t?.altFt != null ? `${t.altFt} ft` : '—', `target ${tg.altFt} ft`],
+      ['Speed', t?.speedKt != null ? `${t.speedKt} kt` : '—', `target ${tg.speedKt} kt`],
+      ['Next waypoint', g?.lnav ? `${g.lnav.toIdent} ${fmtNm(g.lnav.toDistanceNm)} nm` : '—'],
+      ['Phase', g?.phase || '—'],
+    ],
+    live: settings.live,
+    log: ui.lastInputs,
+  };
+}
 
-  const live = $('live-toggle');
-  live.textContent = settings.live ? 'LIVE' : 'DRY RUN';
-  live.className = `pill-btn ${settings.live ? 'live' : 'dry'}`;
+function buildView() {
+  const skinId = currentSkinId();
+  const s = SKINS[skinId];
+  const page = PAGES[ui.page](s);
+  return {
+    skin: skinId,
+    screen: {
+      title: page.title,
+      titleRight: page.titleRight || '',
+      rows: page.rows,
+      scratch: ui.message
+        ? { text: ui.message, cls: ui.message === 'LOADING...' ? 'white' : 'amber' }
+        : { text: ui.scratch, cls: '' },
+    },
+    fkeys: s.keys.map(([label, action]) => ({ label, exec: action === 'exec' })),
+    execLit: Boolean(ui.pending),
+    panel: buildPanel(skinId),
+    fma: { cols: fmaColumns(skinId), warn: ap.disconnectReason || '' },
+    status: buildStatus(),
+  };
 }
 
 function render() {
-  const skinId = currentSkinId();
-  const s = SKINS[skinId];
-  document.body.dataset.skin = skinId;
-  renderScreen(s);
-  renderKeys(s);
-  renderPanel(skinId);
-  renderFma(skinId);
-  renderStatus();
+  const vm = buildView();
+  FmsView.render(vm);
+  api?.publishFmsView?.(vm);
+}
+
+const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-']));
+
+/** The one entry point for every cockpit input - local clicks and remotes. */
+function handleInput(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'lsk' && /^[LR][1-6]$/.test(msg.id)) return onLsk(msg.id);
+  if (msg.type === 'key' && KEYPAD.has(msg.ch)) return onKey(msg.ch);
+  if (msg.type === 'fkey' && Number.isInteger(msg.index)) {
+    const key = skin().keys[msg.index];
+    if (key && key[0]) onFunctionKey(key[1]);
+    return null;
+  }
+  if (msg.type === 'panel') {
+    const item = panelHandlers.get(msg.id);
+    if (!item) return null;
+    if (item.type === 'button' && msg.action === 'click') item.onClick();
+    else if (item.type === 'knob') {
+      const current = Number(String(item.raw ? item.raw() : item.value).replace(/[^\d-]/g, ''));
+      const step = msg.big ? item.bigStep : item.step;
+      if (msg.action === 'inc') item.set(current + step);
+      else if (msg.action === 'dec') item.set(current - step);
+      else if (msg.action === 'push' && item.push) item.push();
+      else if (msg.action === 'pull' && item.pull) item.pull();
+    }
+    return render();
+  }
+  // A remote may switch the autopilot to DRY RUN, never to LIVE - going
+  // LIVE stays a deliberate choice made at the PC, behind its warning.
+  if (msg.type === 'dry-run' && settings.live) {
+    settings.live = false;
+    api?.autopilotReleaseAll();
+    api?.autopilotRecenter(null);
+    updatePassthrough();
+    return render();
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- control loop
@@ -892,6 +847,7 @@ async function loadSettings() {
   $('invert-pitch').checked = settings.invertPitch;
   showMouseCenter();
   syncSteeringVisibility();
+  $('remote-enabled').checked = settings.remoteEnabled;
 }
 
 function saveSettings() {
@@ -1001,6 +957,48 @@ for (const [id, axis, direction, label] of [
   });
 }
 
+// ---------------------------------------------------------------- phone / tablet control
+
+async function startRemote() {
+  $('remote-error').textContent = '';
+  if (!settings.remoteCode) {
+    // Saved, so a paired phone keeps working after the app restarts.
+    settings.remoteCode = await api.remoteNewCode();
+    await saveSettings();
+  }
+  try {
+    const { urls } = await api.remoteStart({ port: settings.remotePort, code: settings.remoteCode });
+    $('remote-urls').textContent = urls.length ? urls.join('  or  ') : `http://<this PC's IP>:${settings.remotePort}`;
+    $('remote-code').textContent = settings.remoteCode;
+    $('remote-info').hidden = false;
+    render(); // so a phone that connects straight away has a view
+  } catch (err) {
+    $('remote-info').hidden = true;
+    $('remote-error').textContent = err.code === 'EADDRINUSE'
+      ? `Port ${settings.remotePort} is already in use by another program.`
+      : `Could not start remote control: ${err.message}`;
+  }
+}
+
+$('remote-enabled').addEventListener('change', async () => {
+  settings.remoteEnabled = $('remote-enabled').checked;
+  await saveSettings();
+  if (settings.remoteEnabled) startRemote();
+  else {
+    await api.remoteStop();
+    $('remote-info').hidden = true;
+  }
+});
+$('remote-new-code').addEventListener('click', async () => {
+  settings.remoteCode = await api.remoteNewCode();
+  await api.remoteSetCode(settings.remoteCode);
+  $('remote-code').textContent = settings.remoteCode;
+  await saveSettings();
+});
+api?.onRemoteClients?.((count) => {
+  $('remote-clients').textContent = count ? `${count} device${count > 1 ? 's' : ''} connected` : 'No devices connected';
+});
+
 $('skin-select').addEventListener('change', () => {
   settings.skin = $('skin-select').value;
   saveSettings();
@@ -1023,24 +1021,15 @@ $('live-dialog').addEventListener('close', () => {
   render();
 });
 
-// Typing on the physical keyboard goes to the scratchpad too.
-document.addEventListener('keydown', (e) => {
-  if (e.target.closest('input, select, textarea, dialog')) return;
-  if (/^[a-z0-9]$/i.test(e.key)) onKey(e.key.toUpperCase());
-  else if (e.key === 'Backspace') onKey('CLR');
-  else if (e.key === 'Delete') onKey('DEL');
-  else if (e.key === ' ') onKey('SP');
-  else if (e.key === '/' || e.key === '.') onKey(e.key);
-  else return;
-  e.preventDefault();
-});
-
 (async function init() {
   await loadSettings();
   await buildKeymapEditor();
   ui.page = 'rte';
+  FmsView.mount(handleInput);
   api?.onTelemetry(onTelemetry);
-  setInterval(renderStatus, 1000);
+  api?.onRemoteInput?.(handleInput);
+  setInterval(render, 1000); // keeps ages/ETEs ticking, here and on remotes
   render();
+  if (settings.remoteEnabled && api?.remoteStart) startRemote();
   loadNavdata();
 })();
