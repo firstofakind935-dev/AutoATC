@@ -20,7 +20,7 @@
   const TRAIL_POINTS = 14;
   const CA_NM = 3, CA_FT = 1000; // conflict alert: closer than this, laterally AND vertically
   const trails = new Map();       // callsign -> [[x, y], ...] in map units
-  const opts = { blocks: true, trails: true, leaders: true, vectors: true, alerts: true, rings: false, scope: true, sweep: true };
+  const opts = { blocks: true, trails: true, leaders: true, vectors: true, alerts: true, rings: false };
   let leaderMin = 1;              // speed-leader length, minutes
   let selected = null;            // callsign
   let measure = null;             // { a: [x, y], b: [x, y] | null } while the tool is active/finished
@@ -95,7 +95,7 @@
     for (const { row, xy } of aircraft) {
       const p = row.position, [x, y] = transform(xy);
       const isSel = row.callsign === selected, alert = conflicts.has(row.callsign);
-      const color = alert ? '#ff5555' : isSel ? '#5fe8ff' : '#7dffb2';
+      const color = alert ? '#ff5555' : isSel ? '#ffe066' : '#6dff9c';
 
       if (opts.trails) {
         ctx.fillStyle = 'rgba(207,227,214,.5)';
@@ -116,7 +116,7 @@
       // symbol
       ctx.translate(x, y); ctx.rotate(((p.headingDeg || 0) * Math.PI) / 180);
       ctx.fillStyle = color;
-      ctx.fillRect(-2.5, -2.5, 5, 5);
+      ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (isSel) { ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(x - 10, y - 10, 20, 20); }
 
@@ -210,7 +210,7 @@
     <div id="aa-sel"></div>
     <h4>Traffic</h4><div id="aa-list"></div></div>`;
   document.body.appendChild(ctrl);
-  const TOGGLES = [['blocks', 'Data blocks'], ['trails', 'Trails'], ['leaders', 'Speed leaders'], ['vectors', 'ATC vectors'], ['alerts', 'Conflict alerts'], ['rings', 'Range rings (selected aircraft)'], ['scope', 'Scope rings + compass'], ['sweep', 'Sweep']];
+  const TOGGLES = [['blocks', 'Data blocks'], ['trails', 'Trails'], ['leaders', 'Speed leaders'], ['vectors', 'ATC vectors'], ['alerts', 'Conflict alerts'], ['rings', 'Range rings (selected)']];
   const togBox = ctrl.querySelector('#aa-toggles');
   for (const [key, label] of TOGGLES) {
     const l = document.createElement('label');
@@ -272,100 +272,12 @@
       img.src = `islands/${it.file}`;
     }
   }).catch(() => {});
-  const siteIcao = () => (document.getElementById('aa-airport') || {}).value || 'IRFD';
-  const siteXY = () => { const a = airportByIcao(siteIcao()); return a ? a.coordinates : null; };
-
   window.autoatcDrawUnder = function (ctx, transform, scale) {
     for (const it of islands) {
       const [x, y] = transform(it.originUnits);
       ctx.drawImage(it.img, x, y, it.unitsWide * scale, it.unitsHigh * scale);
     }
-    // radar-scope look: tint the whole chart toward a dark green-grey glass
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = '#6f9d8c';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.restore();
-
-    // range rings and a compass scale around the selected airport
-    const site = siteXY();
-    if (!opts.scope || !site) return;
-    const [cx, cy] = transform(site);
-    const pxPerNm = UNITS_PER_NM * scale;
-    const step = [1, 2, 5, 10, 20, 50].find((n) => n * pxPerNm >= 70) || 50;
-    const maxPx = Math.hypot(ctx.canvas.width, ctx.canvas.height);
-    ctx.save();
-    ctx.lineWidth = 1; ctx.font = '10px ui-monospace, Menlo, Consolas, monospace';
-    for (let nm = step; nm * pxPerNm < maxPx * 1.2 && nm <= 80; nm += step) {
-      const r = nm * pxPerNm;
-      ctx.strokeStyle = 'rgba(47,214,160,.22)';
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = 'rgba(95,138,125,.9)';
-      ctx.fillText(`${nm}`, cx + 3, cy - r - 3);
-    }
-    // compass ticks on the first ring that is comfortably large
-    const ringNm = Math.max(step, Math.ceil(180 / pxPerNm / step) * step), R = ringNm * pxPerNm;
-    ctx.strokeStyle = 'rgba(47,214,160,.55)'; ctx.fillStyle = 'rgba(125,255,178,.75)';
-    for (let deg = 0; deg < 360; deg += 10) {
-      const rad = (deg * Math.PI) / 180, long = deg % 30 === 0, len = long ? 10 : 5;
-      const sx = Math.sin(rad), sy = -Math.cos(rad);
-      ctx.beginPath(); ctx.moveTo(cx + sx * R, cy + sy * R); ctx.lineTo(cx + sx * (R + len), cy + sy * (R + len)); ctx.stroke();
-      if (long) ctx.fillText(String(deg).padStart(3, '0'), cx + sx * (R + 24) - 9, cy + sy * (R + 24) + 3);
-    }
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
   };
-
-  // rotating sweep, on its own canvas so it doesn't redraw the map every frame
-  const sweep = document.createElement('canvas');
-  sweep.id = 'aa-sweep';
-  document.body.appendChild(sweep);
-  const SWEEP_SECONDS = 8;
-  (function spin(t) {
-    const mc = document.getElementById('map');
-    if (mc) {
-      const r = mc.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-      if (sweep.width !== Math.round(r.width * dpr) || sweep.height !== Math.round(r.height * dpr)) {
-        sweep.width = Math.round(r.width * dpr); sweep.height = Math.round(r.height * dpr);
-        sweep.style.left = `${r.left}px`; sweep.style.top = `${r.top}px`; sweep.style.width = `${r.width}px`; sweep.style.height = `${r.height}px`;
-      }
-      const g = sweep.getContext('2d');
-      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, r.width, r.height);
-      const site = siteXY();
-      if (opts.sweep && site && typeof transformCoordinates === 'function' && g.createConicGradient) {
-        const [cx, cy] = transformCoordinates(site);
-        const a = (((t / 1000) % SWEEP_SECONDS) / SWEEP_SECONDS) * Math.PI * 2 - Math.PI / 2;
-        const trail = Math.PI / 3, R = Math.hypot(r.width, r.height);
-        const grad = g.createConicGradient(a - trail, cx, cy);
-        grad.addColorStop(0, 'rgba(47,214,160,0)'); grad.addColorStop(trail / (Math.PI * 2), 'rgba(47,214,160,.16)');
-        grad.addColorStop(trail / (Math.PI * 2) + 0.0005, 'rgba(47,214,160,0)');
-        g.fillStyle = grad; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, a - trail, a); g.closePath(); g.fill();
-        g.strokeStyle = 'rgba(125,255,178,.55)'; g.lineWidth = 1.2;
-        g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.stroke();
-      }
-    }
-    requestAnimationFrame(spin);
-  }(0));
-
-  // readout strip: site, cursor range/bearing from it, view width, Zulu time, traffic
-  const status = document.createElement('div');
-  status.id = 'aa-status';
-  status.innerHTML = '<span><b>SITE</b><i id="aa-s-site"></i></span><span><b>CURSOR</b><i id="aa-s-cur">---</i></span><span><b>VIEW</b><i id="aa-s-view"></i></span><span><b>TFC</b><i id="aa-s-tfc">0</i></span><span id="aa-s-z"></span>';
-  document.body.appendChild(status);
-  let cursor = null;
-  document.getElementById('map').addEventListener('mousemove', (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    cursor = [(e.clientX - r.left - offsetX) / scale, (e.clientY - r.top - offsetY) / scale];
-  });
-  function updateStatus() {
-    const site = siteXY(), q = (id) => document.getElementById(id);
-    q('aa-s-site').textContent = siteIcao();
-    q('aa-s-tfc').textContent = String(aircraft.length);
-    q('aa-s-view').textContent = `${(document.getElementById('map').width / (scale * UNITS_PER_NM)).toFixed(0)} nm`;
-    q('aa-s-cur').textContent = cursor && site ? `${nmBetween(site, cursor).toFixed(1)} nm  ${String(Math.round(bearingTo(site, cursor))).padStart(3, '0')}°` : '---';
-    q('aa-s-z').textContent = `${new Date().toISOString().slice(11, 19)}Z`;
-  }
-  setInterval(updateStatus, 500);
 
   // ---- ground + charts views ------------------------------------------------
   const css = `
