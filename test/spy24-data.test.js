@@ -40,3 +40,13 @@ test('everything lands on the world map, and the fit to our airports is tight', 
   assert.ok(data.meta.fit.medianErrorPx / data.meta.fit.pxPerNm < 1, `median fit error ${data.meta.fit.medianErrorPx}px`);
   assert.ok(data.meta.fit.airports >= 15);
 });
+
+test('every airport 24SPY lists is included, on the map, and the unknown ones are new', () => {
+  const W = 937, H = 706;
+  const ids = data.airports.map((a) => a.icao);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.length >= 24);
+  for (const icao of ['IRFD', 'IPPH', 'ITRN', 'OWO']) assert.ok(ids.includes(icao), icao);
+  assert.ok(data.airports.every((a) => a.name && a.x > 0 && a.x < W && a.y > 0 && a.y < H));
+  assert.equal(data.airports.find((a) => a.icao === 'IRFD').freq.tower, '124.850');
+});

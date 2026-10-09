@@ -955,6 +955,28 @@ function drawSpyAirways() {
     }
 }
 
+// 24SPY's own airport positions, drawn as hollow diamonds next to the radar's
+// regular airport markers so the two datasets can be compared by eye.
+function drawSpyAirports() {
+    const layer = document.getElementById('spy-airports');
+    if (!layer) return;
+    layer.replaceChildren();
+    for (const ap of spyData.airports) {
+        const r = 5;
+        layer.appendChild(svgEl('polygon', {
+            points: `${ap.x},${ap.y - r} ${ap.x + r},${ap.y} ${ap.x},${ap.y + r} ${ap.x - r},${ap.y}`,
+            fill: 'none', stroke: '#e0a33a', 'stroke-width': 1.4, 'vector-effect': 'non-scaling-stroke',
+        }));
+        const label = svgEl('text', { x: ap.x + 8, y: ap.y + 3, fill: '#e0a33a', 'font-size': 9, 'font-family': 'monospace' });
+        label.textContent = `${ap.icao} ${ap.name}`;
+        layer.appendChild(label);
+    }
+}
+
+document.getElementById('spy-airports-check').addEventListener('change', (e) => {
+    if (e.target.checked) drawSpyAirports();
+    else document.getElementById('spy-airports')?.replaceChildren();
+});
 document.getElementById('spy-areas-check').addEventListener('change', (e) => {
     if (e.target.checked) drawSpyAreas();
     else document.getElementById('spy-areas')?.replaceChildren();
@@ -3241,7 +3263,7 @@ function fetchMapLayer(container) {
 
                     // 24SPY airspace outlines and airways: two layers under
                     // everything else, filled in by the toolbar toggles.
-                    for (const id of ['spy-areas', 'spy-airways']) {
+                    for (const id of ['spy-areas', 'spy-airways', 'spy-airports']) {
                         const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                         layer.setAttribute('id', id);
                         layer.style.pointerEvents = 'none';

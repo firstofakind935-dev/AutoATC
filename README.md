@@ -571,7 +571,7 @@ shows a simple marker + label at each airport's verified anchor instead,
 and the detailed diagram is still available in the Ground View side
 panel.
 
-**Waypoints, airways and airspace come from 24SPY.** The radar's
+**Waypoints, airports, airways and airspace come from 24SPY.** The radar's
 waypoints (196, including every one 24Radar had), the NATA/NATJ oceanic
 airways and the FIR/TMA outlines come from
 [24SPY](https://github.com/tiaguinho2009/24SPY) by **Tiago Murteira
@@ -586,7 +586,11 @@ GPL-compatible. The credit also shows in the radar's footer. Regenerate
 it from a clone of the 24SPY repo with
 `node scripts/import-24spy.js [path-to-clone]` (24SPY's repo is being
 archived, so the file in this repo is the copy to keep). The toolbar has
-**Draw Fixes**, **FIR / TMA Outlines** and **Airways** toggles for them.
+**Draw Fixes**, **FIR / TMA Outlines**, **24SPY Airports** and **Airways**
+toggles for them. The 24 airports (names, tower/ground frequencies, and two
+the radar didn't have: ITRN and OWO) are drawn as amber diamonds beside the
+radar's own pixel-measured airport markers, which stay the main ones - the two
+datasets disagree by up to ~1 nm, and by far more for IZOL and IBAR.
 
 Reachable two ways:
 
