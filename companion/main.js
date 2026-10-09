@@ -4,7 +4,8 @@ const fs = require('fs');
 const { fork } = require('child_process');
 
 const { loadAirports } = require('./lib/airports');
-const { createKeySender, KEY_NAMES } = require('./lib/keySender');
+const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
+const { createMouseSteer } = require('./lib/mouseSteer');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
@@ -47,7 +48,34 @@ const PRELOAD_WEB_PREFS = {
 let controlWindow = null;
 let overlayWindow = null;
 let fmsWindow = null;
-let keySender = null; // created on the first autopilot key press
+let inputSender = null; // created on the first autopilot input
+let mouseSteer = null;
+
+function getInputSender() {
+  if (!inputSender) inputSender = createInputSender();
+  return inputSender;
+}
+
+// Electron works in DIPs; the OS input APIs on Windows want physical pixels.
+function toPhysical(point) {
+  return process.platform === 'win32' ? screen.dipToScreenPoint(point) : point;
+}
+
+function getMouseSteer() {
+  if (!mouseSteer) {
+    mouseSteer = createMouseSteer({
+      moveMouse: (x, y) => {
+        const p = toPhysical({ x: Math.round(x), y: Math.round(y) });
+        getInputSender().moveMouse(p.x, p.y);
+      },
+      getCursor: () => screen.getCursorScreenPoint(),
+      now: () => Date.now(),
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (t) => clearTimeout(t),
+    });
+  }
+  return mouseSteer;
+}
 
 function createControlWindow() {
   controlWindow = new BrowserWindow({
@@ -88,7 +116,7 @@ function openFmsWindow() {
   fmsWindow.on('closed', () => {
     fmsWindow = null;
     // Never leave a key held down with nothing left to release it.
-    if (keySender) keySender.releaseAll();
+    if (inputSender) inputSender.releaseAll();
   });
 }
 
@@ -185,11 +213,19 @@ ipcMain.on('telemetry', (event, sample) => {
 
 ipcMain.handle('autopilot-key-names', () => KEY_NAMES);
 ipcMain.handle('autopilot-press', (event, { key, ms }) => {
-  if (!keySender) keySender = createKeySender();
-  keySender.press(key, ms);
+  getInputSender().press(key, ms);
 });
+// Pitch/bank nudges via the mouse cursor - see lib/mouseSteer.js.
+// Resolves {override: true} if the pilot has moved the mouse.
+ipcMain.handle('autopilot-steer', (event, command) => getMouseSteer().steer(command));
+ipcMain.handle('autopilot-recenter', (event, center) => {
+  if (mouseSteer) mouseSteer.recenter(center);
+});
+// Where the cursor is now - the FMS settings capture the straight-and-level
+// center point with this.
+ipcMain.handle('autopilot-cursor', () => screen.getCursorScreenPoint());
 ipcMain.handle('autopilot-release-all', () => {
-  if (keySender) keySender.releaseAll();
+  if (inputSender) inputSender.releaseAll();
 });
 // While the autopilot is flying, the FMS window stops taking keyboard focus
 // (mouse clicks still work), so clicking its buttons doesn't pull focus

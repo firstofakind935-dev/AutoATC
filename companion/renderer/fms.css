@@ -211,3 +211,6 @@ body[data-skin="airbus"] .line.label-line { color: var(--scr-white); }
 dialog { background: #1a1e24; color: var(--text); border: 1px solid #333a44; border-radius: 10px; max-width: 440px; }
 dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 dialog h3 { margin-top: 0; }
+
+.row.tight { margin-top: 4px; margin-bottom: 6px; }
+.check { display: flex; gap: 6px; align-items: center; color: var(--dim); margin-bottom: 8px; }

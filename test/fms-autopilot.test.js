@@ -146,3 +146,63 @@ for (const [origin, destination, type] of [['IRFD', 'ITKO', 'A320'], ['ISAU', 'I
     assert.ok(result.maxAltOverCruise < 600, `overshot cruise by ${Math.round(result.maxAltOverCruise)} ft`);
   });
 }
+
+// --- Mouse steering (PTFS flies pitch and bank by mouse) ---------------------
+
+const { createMouseSteer } = require('../companion/lib/mouseSteer');
+
+function fakeMouse() {
+  const io = { cursor: { x: 0, y: 0 }, t: 0, timers: [], moves: [] };
+  io.moveMouse = (x, y) => {
+    io.cursor = { x, y };
+    io.moves.push([x, y]);
+  };
+  io.getCursor = () => io.cursor;
+  io.now = () => io.t;
+  io.setTimer = (fn, ms) => {
+    const timer = { fn, at: io.t + ms };
+    io.timers.push(timer);
+    return timer;
+  };
+  io.clearTimer = (timer) => {
+    io.timers = io.timers.filter((t) => t !== timer);
+  };
+  io.advance = (ms) => {
+    io.t += ms;
+    for (const timer of io.timers.filter((t) => t.at <= io.t).sort((a, b) => a.at - b.at)) {
+      io.timers = io.timers.filter((t) => t !== timer);
+      timer.fn();
+    }
+  };
+  return io;
+}
+
+const CENTER = { x: 960, y: 540 };
+
+test('mouse nudge: bank right + nose up moves the cursor right and up, then back to center axis by axis', () => {
+  const io = fakeMouse();
+  const steer = createMouseSteer(io);
+  steer.steer({ center: CENTER, deflectionPx: 100, roll: { direction: 1, ms: 100 }, pitch: { direction: 1, ms: 300 } });
+  assert.deepEqual(io.cursor, { x: 1060, y: 440 });
+  io.advance(100);
+  assert.deepEqual(io.cursor, { x: 960, y: 440 }, 'roll nudge ends first');
+  io.advance(200);
+  assert.deepEqual(io.cursor, CENTER, 'back at center');
+});
+
+test('mouse nudge: invertPitch flips the vertical direction', () => {
+  const io = fakeMouse();
+  createMouseSteer(io).steer({ center: CENTER, deflectionPx: 50, invertPitch: true, pitch: { direction: 1, ms: 100 } });
+  assert.deepEqual(io.cursor, { x: 960, y: 590 });
+});
+
+test('moving the mouse yourself is reported as an override, and nothing moves', () => {
+  const io = fakeMouse();
+  const steer = createMouseSteer(io);
+  steer.steer({ center: CENTER, deflectionPx: 100, roll: { direction: -1, ms: 100 } });
+  io.advance(100); // cursor back at center
+  io.cursor = { x: 400, y: 300 }; // the pilot grabs the mouse
+  const moves = io.moves.length;
+  assert.equal(steer.steer({ center: CENTER, deflectionPx: 100, roll: { direction: 1, ms: 100 } }).override, true);
+  assert.equal(io.moves.length, moves);
+});

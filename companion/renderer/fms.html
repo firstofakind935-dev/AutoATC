@@ -53,7 +53,27 @@
         <input id="planner-url" placeholder="https://your-planner.up.railway.app">
       </label>
       <h3>Game controls</h3>
-      <p class="dim small">The keys the autopilot presses in PTFS. Check each one matches your game controls: click Test, then quickly click into PTFS and watch the aircraft.</p>
+      <label class="field">Pitch &amp; bank control
+        <select id="steering">
+          <option value="mouse">Mouse (PTFS)</option>
+          <option value="keys">Keys</option>
+        </select>
+      </label>
+      <div id="mouse-settings">
+        <p class="dim small">PTFS steers toward your mouse cursor. The autopilot nudges the cursor off center and back. Moving the mouse yourself disconnects the autopilot.</p>
+        <div class="row tight">
+          <button id="capture-center" class="btn secondary small">Capture center</button>
+          <span class="dim small">Center: <span id="mouse-center">not set</span></span>
+        </div>
+        <p class="dim small">Click Capture, then within 3 s hold your mouse over PTFS where the aircraft flies straight and level (usually the middle of the game).</p>
+        <label class="field">Nudge distance (px) <input id="deflection" type="number" min="10" max="1000" step="10"></label>
+        <label class="check"><input id="invert-pitch" type="checkbox"> Invert pitch (mouse up = nose down)</label>
+        <div class="row tight">
+          <button id="test-bank-right" class="btn secondary small">Test bank right</button>
+          <button id="test-nose-up" class="btn secondary small">Test nose up</button>
+        </div>
+      </div>
+      <p class="dim small">Keys the autopilot presses. Test presses the key 3 s later, so click into PTFS and watch the aircraft.</p>
       <div id="keymap"></div>
       <div class="row">
         <button id="save-settings" class="btn">Save</button>

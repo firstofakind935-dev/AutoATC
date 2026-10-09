@@ -159,18 +159,32 @@ the HUD, plus the dead-reckoned position), the FMS works out the heading to
 fly to stay on the route (LNAV), the altitude/vertical speed for the
 climb, cruise and descent profile (VNAV), and the speed for the phase of
 flight. The autopilot compares how fast heading, altitude and speed are
-*actually* changing with how fast they *should* be, and taps the matching
-key - roll, pitch or throttle - for longer the bigger the gap. Short taps,
-never held keys, so one bad HUD reading can only cause one small input. It
-disconnects itself after 30 seconds without tracking data.
+*actually* changing with how fast they *should* be, and nudges the
+controls to close the gap - longer the bigger the gap:
+
+- **Pitch and bank: the mouse.** PTFS steers toward the cursor, so the
+  autopilot moves the cursor off the straight-and-level center point
+  (right to bank right, up for nose up) for a moment, then back.
+- **Throttle: W / S.** A short tap.
+
+Nudges, never held inputs, so between tracking updates the cursor rests at
+center and the aircraft isn't left rolling, and one bad HUD reading can
+only cause one small input. The autopilot disconnects itself after 30
+seconds without tracking data, and **as soon as you move the mouse
+yourself** - like a real autopilot when the pilot moves the controls.
 
 **Before you fly with it:**
 
 1. Open **Settings** in the FMS window and set the **Flight planner URL**
    (your planner service, e.g. `https://your-planner.up.railway.app`).
-2. Set **Game controls** to the keys PTFS actually uses for roll, pitch and
-   throttle. The defaults (arrow keys, W/S) are a guess - use each **Test**
-   button (it presses the key 3 seconds later, so click into PTFS) to check.
+2. Under **Game controls**, click **Capture center**, then within 3 seconds
+   hold your mouse over PTFS where the aircraft flies straight and level
+   (usually the middle of the game view). Use **Test bank right** / **Test
+   nose up** (3 seconds later, so click into PTFS) to check the direction;
+   tick **Invert pitch** if nose up goes the wrong way, and change **Nudge
+   distance** if the response is too weak or too strong. Throttle is W/S by
+   default - **Test** checks those too. (Pitch & bank control can be
+   switched to **Keys** for setups that fly by keyboard.)
 3. Set the control window's **Report interval** to 2 seconds while the
    autopilot flies - it only gets new information that often, so 5 seconds
    makes it slow to react.
@@ -179,7 +193,8 @@ disconnects itself after 30 seconds without tracking data.
    go to whichever window has keyboard focus, so keep PTFS focused - while
    LIVE and engaged, the FMS window stops taking keyboard focus (its
    buttons still work with the mouse) so clicking it doesn't steal focus
-   from the game.
+   from the game. Hands off the mouse while it flies - touching it
+   disconnects the autopilot.
 
 macOS needs Accessibility permission for the app (System Settings >
 Privacy & Security > Accessibility). Linux needs `xdotool` installed.
@@ -209,8 +224,10 @@ root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
   LNAV/VNAV/speed guidance (also loaded directly by the FMS window).
 - `lib/autopilot.js` - autopilot modes and the rate-based controller that
   turns targets into key taps (also loaded directly by the FMS window).
-- `lib/keySender.js` - presses keys in the focused window (Windows
-  SendInput via PowerShell, macOS System Events, Linux xdotool).
+- `lib/inputSender.js` - presses keys and moves the mouse cursor (Windows
+  SendInput via PowerShell, macOS System Events/CoreGraphics, Linux xdotool).
+- `lib/mouseSteer.js` - pitch/bank nudges via the cursor, and the
+  "pilot moved the mouse" override.
 - `main.js` - creates both windows, relays messages between them, and
   hosts the desktop-capture/settings/airports IPC handlers.
 - `preload.js` - exposes IPC calls and direct `lib/` logic to both

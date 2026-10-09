@@ -20,6 +20,9 @@ const $ = (id) => document.getElementById(id);
 const COLS = 24;
 const PLAN_ID_RE = /^[A-HJ-NP-Z2-9]{6}$/;
 
+// PTFS: throttle on W/S, pitch and bank by mouse (see ../lib/mouseSteer.js).
+// The roll/pitch keys only apply with "Pitch & bank control: Keys", for
+// other games or keyboard-flying setups.
 const DEFAULT_KEYMAP = {
   rollLeft: 'ArrowLeft',
   rollRight: 'ArrowRight',
@@ -48,7 +51,16 @@ const HUD_TYPE_SKINS = [
 
 // ---------------------------------------------------------------- state
 
-const settings = { plannerUrl: '', skin: 'auto', keymap: { ...DEFAULT_KEYMAP }, live: false };
+const settings = {
+  plannerUrl: '',
+  skin: 'auto',
+  keymap: { ...DEFAULT_KEYMAP },
+  steering: 'mouse', // mouse | keys - how pitch and bank are flown
+  mouseCenter: null, // {x, y} screen point where the aircraft flies straight and level
+  mouseDeflectionPx: 120, // how far off center a nudge moves the cursor
+  invertPitch: false,
+  live: false,
+};
 const ap = Autopilot.create();
 const ui = {
   page: 'init',
@@ -533,11 +545,15 @@ function altHold() {
 function toggleAp() {
   if (!ap.engaged) {
     if (!ui.telemetry) return flash('NO TRACKING DATA');
+    if (settings.live && settings.steering === 'mouse' && !settings.mouseCenter) return flash('SET MOUSE CENTER');
     if (ap.lateral === 'HDG') ap.selected.headingDeg = Math.round(ui.telemetry.headingDeg);
     ap.disconnectReason = null;
   }
   ap.engaged = !ap.engaged;
-  if (!ap.engaged) api?.autopilotReleaseAll();
+  if (!ap.engaged) {
+    api?.autopilotReleaseAll();
+    api?.autopilotRecenter(null); // cancel pending nudges, leave the cursor alone
+  }
   updatePassthrough();
   render();
 }
@@ -801,7 +817,54 @@ function render() {
 
 const AXIS_KEYS = { roll: ['rollLeft', 'rollRight'], pitch: ['pitchDown', 'pitchUp'], throttle: ['throttleDown', 'throttleUp'] };
 
-function onTelemetry(sample) {
+function logInput(text) {
+  const time = new Date().toLocaleTimeString([], { hour12: false });
+  ui.lastInputs.unshift(`${time}  ${text}`);
+  ui.lastInputs = ui.lastInputs.slice(0, 12);
+}
+
+function disconnectAp(reason) {
+  ap.engaged = false;
+  ap.disconnectReason = reason;
+  api?.autopilotRecenter(null);
+  updatePassthrough();
+}
+
+async function sendCommands(commands) {
+  const byAxis = Object.fromEntries(commands.map((cmd) => [cmd.axis, cmd]));
+
+  // Pitch and bank: one mouse nudge covering both axes (PTFS), or keys.
+  if (settings.steering === 'mouse' && (byAxis.roll || byAxis.pitch)) {
+    const { roll, pitch } = byAxis;
+    const parts = [];
+    if (roll) parts.push(`${roll.direction > 0 ? 'right' : 'left'} ${roll.ms}ms`);
+    if (pitch) parts.push(`${pitch.direction > 0 ? 'nose up' : 'nose down'} ${pitch.ms}ms`);
+    logInput(`mouse ${parts.join(', ')}`);
+    if (settings.live) {
+      if (!settings.mouseCenter) {
+        disconnectAp('Set the mouse center in Settings - autopilot disconnected');
+      } else {
+        const result = await api?.autopilotSteer({
+          center: settings.mouseCenter,
+          deflectionPx: settings.mouseDeflectionPx,
+          invertPitch: settings.invertPitch,
+          roll: roll ? { direction: roll.direction, ms: roll.ms } : null,
+          pitch: pitch ? { direction: pitch.direction, ms: pitch.ms } : null,
+        });
+        if (result?.override) disconnectAp('Mouse moved - autopilot disconnected');
+      }
+    }
+  }
+
+  for (const cmd of commands) {
+    if (settings.steering === 'mouse' && cmd.axis !== 'throttle') continue;
+    const key = settings.keymap[AXIS_KEYS[cmd.axis][cmd.direction > 0 ? 1 : 0]];
+    if (settings.live) api?.autopilotPress(key, cmd.ms);
+    logInput(`${key} ${cmd.ms}ms  (${cmd.axis} ${cmd.direction > 0 ? '+' : '−'})`);
+  }
+}
+
+async function onTelemetry(sample) {
   const first = !ui.telemetry;
   ui.telemetry = sample;
   if (first) syncSelectionsToAircraft();
@@ -810,15 +873,10 @@ function onTelemetry(sample) {
   const out = Autopilot.update(ap, sample, ui.guidance);
   if (out.disconnected) {
     api?.autopilotReleaseAll();
+    api?.autopilotRecenter(null);
     updatePassthrough();
   }
-  for (const cmd of out.commands) {
-    const key = settings.keymap[AXIS_KEYS[cmd.axis][cmd.direction > 0 ? 1 : 0]];
-    if (settings.live) api?.autopilotPress(key, cmd.ms);
-    const time = new Date().toLocaleTimeString([], { hour12: false });
-    ui.lastInputs.unshift(`${time}  ${key} ${cmd.ms}ms  (${cmd.axis} ${cmd.direction > 0 ? '+' : '−'})`);
-  }
-  ui.lastInputs = ui.lastInputs.slice(0, 12);
+  await sendCommands(out.commands);
   render();
 }
 
@@ -829,6 +887,11 @@ async function loadSettings() {
   Object.assign(settings, saved, { keymap: { ...DEFAULT_KEYMAP, ...(saved.keymap || {}) }, live: false });
   $('planner-url').value = settings.plannerUrl || '';
   $('skin-select').value = settings.skin || 'auto';
+  $('steering').value = settings.steering;
+  $('deflection').value = settings.mouseDeflectionPx;
+  $('invert-pitch').checked = settings.invertPitch;
+  showMouseCenter();
+  syncSteeringVisibility();
 }
 
 function saveSettings() {
@@ -842,7 +905,7 @@ async function buildKeymapEditor() {
   box.innerHTML = '';
   for (const [action, label] of Object.entries(KEYMAP_LABELS)) {
     const line = document.createElement('div');
-    line.className = 'keymap-row';
+    line.className = `keymap-row ${action.startsWith('throttle') ? '' : 'steer-keys'}`;
     line.innerHTML = `<span>${label}</span>`;
     const select = document.createElement('select');
     for (const n of names) select.append(new Option(n, n));
@@ -862,6 +925,7 @@ async function buildKeymapEditor() {
     line.append(select, test);
     box.append(line);
   }
+  syncSteeringVisibility();
 }
 
 $('settings-toggle').addEventListener('click', () => {
@@ -871,12 +935,72 @@ $('settings-toggle').addEventListener('click', () => {
 });
 $('save-settings').addEventListener('click', async () => {
   settings.plannerUrl = $('planner-url').value.trim();
+  settings.mouseDeflectionPx = Math.max(10, Math.min(1000, Number($('deflection').value) || 120));
+  settings.invertPitch = $('invert-pitch').checked;
   ui.navdata = null;
   await saveSettings();
   loadNavdata();
   $('settings-msg').textContent = 'Saved';
   render();
 });
+function showMouseCenter() {
+  const c = settings.mouseCenter;
+  $('mouse-center').textContent = c ? `${Math.round(c.x)}, ${Math.round(c.y)}` : 'not set';
+}
+
+function syncSteeringVisibility() {
+  const mouse = settings.steering === 'mouse';
+  $('mouse-settings').hidden = !mouse;
+  for (const el of document.querySelectorAll('.steer-keys')) el.hidden = mouse;
+}
+
+// Every capture/test waits 3 s, so the pilot can move over to PTFS first.
+function countdown(message, fn) {
+  let left = 3;
+  const tick = () => {
+    if (left === 0) return fn();
+    $('settings-msg').textContent = `${message} in ${left}…`;
+    left -= 1;
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+$('steering').addEventListener('change', () => {
+  settings.steering = $('steering').value;
+  syncSteeringVisibility();
+});
+$('capture-center').addEventListener('click', () => {
+  countdown('Hold your mouse where the aircraft flies straight and level - capturing', async () => {
+    settings.mouseCenter = await api?.autopilotCursor();
+    showMouseCenter();
+    await saveSettings();
+    $('settings-msg').textContent = 'Center captured and saved';
+  });
+});
+for (const [id, axis, direction, label] of [
+  ['test-bank-right', 'roll', 1, 'bank right'],
+  ['test-nose-up', 'pitch', 1, 'nose up'],
+]) {
+  $(id).addEventListener('click', () => {
+    if (!settings.mouseCenter) {
+      $('settings-msg').textContent = 'Capture the center first';
+      return;
+    }
+    countdown(`Click into PTFS - nudging ${label}`, async () => {
+      settings.mouseDeflectionPx = Number($('deflection').value) || 120;
+      settings.invertPitch = $('invert-pitch').checked;
+      await api?.autopilotSteer({
+        center: settings.mouseCenter,
+        deflectionPx: settings.mouseDeflectionPx,
+        invertPitch: settings.invertPitch,
+        [axis]: { direction, ms: 500 },
+      });
+      $('settings-msg').textContent = `Nudged ${label} for 0.5 s`;
+    });
+  });
+}
+
 $('skin-select').addEventListener('change', () => {
   settings.skin = $('skin-select').value;
   saveSettings();

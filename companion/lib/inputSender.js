@@ -1,17 +1,21 @@
-// Presses keys in whatever window has keyboard focus - the autopilot's way
-// of flying PTFS. Runs in the Electron main process (see main.js's
-// 'autopilot-press' handler), never in a renderer.
+// The autopilot's hands: presses keys (throttle) and moves the mouse
+// cursor (pitch and bank - PTFS steers toward the cursor) as if a person
+// were doing it. Runs in the Electron main process (see main.js's
+// 'autopilot-press' / 'autopilot-steer' handlers), never in a renderer.
 //
 // One method per OS, all built into the OS (nothing to install on Windows
 // or macOS):
-// - Windows: a long-lived PowerShell process calling SendInput with
-//   hardware scan codes, which games read like a real keyboard.
-// - macOS: osascript + System Events. The companion app needs Accessibility
-//   permission (System Settings > Privacy & Security > Accessibility).
+// - Windows: a long-lived PowerShell process calling SendInput - hardware
+//   scan codes for keys, absolute moves for the mouse - which games read
+//   like a real keyboard and mouse.
+// - macOS: osascript (System Events for keys, CoreGraphics for the mouse).
+//   The companion app needs Accessibility permission (System Settings >
+//   Privacy & Security > Accessibility).
 // - Linux: xdotool (install it from your package manager).
 //
 // Keys go to the FOCUSED window - the PTFS game window must be focused
-// while the autopilot is flying.
+// while the autopilot is flying. Mouse positions are physical screen
+// pixels (main.js converts from Electron's DIPs).
 
 const { spawn } = require('child_process');
 
@@ -56,6 +60,19 @@ public static class AutoAtcKeys {
   [StructLayout(LayoutKind.Explicit)] struct INPUTUNION { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
   [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public INPUTUNION u; }
   [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
+  [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+  [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
+  public static void Init() { SetProcessDPIAware(); }
+  // Absolute move in physical pixels across the whole virtual desktop.
+  public static void Move(int x, int y) {
+    int vx = GetSystemMetrics(76), vy = GetSystemMetrics(77), vw = GetSystemMetrics(78), vh = GetSystemMetrics(79);
+    INPUT input = new INPUT();
+    input.type = 0;
+    input.u.mi.dx = (int)Math.Round((x - vx) * 65535.0 / Math.Max(1, vw - 1));
+    input.u.mi.dy = (int)Math.Round((y - vy) * 65535.0 / Math.Max(1, vh - 1));
+    input.u.mi.dwFlags = 0x0001 | 0x8000 | 0x4000; // MOVE | ABSOLUTE | VIRTUALDESK
+    SendInput(1, new INPUT[] { input }, Marshal.SizeOf(typeof(INPUT)));
+  }
   public static void Send(ushort scan, bool extended, bool up) {
     INPUT input = new INPUT();
     input.type = 1;
@@ -65,9 +82,11 @@ public static class AutoAtcKeys {
   }
 }
 "@
+[AutoAtcKeys]::Init()
 while (($line = [Console]::In.ReadLine()) -ne $null) {
   $p = $line.Split(' ')
-  [AutoAtcKeys]::Send([uint16]$p[1], $p[2] -eq '1', $p[0] -eq 'up')
+  if ($p[0] -eq 'move') { [AutoAtcKeys]::Move([int]$p[1], [int]$p[2]) }
+  else { [AutoAtcKeys]::Send([uint16]$p[1], $p[2] -eq '1', $p[0] -eq 'up') }
 }
 `;
 
@@ -79,20 +98,21 @@ function createWindowsBackend() {
     stdio: ['pipe', 'ignore', 'pipe'],
     windowsHide: true,
   });
-  proc.on('error', (err) => console.error(`[keySender] PowerShell failed to start: ${err.message}`));
-  proc.stderr.on('data', (d) => console.error(`[keySender] ${d}`));
+  proc.on('error', (err) => console.error(`[inputSender] PowerShell failed to start: ${err.message}`));
+  proc.stderr.on('data', (d) => console.error(`[inputSender] ${d}`));
   // Lines written before Add-Type finishes compiling just wait in the pipe.
   const send = (dir, [scan, extended]) => proc.stdin.write(`${dir} ${scan} ${extended ? 1 : 0}\n`);
   return {
     down: (key) => send('down', key),
     up: (key) => send('up', key),
+    moveMouse: (x, y) => proc.stdin.write(`move ${Math.round(x)} ${Math.round(y)}\n`),
     close: () => proc.kill(),
   };
 }
 
 function runDetached(cmd, args) {
   const proc = spawn(cmd, args, { stdio: 'ignore' });
-  proc.on('error', (err) => console.error(`[keySender] ${cmd} failed: ${err.message}`));
+  proc.on('error', (err) => console.error(`[inputSender] ${cmd} failed: ${err.message}`));
 }
 
 function createMacBackend() {
@@ -105,21 +125,28 @@ key down (key code ${key[2]})
 delay ${(ms / 1000).toFixed(3)}
 key up (key code ${key[2]})
 end tell`]),
+    // A real mouse-moved event (not just warping the cursor), so the game
+    // sees it like a hand on the mouse.
+    moveMouse: (x, y) =>
+      runDetached('osascript', ['-l', 'JavaScript', '-e',
+        `ObjC.import('CoreGraphics'); $.CGEventPost($.kCGHIDEventTap, $.CGEventCreateMouseEvent(null, $.kCGEventMouseMoved, {x: ${Math.round(x)}, y: ${Math.round(y)}}, $.kCGMouseButtonLeft));`]),
   };
 }
 
 function createLinuxBackend() {
   return {
     pressFor: (key, ms) => runDetached('xdotool', ['keydown', key[3], 'sleep', (ms / 1000).toFixed(3), 'keyup', key[3]]),
+    moveMouse: (x, y) => runDetached('xdotool', ['mousemove', String(Math.round(x)), String(Math.round(y))]),
   };
 }
 
 /**
- * Creates a key sender. `press(name, ms)` holds that key for `ms`
- * milliseconds. A key pressed again while still held is extended rather
- * than released and re-pressed.
+ * Creates an input sender. `press(name, ms)` holds that key for `ms`
+ * milliseconds (a key pressed again while still held is extended rather
+ * than released and re-pressed); `moveMouse(x, y)` puts the cursor at that
+ * physical screen pixel.
  */
-function createKeySender(platform = process.platform) {
+function createInputSender(platform = process.platform) {
   const backend = platform === 'win32' ? createWindowsBackend() : platform === 'darwin' ? createMacBackend() : createLinuxBackend();
   const held = new Map(); // key name -> release timer (Windows backend only)
 
@@ -151,6 +178,7 @@ function createKeySender(platform = process.platform) {
   return {
     press,
     releaseAll,
+    moveMouse: (x, y) => backend.moveMouse(x, y),
     close() {
       releaseAll();
       backend.close?.();
@@ -158,4 +186,4 @@ function createKeySender(platform = process.platform) {
   };
 }
 
-module.exports = { createKeySender, KEY_NAMES: Object.keys(KEYS) };
+module.exports = { createInputSender, KEY_NAMES: Object.keys(KEYS) };

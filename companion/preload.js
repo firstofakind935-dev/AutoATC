@@ -60,6 +60,9 @@ contextBridge.exposeInMainWorld('companion', {
   autopilotKeyNames: () => ipcRenderer.invoke('autopilot-key-names'),
   autopilotPress: (key, ms) => ipcRenderer.invoke('autopilot-press', { key, ms }),
   autopilotReleaseAll: () => ipcRenderer.invoke('autopilot-release-all'),
+  autopilotSteer: (command) => ipcRenderer.invoke('autopilot-steer', command),
+  autopilotRecenter: (center) => ipcRenderer.invoke('autopilot-recenter', center),
+  autopilotCursor: () => ipcRenderer.invoke('autopilot-cursor'),
   setFmsPassthrough: (on) => ipcRenderer.invoke('fms-set-passthrough', on),
 
   // Control window <-> overlay window messaging, relayed through main
