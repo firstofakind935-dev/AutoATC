@@ -2,8 +2,8 @@ body, html {
     margin: 0;
     padding: 0;
     height: 100%;
-    font-family: Arial, sans-serif;
-    background-color: #2d2d2d;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background-color: #04070a;
     color: #fff;
     overflow: hidden;
 }
@@ -14,7 +14,7 @@ header {
     left: 0;
     right: 0;
     height: 60px;
-    background: linear-gradient(to right, rgb(27, 76, 109) 0%, rgba(19, 19, 22, 1) 10%);
+    background: linear-gradient(to right, rgb(18, 70, 66) 0%, #05090d 10%);
     color: #fff;
     display: flex;
     align-items: center;
@@ -52,7 +52,7 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #202024;
+    background-color: #0a131b;
     height: 40px;
     width: 150px;
     margin-left: 20px;
@@ -63,12 +63,12 @@ header h1 {
 }
 
 .fpl-button.on {
-    background-color: #3b6cec; /* Cor ativa */
+    background-color: #1fb98a; /* Cor ativa */
     color: #ffffff; /* Cor do texto quando ativo */
 }
 
 .fpl-button.on:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
 }
 
 .fpl-button .fpl-icon {
@@ -80,11 +80,11 @@ header h1 {
 }
 
 .fpl-button:hover {
-    background-color: #323237; 
+    background-color: #12212c; 
 }
 
 .fpl-button:active {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: #ffffff;
 }
 
@@ -95,7 +95,7 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #17171a; /* Fundo mais escuro */
+    background-color: #070e14; /* Fundo mais escuro */
     height: 40px;
     width: 110px;
     margin-left: 5px;
@@ -122,7 +122,7 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #202024;
+    background-color: #0a131b;
     height: 35px;
     width: 75px;
     border: none;
@@ -130,19 +130,19 @@ header h1 {
 }
 
 .atc-online .online-number {
-    color: #3b6cec;
+    color: #1fb98a;
     margin-right: 5px;
     font-weight: bold;
 }
 
 .mapUpdateTime {
     font-size: 15px;
-    color: rgb(190, 190, 190);
+    color: #9fc9b8;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(32, 32, 36, 1);
+    background-color: rgba(8, 17, 25, 0.96);
     height: 35px;
     min-width: 100px;
     padding: 0 15px;
@@ -174,7 +174,7 @@ header a {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #131316; /* Cor de fundo escura */
+    background-color: #05090d; /* Cor de fundo escura */
     color: #ffffff; /* Cor do texto */
     width: 60%; /* Largura do menu */
     max-width: 800px; /* Limite de largura máxima */
@@ -189,7 +189,7 @@ header a {
 }
 
 .Changelog-menu .title {
-    background-color: #202024; /* Fundo do título */
+    background-color: #0a131b; /* Fundo do título */
     padding: 15px;
     font-size: 1.5em;
     font-weight: bold;
@@ -204,7 +204,7 @@ header a {
     top: 50%;
     right: 15px; /* Ajuste de espaçamento da borda direita */
     transform: translateY(-50%); /* Centraliza verticalmente */
-    background-color: #131316;
+    background-color: #05090d;
     border: none;
     border-radius: 5px;
     padding: 5px; /* Espaçamento interno para centralizar */
@@ -218,19 +218,19 @@ header a {
 }
 
 .cl-close-button:hover {
-    background-color: rgba(50, 50, 55, 1);
+    background-color: #12212c;
 }
 
 .Changelog-menu .content {
     padding: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     line-height: 1.6;
     overflow-y: auto;
 }
 
 .Changelog-menu .content h2 {
     font-size: 1.5em;
-    color: #3b6cec; /* Cor chamativa */
+    color: #1fb98a; /* Cor chamativa */
     margin-bottom: 10px;
     border-bottom: 2px solid #444; /* Linha separadora */
     padding-bottom: 5px;
@@ -266,18 +266,18 @@ header a {
 }
 
 .Changelog-menu .content::-webkit-scrollbar-thumb {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     border-radius: 4px;
 }
 
 /* Compatibilidade com navegadores que suportam scrollbar não-Webkit */
 .Changelog-menu {
-    scrollbar-color: #3b6cec transparent;
+    scrollbar-color: #1fb98a transparent;
     scrollbar-width: thin;
 }
 
 .header-button2 {
-    background-color: rgba(32, 32, 36, 1);
+    background-color: rgba(8, 17, 25, 0.96);
     border: none;
     border-radius: 5px;
     padding: 5px; /* Espaçamento interno para centralizar */
@@ -291,7 +291,7 @@ header a {
 }
 
 .header-button2:hover {
-    background-color: rgba(50, 50, 55, 1);
+    background-color: #12212c;
 }
 
 .header-button2 .icon {
@@ -302,7 +302,7 @@ header a {
 /* Estilo do botão de configurações */
 .settings-button,
 .close-button {
-    background-color: rgba(32, 32, 36, 1);
+    background-color: rgba(8, 17, 25, 0.96);
     border: none;
     border-radius: 5px;
     padding: 5px; /* Espaçamento interno para centralizar */
@@ -316,19 +316,19 @@ header a {
 }
 
 .settings-button:hover {
-    background-color: rgba(50, 50, 55, 1);
+    background-color: #12212c;
 }
 
 .settings-button:active {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
 }
 
 .settings-button.on {
-    background-color: #3b6cec; /* Cor ativa */
+    background-color: #1fb98a; /* Cor ativa */
 }
 
 .close-button:hover {
-    background-color: rgba(50, 50, 55, 1);
+    background-color: #12212c;
 }
 
 .settings-icon,
@@ -345,7 +345,7 @@ header a {
     width: 300px;
     max-height: 90vh; /* Limita a altura ao tamanho da tela */
     overflow-y: auto;
-    background-color: #131316;
+    background-color: #05090d;
     border-radius: 5px;
     padding: 20px;
     box-shadow: 4px 0px 10px rgba(0, 0, 0, 0.5);
@@ -357,11 +357,11 @@ header a {
     justify-content: space-between;
     align-items: center;
     margin-top: 0;
-    color: #3b6cec;
+    color: #1fb98a;
 }
 
 .settings-menu p {
-    color: #bdbdbd;
+    color: #9fc9b8;
     margin: 10px 0;
 }
 
@@ -377,7 +377,7 @@ header a {
 .map-option {
     display: flex;
     align-items: center;
-    background-color: #131316;
+    background-color: #05090d;
     padding: 8px;
     border-radius: 5px;
     transition: background-color 0.3s ease;
@@ -388,8 +388,8 @@ header a {
     appearance: none;
     width: 18px;
     height: 18px;
-    background-color: #2d2d2d;
-    border: 1px solid #3b6cec;
+    background-color: #04070a;
+    border: 1px solid #1fb98a;
     border-radius: 3px;
     cursor: pointer;
     margin-right: 10px;
@@ -403,7 +403,7 @@ header a {
 
 /* Estilo para o ícone de checkmark */
 .map-option input[type="checkbox"]:checked {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     background-image: url('Icons/checkmark-svgrepo-com.svg');
     background-size: 100%; /* Ajusta o tamanho do ícone */
     background-position: center;
@@ -412,7 +412,7 @@ header a {
 }
 
 .map-option input[type="checkbox"]:checked:hover {
-    background-color: #0048ff;
+    background-color: #2fd6a0;
 }
 
 /* Estilo do texto da opção */
@@ -430,10 +430,10 @@ header a {
     left: 20px; /* Ajuste para ficar no canto superior esquerdo */
     width: 300px;
     padding: 0 15px 15px 15px;
-    background-color: #131316;
+    background-color: #05090d;
     border-radius: 10px;
     color: #fff;
-    font-family: Arial, sans-serif;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     z-index: 100;
     overflow: hidden; /* Necessário para a animação */
@@ -470,7 +470,7 @@ header a {
 .flp-menu h3 {
     font-size: 1.6rem;
     margin-bottom: 10px;
-    color: #3b6cec;
+    color: #1fb98a;
     text-align: left;
     width: 100%;
 }
@@ -479,7 +479,7 @@ header a {
     border: none;
     height: 2px;
     width: 100%;
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     margin-bottom: 15px;
 }
 
@@ -493,15 +493,15 @@ header a {
 
 .form-row label {
     font-size: 1rem;
-    color: #bdbdbd;
+    color: #9fc9b8;
     width: 35%;
     text-align: right;
     padding-right: 10px;
 }
 
 .form-row textarea {
-    background-color: #2d2d2d;
-    border: 2px solid #3b6cec;
+    background-color: #04070a;
+    border: 2px solid #1fb98a;
     border-radius: 4px;
     color: #fff;
     font-size: 1rem;
@@ -529,8 +529,8 @@ header a {
 
 textarea:focus, textarea:hover {
     outline: none;
-    border-color: #0048ff;
-    box-shadow: 0 0 5px rgba(59, 108, 236, 0.7);
+    border-color: #2fd6a0;
+    box-shadow: 0 0 5px rgba(47,214,160,0.7);
 }
 
 .buttons {
@@ -542,7 +542,7 @@ textarea:focus, textarea:hover {
 }
 
 .buttons button {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: #fff;
     font-size: 1rem;
     border: none;
@@ -554,7 +554,7 @@ textarea:focus, textarea:hover {
 }
 
 .buttons button:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
     transform: scale(1.05);
 }
 
@@ -568,7 +568,7 @@ textarea:focus, textarea:hover {
 }
 
 .buttons .save:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
 }
 
 .buttons .save:active {
@@ -580,7 +580,7 @@ textarea:focus, textarea:hover {
 }
 
 .buttons .reset:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
 }
 
 .buttons .reset:active {
@@ -590,7 +590,7 @@ textarea:focus, textarea:hover {
 .mini-slider {
     display: none;
     position: absolute;
-    background-color: #131316; /* Cor de fundo escura */
+    background-color: #05090d; /* Cor de fundo escura */
     color: #ffffff; /* Cor do texto */
     padding: 10px;
     border-radius: 5px;
@@ -610,14 +610,14 @@ textarea:focus, textarea:hover {
     display: block;
     margin-bottom: 5px;
     font-size: 1rem;
-    color: #bdbdbd; /* Cor do texto */
+    color: #9fc9b8; /* Cor do texto */
 }
 
 .mini-slider input[type="range"] {
     width: 100%;
     -webkit-appearance: none;
     appearance: none;
-    background: linear-gradient(to right, #3b6cec 0%, #3b6cec 50%, #202024 50%, #202024 100%);
+    background: linear-gradient(to right, #1fb98a 0%, #1fb98a 50%, #0a131b 50%, #0a131b 100%);
     height: 5px;
     border-radius: 5px;
     outline: none;
@@ -636,7 +636,7 @@ textarea:focus, textarea:hover {
 }
 
 .mini-slider input[type="range"]::-webkit-slider-thumb:hover {
-    background: #4b7eff;
+    background: #2fd6a0;
 }
 
 .mini-slider input[type="range"]::-moz-range-thumb {
@@ -653,7 +653,7 @@ textarea:focus, textarea:hover {
     margin-top: 5px;
     text-align: center;
     font-size: 1.2rem;
-    color: #3b6cec; /* Cor do valor */
+    color: #1fb98a; /* Cor do valor */
 }
 
 /* Estilo para o container da lista */
@@ -662,8 +662,8 @@ textarea:focus, textarea:hover {
     max-height: 150px; /* Limite de altura para tornar a lista rolável */
     overflow-y: auto;
     overflow-x: hidden;
-    border: 1px solid #3b6cec;
-    background-color: #131316;
+    border: 1px solid #1fb98a;
+    background-color: #05090d;
     z-index: 101;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     border-radius: 5px;
@@ -675,7 +675,7 @@ textarea:focus, textarea:hover {
     width: 100%;
     box-sizing: border-box;
     border: none;
-    background-color: #2d2d2d;
+    background-color: #04070a;
     color: #fff;
     padding: 8px 0px 8px 0px;
     cursor: pointer;
@@ -684,7 +684,7 @@ textarea:focus, textarea:hover {
 }
 
 .list-container button:hover {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: #ffffff;
 }
 
@@ -693,14 +693,14 @@ textarea:focus, textarea:hover {
 }
 
 .list-container::-webkit-scrollbar-track {
-    background: #1e1e1e;
+    background: #070e14;
     border-radius: 10px;
 }
 
 .list-container::-webkit-scrollbar-thumb {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     border-radius: 10px;
-    border: 1px solid #1e1e1e;
+    border: 1px solid #070e14;
 }
 
 /* Container principal para o mapa */
@@ -710,7 +710,7 @@ textarea:focus, textarea:hover {
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: rgba(19, 19, 19, 255);
+    background-color: #04070a;
     cursor: grab;
 }
 
@@ -733,7 +733,7 @@ canvas {
     background-color: rgba(40, 40, 60, 0);
     padding: 3px 0px;
     border-radius: 5px;
-    color: #7d7d85;
+    color: #5f8a7d;
     font-size: 0.85em;
     text-align: center;
     z-index: 10;
@@ -746,7 +746,7 @@ canvas {
 .airport-ui .icao-code {
     background-color: transparent;
     border: none;
-    color: #7d7d85;
+    color: #5f8a7d;
     font-size: 1em;
     text-align: center;
     padding: auto 2px;
@@ -799,7 +799,7 @@ canvas {
 }
 
 .airport-ui .badge.C {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
 }
 
 .airport-ui .badge.A {
@@ -834,7 +834,7 @@ canvas {
 
 .icao-menu {
     position: absolute;
-    background-color: #131316;
+    background-color: #05090d;
     color: #fff;
     padding: 10px;
     border-radius: 5px;
@@ -859,7 +859,7 @@ canvas {
 }
 
 .icao-menu .title {
-    color: #3b6cec;
+    color: #1fb98a;
     font-size: 1.1em;
     font-weight: bold;
     margin-bottom: 5px;
@@ -871,7 +871,7 @@ canvas {
     border: none;
     height: 1px;
     font-weight: normal;
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     width: 100%;
     margin: 4px 0;
     opacity: 0.3;
@@ -885,7 +885,7 @@ canvas {
 
 .no-charts {
     font-size: 15px;
-    color: rgb(190, 190, 190);
+    color: #9fc9b8;
     text-align: center;
     display: flex;
     align-items: center;
@@ -895,12 +895,12 @@ canvas {
 
 .chart-button {
     font-size: 15px;
-    color: rgb(190, 190, 190);
+    color: #9fc9b8;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(32, 32, 36, 1);
+    background-color: rgba(8, 17, 25, 0.96);
     height: 35px;
     width: 210px;
     border: none;
@@ -911,17 +911,17 @@ canvas {
 }
 
 .chart-button:hover {
-    background-color: rgba(50, 50, 55, 1);
+    background-color: #12212c;
     color: white;
 }
 
 .chart-button:active {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: white;
 }
 
 .chart-button.special {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: rgb(223, 223, 223);
     display: flex;
     align-items: center;
@@ -930,7 +930,7 @@ canvas {
 }
 
 .chart-button.special:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
     color: white;
 }
 
@@ -949,7 +949,7 @@ canvas {
 
 .airport-info-menu {
     position: fixed;
-    background-color: #131316;
+    background-color: #05090d;
     color: #fff;
     padding: 10px 10px 5px 10px;
     border-radius: 5px;
@@ -961,7 +961,7 @@ canvas {
 
 /* Estilo do título do aeroporto e posição */
 .airport-info-menu .title {
-    color: #3b6cec;
+    color: #1fb98a;
     font-size: 1.1em;
     font-weight: bold;
     margin-bottom: 5px;
@@ -971,7 +971,7 @@ canvas {
 
 .airport-info-menu .title .role1 {
     color: white;
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     font-size: 1em;
     font-weight: normal;
     width: 150px;
@@ -988,7 +988,7 @@ canvas {
 
 .airport-info-menu .title .role2 {
     color: white;
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     font-size: 1em;
     font-weight: normal;
     width: 150px;
@@ -1006,7 +1006,7 @@ canvas {
 /* Estilo das informações do controlador */
 .airport-info-menu .controller-info {
     font-size: 1em; /* Tamanho normal */
-    color: #bdbdbd; /* Cor cinza clara */
+    color: #9fc9b8; /* Cor cinza clara */
     font-weight: normal;
 }
 
@@ -1014,7 +1014,7 @@ canvas {
     border: none;
     height: 1px;
     font-weight: normal;
-    background-color: #3b6cec; /* Cor azul para combinar com o texto */
+    background-color: #1fb98a; /* Cor azul para combinar com o texto */
     width: 100%;
     margin: 4px 0; /* Ajuste o espaçamento conforme necessário */
     opacity: 0.3; /* Para dar um efeito de sombra */
@@ -1022,7 +1022,7 @@ canvas {
 
 .special-tag {
     color: #ffffff;
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     font-size: 0.9em;
     font-weight: bold;
     padding: 3px 10px;
@@ -1034,13 +1034,13 @@ canvas {
 .info-sections {
     max-height: 200px;
     overflow-y: auto;
-    scrollbar-color: #3b6cec transparent;
+    scrollbar-color: #1fb98a transparent;
     scrollbar-width: thin;
     margin-bottom: 5px;
 }
 
 .controller-info-section {
-    background-color: rgba(32,32,36,1);
+    background-color: rgba(8, 17, 25, 0.96);
     border-radius: 5px;
     padding: 10px;
     margin-top: 5px;
@@ -1049,7 +1049,7 @@ canvas {
 }
 
 .controller-info-section:hover {
-    background-color: rgba(40, 40, 45, 1);
+    background-color: #0e1b27;
 }
 
 .controller-info-section p {
@@ -1063,7 +1063,7 @@ canvas {
 }
 
 .atis-info-section {
-    background-color: rgba(32, 32, 36, 1);
+    background-color: rgba(8, 17, 25, 0.96);
     border-radius: 5px;
     padding: 10px;
     margin-top: 5px;
@@ -1073,7 +1073,7 @@ canvas {
 }
 
 .atis-info-section:hover {
-    background-color: rgba(40, 40, 45, 1);
+    background-color: #0e1b27;
 }
 
 .atis-header {
@@ -1082,7 +1082,7 @@ canvas {
     align-items: center;
     gap: 10px;
     font-size: 0.9em;
-    color: #bdbdbd;
+    color: #9fc9b8;
 }
 
 .atis-ident {
@@ -1092,7 +1092,7 @@ canvas {
 
 .atis-uptime {
     font-size: 0.9em;
-    color: #bdbdbd;
+    color: #9fc9b8;
 }
 
 .atis-chart {
@@ -1113,7 +1113,7 @@ canvas {
 }
 
 .atis-info-section .separator {
-    color: #3b6cec;
+    color: #1fb98a;
 }
 
 .atis-tooltip {
@@ -1170,7 +1170,7 @@ canvas {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #131316;
+    background-color: #05090d;
     color: #ffffff;
     width: 60%;
     max-width: 400px;
@@ -1185,7 +1185,7 @@ canvas {
 }
 
 .message-menu .title {
-    background-color: #202024;
+    background-color: #0a131b;
     padding: 10px 15px 10px 15px;
     font-size: 1.5em;
     font-weight: bold;
@@ -1197,7 +1197,7 @@ canvas {
 
 .message-menu .content {
     margin: 0px 15px 0px 15px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     line-height: 1.6;
     text-align: left;
     max-height: 150px;
@@ -1206,7 +1206,7 @@ canvas {
 }
 
 .message-menu .close-button {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     color: #fff;
     font-size: 1.2rem;
     border: none;
@@ -1220,7 +1220,7 @@ canvas {
 }
 
 .message-menu .close-button:hover {
-    background-color: #4b7eff;
+    background-color: #2fd6a0;
     transform: scale(1.025);
 }
 
@@ -1231,12 +1231,12 @@ canvas {
     background: none;
 }
 .message-menu .content::-webkit-scrollbar-thumb {
-    background-color: #3b6cec;
+    background-color: #1fb98a;
     border-radius: 4px;
 }
 
 .message-menu .content {
-    scrollbar-color: #3b6cec transparent;
+    scrollbar-color: #1fb98a transparent;
     scrollbar-width: thin;
 }
 
@@ -1258,7 +1258,7 @@ canvas {
 .loading-content {
     display: flex;
     align-items: center;
-    background-color: #131316;
+    background-color: #05090d;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -1285,14 +1285,14 @@ canvas {
     position: absolute;
     bottom: 5px;
     right: 5px;
-    color: #bdbdbd;
+    color: #9fc9b8;
     font-size: 0.7em;
     z-index: 1000;
     user-select: none;
 }
 
 .footer-link {
-    color: #bdbdbd;
+    color: #9fc9b8;
     text-decoration: none;
     cursor: pointer;
 }
