@@ -281,10 +281,11 @@
 
   // ---- ground + charts views ------------------------------------------------
   const css = `
-  #aa-bar{position:fixed;bottom:44px;left:50%;transform:translateX(-50%);z-index:5000;display:flex;gap:6px;align-items:center;background:rgba(32,32,36,.92);padding:6px 10px;border-radius:8px;color:#fff;font:13px sans-serif}
+  #aa-bar{position:fixed;bottom:44px;left:12px;z-index:5000;display:flex;gap:6px;align-items:center;background:rgba(32,32,36,.92);padding:6px 10px;border-radius:8px;color:#fff;font:13px sans-serif}
   #aa-bar select,#aa-bar button{background:#2b2b31;color:#fff;border:1px solid #444;border-radius:5px;padding:4px 8px;font:inherit;cursor:pointer}
   #aa-bar button:hover{background:#3a3a42}
-  .aa-panel{position:fixed;inset:70px 20px 40px 20px;z-index:5001;background:#17171b;color:#e6e6e6;border:1px solid #444;border-radius:10px;display:none;flex-direction:column;font:14px sans-serif}
+  /* docked to the right so the map and en-route traffic stay visible */
+  .aa-panel{position:fixed;top:70px;right:12px;bottom:40px;width:var(--aa-panel-w,min(560px,46vw));z-index:5001;background:#17171b;color:#e6e6e6;border:1px solid #444;border-radius:10px;display:none;flex-direction:column;font:14px sans-serif}
   .aa-panel .aa-head{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid #333}
   .aa-panel .aa-head b{flex:1}
   .aa-panel button{background:#2b2b31;color:#fff;border:1px solid #444;border-radius:5px;padding:4px 10px;cursor:pointer}
@@ -307,8 +308,14 @@
   function panel(id, title) {
     const el = document.createElement('div');
     el.className = 'aa-panel'; el.id = id;
-    el.innerHTML = `<div class="aa-head"><b class="aa-title">${title}</b><button class="aa-close">Close</button></div>`;
+    el.innerHTML = `<div class="aa-head"><b class="aa-title">${title}</b><button class="aa-wide" title="wider / narrower">&harr;</button><button class="aa-close">Close</button></div>`;
     el.querySelector('.aa-close').onclick = () => { el.style.display = 'none'; };
+    el.querySelector('.aa-wide').onclick = () => {
+      const wide = el.dataset.wide !== '1';
+      el.dataset.wide = wide ? '1' : '';
+      document.documentElement.style.setProperty('--aa-panel-w', wide ? 'min(900px,72vw)' : 'min(560px,46vw)');
+      if (el._refit) setTimeout(el._refit, 0);
+    };
     document.body.appendChild(el);
     return el;
   }
@@ -324,13 +331,14 @@
   };
   async function openGround() {
     const icao = sel.value;
+    chartsPanel.style.display = 'none';
     groundPanel.style.display = 'flex';
     groundPanel.querySelector('.aa-title').textContent = `Ground view - ${icao}`;
     groundPanel.querySelectorAll('.aa-stage-wrap').forEach((n) => n.remove());
     const wrap = document.createElement('div');
     wrap.className = 'aa-stage-wrap'; wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0';
     const tools = document.createElement('div');
-    tools.style.cssText = 'padding:6px 12px;display:flex;gap:12px;border-bottom:1px solid #333';
+    tools.style.cssText = 'padding:6px 12px;display:flex;flex-wrap:wrap;gap:4px 14px;border-bottom:1px solid #333;white-space:nowrap';
     const stage = document.createElement('div'); stage.id = 'aa-ground-stage';
     wrap.append(tools, stage);
     groundPanel.appendChild(wrap);
@@ -396,6 +404,7 @@
       apply();
     };
     fit();
+    groundPanel._refit = fit;
     let drag = null;
     stage.onpointerdown = (e) => { drag = [e.clientX, e.clientY]; stage.setPointerCapture(e.pointerId); stage.style.cursor = 'grabbing'; };
     stage.onpointermove = (e) => { if (!drag) return; view.x += e.clientX - drag[0]; view.y += e.clientY - drag[1]; drag = [e.clientX, e.clientY]; apply(); };
@@ -411,6 +420,7 @@
   // Charts view: airport facts, frequencies and chart links.
   async function openCharts() {
     const icao = sel.value, spy = airportByIcao(icao);
+    groundPanel.style.display = 'none';
     chartsPanel.style.display = 'flex';
     chartsPanel.querySelector('.aa-title').textContent = `Charts view - ${icao} ${spy ? spy.real_name : ''}`;
     chartsPanel.querySelectorAll('.aa-body').forEach((n) => n.remove());
