@@ -43,12 +43,11 @@ const KEYMAP_LABELS = {
 // Aircraft names as the HUD shows them -> FMS style. Anything not listed
 // (An-225, C-130, fighters, light aircraft...) gets the Default FMS.
 const HUD_TYPE_SKINS = [
-  [/airbus a220/i, 'bombardier'], // designed as the Bombardier CSeries
+  [/airbus a220/i, 'a220'],
   [/airbus a3[58]0/i, 'a350'],
   [/airbus|a330 mrtt/i, 'airbus'],
   [/boeing 787/i, 'boeing787'],
   [/boeing|douglas md|\bc40\b|kc-?7[06]7|707af1|747af1|dreamlifter|\bp8\b|c-32|e-3 sentry|ec-18b/i, 'boeing'],
-  [/bombardier|crj|q400|learjet/i, 'bombardier'],
   [/e190|embraer/i, 'embraer'],
 ];
 
@@ -102,7 +101,8 @@ function fmtTime(min) {
 const c = (text, cls = '') => [String(text ?? ''), cls];
 
 function currentSkinId() {
-  if (settings.skin !== 'auto') return settings.skin;
+  // A style picked by hand - unless it no longer exists, then Auto.
+  if (settings.skin !== 'auto' && SKINS[settings.skin]) return settings.skin;
   const hudType = ui.telemetry?.aircraftType || '';
   for (const [re, skin] of HUD_TYPE_SKINS) if (re.test(hudType)) return skin;
   const fromPlan = ui.plan?.aircraft?.fms;
@@ -523,18 +523,43 @@ const SKINS = {
     ],
     alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', 'SP', 'DEL', '/', 'CLR'],
   },
-  bombardier: {
-    name: 'Bombardier FMS',
+  // A220 (Collins Pro Line Fusion), from a photo: FMS pages on the centre
+  // display - a top tab row (ACT, DBASE, POS, FPLN, PERF, ROUTE), a second
+  // row that depends on the page, fields and buttons clicked with the
+  // cursor, THRUST... / MSG... along the bottom - typed into from the MKP
+  // keyboard (round letter keys with the number pad in the same block).
+  // Changes need EXEC; CNCL cancels them.
+  a220: {
+    name: 'A220 FMS',
     execRequired: true,
-    eraseLabel: '<CANCEL MOD',
-    colors: { active: 'magenta', legs: 'cyan' },
-    labels: { coRoute: 'RTE ID' },
-    titles: { rte: 'FPL', legs: 'LEGS', prog: 'PROGRESS', perf: 'PERF', dir: 'DIRECT-TO', menu: 'MENU' },
+    screenStyle: 'fusion',
+    actPrefix: false,
+    eraseLabel: 'CANCEL',
+    colors: { active: 'magenta', legs: 'white' },
+    labels: { coRoute: 'CO ROUTE' },
+    titles: { rte: 'ROUTE', legs: 'ACTIVE FLIGHT PLAN', prog: 'POSITION', perf: 'PERFORMANCE', dir: 'DIRECT TO', menu: 'DATABASE' },
+    keyCols: 7,
     keys: [
-      ['DIR', 'dir'], ['FPL', 'rte'], ['LEGS', 'legs'], ['DEP ARR', null], ['PERF', 'perf'], ['MFD MENU', null],
-      ['MFD ADV', null], ['MFD DATA', null], ['NAV', 'menu'], ['PROG', 'prog'], ['EXEC', 'exec'], ['', null],
-      ['PREV', 'up'], ['NEXT', 'down'], ['', null], ['', null], ['', null], ['', null],
+      // display: top tabs, then the second-row tabs for the PERF pages and for the rest
+      ['ACT', 'noop', 'tab'], ['DBASE', 'menu', 'tab'], ['POS', 'prog', 'tab'], ['FPLN', 'legs', 'tab'], ['PERF', 'perf', 'tab'], ['ROUTE', 'rte', 'tab'],
+      ['DEP', 'perf', 'subtab perf'], ['CLB', 'perf', 'subtab perf'], ['CRZ', 'perf', 'subtab perf'], ['DES', 'perf', 'subtab perf'], ['ARR', 'perf', 'subtab perf'],
+      ['LEGS', 'legs', 'subtab'], ['VIA/TO', 'rte', 'subtab'], ['POS REPORT', 'prog', 'subtab'], ['FLT LOG', null, 'subtab'],
+      ['THRUST', 'perf', 'bottom'], ['MSG', 'clrinfo', 'bottom'],
+      // MKP: top row
+      ['MSG', 'clrinfo'], ['ROUTE', 'rte'], ['DIR', 'dir'], ['DEP ARR', null], ['', null], ['CNCL', 'cncl'], ['EXEC', 'exec'],
+      // MKP: bottom rows
+      ['MAP', 'noop', 'nav'], ['FMS', 'legs', 'nav'], ['CKS', 'noop', 'nav'], ['↑', 'up', 'nav arrow'], ['PREV', 'up', 'nav'], ['NEXT', 'down', 'nav'], ['', null, 'nav'],
+      ['CHKL', 'noop', 'nav'], ['SYN', 'noop', 'nav'], ['DATA', 'menu', 'nav'], ['←', 'up', 'nav arrow'], ['↓', 'down', 'nav arrow'], ['→', 'down', 'nav arrow'], ['CAS', 'noop', 'nav'],
     ],
+    alpha: [
+      'A', 'B', 'C', 'D', 'E', 'F', '1', '2', '3', 'CLR DEL',
+      'G', 'H', 'I', 'J', 'K', 'L', '4', '5', '6', 'ENTER',
+      'M', 'N', 'O', 'P', 'Q', 'R', '7', '8', '9', '',
+      'S', 'T', 'U', 'V', 'W', 'X', '+/-', '0', '.', '',
+      'Y', 'Z', 'SP', '/', '', '', '', '', '', '',
+    ],
+    alphaCols: 10,
+    numeric: [],
   },
   // Layout from an E-Jet (Honeywell Primus Epic) MCDU: blue-grey unit,
   // PERF/NAV/PREV/FPL/PROG/RTE/CB with BRT-DIM, then MENU/DLK/NEXT/TRS/RADIO
@@ -592,6 +617,7 @@ function onFunctionKey(action) {
     ui.message = null;
     return render();
   }
+  if (action === 'cncl') return ui.pending ? erasePending() : null;
   if (!action) return flash('NOT AVAILABLE');
   if (PAGES[action]) return goPage(action);
   if (action === 'exec') return ui.pending ? execPending() : null;
@@ -618,7 +644,7 @@ function onLsk(id) {
 }
 
 // KCCU keys that mean the same as MCDU ones.
-const KEY_ALIASES = { '←': 'CLR', SPACE: 'SP' };
+const KEY_ALIASES = { '←': 'CLR', SPACE: 'SP', 'CLR DEL': 'CLR', ENTER: 'ENT' };
 
 function onKey(rawKey) {
   const key = KEY_ALIASES[rawKey] || rawKey;
@@ -829,6 +855,8 @@ function buildView() {
     skin: skinId,
     screen: {
       style: s.screenStyle || 'mcdu',
+      page: ui.page === 'dir' ? 'legs' : ui.page,
+      phase: ui.guidance?.phase || null,
       selected: ui.selectedField || null,
       title: page.title,
       titleRight: page.titleRight || '',
@@ -843,9 +871,11 @@ function buildView() {
     fkeys: s.keys.map(([label, action, opts = '']) => ({
       label,
       exec: action === 'exec',
-      group: opts.includes('nav') ? 'nav' : opts.includes('tab') ? 'tab' : 'main',
+      group: ['nav', 'subtab', 'tab', 'bottom'].find((g) => opts.split(' ').includes(g)) || 'main',
+      target: action || null,
+      scope: opts.includes('perf') ? 'perf' : null,
       kind: action === 'knob' ? 'knob' : action === 'blank' ? 'blank' : label ? 'key' : 'spacer',
-      cls: opts.replace('nav', '').replace('tab', '').trim(),
+      cls: opts.split(' ').filter((o) => !['nav', 'tab', 'subtab', 'bottom', 'perf'].includes(o)).join(' '),
     })),
     fkeyCols: s.keyCols || 6,
     alpha: s.alpha || DEFAULT_ALPHA,
@@ -866,7 +896,7 @@ function render() {
   api?.publishFmsView?.(vm);
 }
 
-const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-', 'OVFY', '←', 'SPACE', 'NOTE PAD', 'ENT']));
+const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-', 'OVFY', '←', 'SPACE', 'NOTE PAD', 'ENT', 'CLR DEL', 'ENTER']));
 
 /** The one entry point for every cockpit input - local clicks and remotes. */
 function handleInput(msg) {

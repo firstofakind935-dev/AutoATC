@@ -20,7 +20,7 @@ const CATEGORIES = {
 };
 
 // [icao, name, category, fms]. fms picks the companion's MCDU/CDU style:
-// airbus, a350 (A350/A380), boeing, boeing787, bombardier or embraer, or generic - the neutral Default
+// airbus, a350 (A350/A380), a220, boeing, boeing787 or embraer, or generic - the neutral Default
 // FMS for every aircraft without a manufacturer style of its own. A pilot
 // can still switch in the FMS window.
 const TYPES = [
@@ -31,8 +31,7 @@ const TYPES = [
   ['A359', 'Airbus A350', 'widebody', 'a350'],
   ['A388', 'Airbus A380', 'widebody', 'a350'],
   ['A3ST', 'Airbus Beluga', 'widebody', 'airbus'],
-  // The A220 was designed as the Bombardier CSeries and keeps that cockpit.
-  ['BCS1', 'Airbus A220', 'regionaljet', 'bombardier'],
+  ['BCS1', 'Airbus A220', 'regionaljet', 'a220'],
   ['B703', 'Boeing 707', 'widebody', 'boeing'],
   ['B722', 'Boeing 727', 'narrowbody', 'boeing'],
   ['B737', 'C40', 'narrowbody', 'boeing'],
@@ -50,9 +49,9 @@ const TYPES = [
   ['MD11', 'Douglas MD11', 'widebody', 'boeing'],
   ['MD90', 'Douglas MD90', 'narrowbody', 'boeing'],
   ['L101', 'Lockheed Tristar', 'widebody', 'generic'],
-  ['CRJ7', 'Bombardier CRJ700', 'regionaljet', 'bombardier'],
-  ['DH8D', 'Bombardier Q400', 'turboprop', 'bombardier'],
-  ['LJ45', 'Bombardier Learjet 45', 'bizjet', 'bombardier'],
+  ['CRJ7', 'Bombardier CRJ700', 'regionaljet', 'generic'],
+  ['DH8D', 'Bombardier Q400', 'turboprop', 'generic'],
+  ['LJ45', 'Bombardier Learjet 45', 'bizjet', 'generic'],
   ['E190', 'E190', 'regionaljet', 'embraer'],
   ['AT76', 'ATR72', 'turboprop', 'generic'],
   ['A225', 'An 225', 'widebody', 'generic'],

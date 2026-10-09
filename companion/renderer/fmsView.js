@@ -86,8 +86,9 @@
     });
   }
 
-  function renderScreen(screen, tabs) {
+  function renderScreen(screen, tabs, keys) {
     if (screen.style === 'mfd') return renderMfdScreen(screen, tabs);
+    if (screen.style === 'fusion') return renderFusionScreen(screen, keys);
     let html = `<div class="line title"><span class="center">${escapeHtml(screen.title)}</span><span class="right small">${escapeHtml(screen.titleRight || '')}</span></div>`;
     for (const r of screen.rows) {
       html += `<div class="line label-line"><span>${cells(r.label[0])}</span><span>${cells(r.label[1])}</span></div>`;
@@ -128,6 +129,32 @@
     return null;
   }
 
+  // A220 (Pro Line Fusion) page: two tab rows - the active one in blue -
+  // then the page's lines as clickable fields, and a bottom bar with
+  // THRUST... / MSG..., the typed entry and any message.
+  const PHASE_TAB = { CLB: 'CLB', CRZ: 'CRZ', DES: 'DES', APP: 'ARR', DONE: 'ARR' };
+  function renderFusionScreen(screen, keys) {
+    const tabBtn = ({ k, i }, active, cls) => `<button class="fus-tab ${cls} ${active ? 'active' : ''}" data-index="${i}">${escapeHtml(k.label)}${k.label === 'ACT' ? ' <span class="caret">▾</span>' : ''}${cls === 'btm' ? ' …' : ''}</button>`;
+    const tops = keys.filter(({ k }) => k.group === 'tab');
+    const perfPage = screen.page === 'perf';
+    const subs = keys.filter(({ k }) => k.group === 'subtab' && (k.scope === 'perf') === perfPage);
+    const activeSub = perfPage ? (PHASE_TAB[screen.phase] || 'DEP') : null;
+    let html = `<div class="fus-tabs top">${tops.map((t) => tabBtn(t, t.k.target === screen.page, 'top')).join('')}</div>`;
+    html += `<div class="fus-tabs sub">${subs.map((t) => tabBtn(t, perfPage ? t.k.label === activeSub : t.k.target === screen.page, 'sub')).join('')}</div>`;
+    html += `<div class="fus-body"><div class="fus-title"><span>${escapeHtml(screen.title)}</span><span>${escapeHtml(screen.titleRight || '')}</span></div>`;
+    screen.rows.forEach((r, n) => {
+      html += `<div class="mfd-row">${mfdField(`L${n + 1}`, r.label[0], r.data[0], screen.selected === `L${n + 1}`)}${mfdField(`R${n + 1}`, r.label[1], r.data[1], screen.selected === `R${n + 1}`)}</div>`;
+    });
+    const msg = screen.scratch.cls === 'amber' || screen.scratch.cls === 'white';
+    const bottom = keys.filter(({ k }) => k.group === 'bottom');
+    html += `</div><div class="fus-bottom">${bottom[0] ? tabBtn(bottom[0], false, 'btm') : ''}`
+      + `<span class="mfd-entry">${msg ? '' : escapeHtml(screen.scratch.text)}</span>`
+      + `<span class="mfd-msg ${msg ? screen.scratch.cls : ''}">${msg ? escapeHtml(screen.scratch.text) : ''}</span>`
+      + `${bottom[1] ? tabBtn(bottom[1], false, 'btm') : ''}</div>`;
+    $('screen').innerHTML = html;
+    return null;
+  }
+
   function keyHtml(k, i) {
     if (k.kind === 'spacer') return '<span class="fkey spacer"></span>';
     if (k.kind === 'knob') return '<span class="fkey knob-deco" aria-hidden="true"></span>';
@@ -142,7 +169,9 @@
       const main = [];
       const nav = [];
       vm.fkeys.forEach((k, i) => {
-        if (k.group !== 'tab') (k.group === 'nav' ? nav : main).push(keyHtml(k, i));
+        if (k.group === 'nav') nav.push(keyHtml(k, i));
+        else if (k.group === 'main') main.push(keyHtml(k, i));
+        // tab / subtab / bottom keys are drawn on the display itself
       });
       $('fkeys').innerHTML = main.join('');
       $('fkeys').style.gridTemplateColumns = `repeat(${vm.fkeyCols}, 1fr)`;
@@ -212,7 +241,8 @@
   /** Draws everything from a view model built by fms.js's buildView(). */
   function render(vm) {
     document.body.dataset.skin = vm.skin;
-    renderScreen(vm.screen, vm.fkeys.map((k, i) => ({ k, i })).filter(({ k }) => k.group === 'tab'));
+    const indexed = vm.fkeys.map((k, i) => ({ k, i }));
+    renderScreen(vm.screen, indexed.filter(({ k }) => k.group === 'tab'), indexed);
     renderKeys(vm);
     $('ap-panel').innerHTML = vm.panel.map((i) => panelItemHtml(i, vm.skin)).join('');
     $('fma').innerHTML = vm.fma.cols.map((text, i) => `<div class="fma-col ${i === 3 ? 'ap' : ''}">${escapeHtml(text || '')}</div>`).join('')

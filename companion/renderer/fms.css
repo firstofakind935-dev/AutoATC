@@ -49,21 +49,6 @@ body[data-skin="boeing"] {
   --fma-text: #3cf06e;
 }
 
-body[data-skin="bombardier"] {
-  --body: #1d1f22;
-  --body-edge: #0f1012;
-  --key: #2b2e33;
-  --key-text: #e8e8e8;
-  --alnum: #2b2e33;
-  --alnum-text: #e8e8e8;
-  --panel: #26292e;
-  --window: #000;
-  --window-text: #3fd2ff;
-  --btn-lit: #3fd2ff;
-  --scr-label: #3fd2ff;
-  --fma-text: #3fd2ff;
-}
-
 body[data-skin="embraer"] {
   --body: #8395ab;
   --body-edge: #6c7e95;
@@ -462,3 +447,72 @@ body[data-skin="embraer"] .alpha .key:is([data-ch="E"], [data-ch="N"], [data-ch=
   box-shadow: inset 0 0 0 4px var(--alnum), inset 0 0 0 5px var(--alnum-text), 0 2px 0 #0f1114;
 }
 body[data-skin="embraer"] .key.num { box-shadow: 0 2px 0 #0f1114; }
+
+/* ---------- A220 (Collins Pro Line Fusion): FMS pages + MKP keyboard, from a photo ---------- */
+body[data-skin="a220"] {
+  --key: #2a2d31;
+  --key-text: #ecebe6;
+  --alnum: #2a2d31;
+  --alnum-text: #ecebe6;
+  --scr-bg: #1f2225;
+  --mkp: #4c535b;
+}
+body[data-skin="a220"] .mcdu { width: 640px; padding: 0; background: none; box-shadow: none; }
+body[data-skin="a220"] .lsk-col { display: none; }
+body[data-skin="a220"] .mcdu-screen-row { margin-bottom: 12px; }
+body[data-skin="a220"] .screen {
+  display: flex; flex-direction: column; padding: 0; min-height: 440px; font: 13px/1.2 -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-transform: uppercase; border: 10px solid #2c3136; border-radius: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.fus-tabs { display: flex; gap: 3px; padding: 4px 4px 0; }
+.fus-tabs.sub { padding-top: 3px; border-bottom: 2px solid #c9ced3; }
+.fus-tab {
+  flex: 1; background: #3a3f45; color: #dcdcdc; border: 1px solid #555c64; font: 600 11px -apple-system, "Segoe UI", sans-serif;
+  padding: 5px 2px; white-space: nowrap; border-radius: 2px;
+}
+.fus-tab.top.active { background: #2e86de; border-color: #5aa2ea; color: #fff; }
+.fus-tab.sub { background: #2b2f34; border-radius: 4px 4px 0 0; border-bottom: 0; }
+.fus-tab.sub.active { background: #e6e8ea; color: #15181b; }
+.fus-tab:hover { filter: brightness(1.15); }
+.fus-body { flex: 1; display: flex; flex-direction: column; justify-content: space-around; padding: 4px 8px; }
+.fus-title { display: flex; justify-content: space-between; color: #9aa4ae; font-size: 11px; letter-spacing: 0.5px; }
+body[data-skin="a220"] .mfd-label { color: #aeb5bd; font-size: 10px; }
+body[data-skin="a220"] .mfd-value { font: 600 15px var(--font-screen); }
+body[data-skin="a220"] .mfd-btn { background: #4a5058; border: 1px solid #7a828b; border-radius: 3px; font: 600 11px -apple-system, "Segoe UI", sans-serif; }
+.fus-bottom { display: flex; align-items: center; gap: 8px; padding: 6px; border-top: 1px solid #3c4248; }
+.fus-tab.btm { flex: 0 0 auto; padding: 5px 14px; background: #4a5058; }
+.fus-bottom .mfd-entry { flex: 1; font-family: var(--font-screen); }
+body[data-skin="a220"] .mfd-msg.amber { background: #ffb02e; color: #000; padding: 2px 8px; }
+
+/* MKP */
+body[data-skin="a220"] .fkeys {
+  margin: 0; padding: 14px 16px 8px; gap: 6px; border-radius: 10px 10px 0 0; background: linear-gradient(#58606a, var(--mkp));
+}
+body[data-skin="a220"] .fkey { height: 26px; border-radius: 3px; font-size: 9px; box-shadow: 0 2px 0 #15171a; }
+body[data-skin="a220"] .fkey.exec { position: relative; }
+body[data-skin="a220"] .fkey.exec::after { top: -7px; left: 10px; right: 10px; height: 3px; background: #2f4a36; }
+body[data-skin="a220"] .fkey.exec.lit::after { background: #39e36a; box-shadow: 0 0 8px #39e36a; }
+body[data-skin="a220"] .keypad {
+  flex-direction: column-reverse; gap: 10px; padding: 6px 16px 16px; border-radius: 0 0 10px 10px;
+  background: linear-gradient(var(--mkp), #41474e); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+body[data-skin="a220"] .alpha { gap: 6px; }
+body[data-skin="a220"] .alpha .key { height: 34px; border-radius: 50%; font-size: 12px; box-shadow: 0 2px 0 #15171a; }
+body[data-skin="a220"] .alpha .key:is([data-ch="CLR DEL"], [data-ch="ENTER"]) { border-radius: 4px; font-size: 8.5px; line-height: 1.05; }
+body[data-skin="a220"] .alpha .key:is([data-ch="1"], [data-ch="2"], [data-ch="3"], [data-ch="4"], [data-ch="5"], [data-ch="6"], [data-ch="7"], [data-ch="8"], [data-ch="9"], [data-ch="0"], [data-ch="."], [data-ch="+/-"]) {
+  background: #33373c;
+}
+body[data-skin="a220"] .keypad-left { order: 0; width: auto; }
+body[data-skin="a220"] .navkeys { grid-template-columns: repeat(7, 1fr); }
+body[data-skin="a220"] .navkeys .fkey { height: 26px; }
+body[data-skin="a220"] .navkeys .fkey.arrow { font-size: 13px; }
+body[data-skin="a220"] .numeric { display: none; }
+
+@media (max-width: 760px) {
+  body[data-skin="a220"] .mcdu { width: 100%; }
+  body[data-skin="a220"] .screen { min-height: 0; }
+  body[data-skin="a220"] .fus-tab { font-size: 8.5px; }
+  body[data-skin="a220"] .alpha { gap: 3px; }
+  body[data-skin="a220"] .alpha .key { height: 30px; font-size: 11px; }
+  body[data-skin="a220"] .fkeys, body[data-skin="a220"] .keypad { padding-left: 8px; padding-right: 8px; }
+}

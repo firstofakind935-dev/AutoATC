@@ -146,15 +146,20 @@ the plan), or pick one at the top:
 | A350/A380 MFD | A350, A380 | Same FCU as the Airbus MCDU | INIT key, click the **CO RTE** field, type the ID on the KCCU, press **ENT** |
 | Boeing CDU | 707-777, MD-11/90, P-8, E-3 | MCP: A/T ARM, SPEED, LNAV, VNAV, HDG SEL, ALT HOLD, V/S, CMD A | RTE page, type it, press **2L** (CO ROUTE), then **EXEC** |
 | Boeing 787 CDU | 787 | Same MCP as the Boeing CDU | Same as the Boeing CDU |
-| Bombardier FMS | CRJ700, Q400, Learjet, A220 | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, YD, A/T | FPL page, **2L** (RTE ID), then **EXEC** |
+| A220 FMS | A220 | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, YD, A/T | ROUTE tab, click **CO ROUTE**, type the ID on the MKP, press **ENTER**, then **EXEC** |
 | Embraer MCDU | E190 | Guidance panel, same buttons (FLCH, VS/FPA) | RTE page, **2L** (LOAD RTE) - no EXEC, as on the real unit |
-| Default FMS | Everything else - An-225, C-130, fighters, light aircraft, helicopters... | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, A/T | ROUTE page, **2L** (PLAN ID), then **EXEC** |
+| Default FMS | Everything else - CRJ700, Q400, Learjet, An-225, C-130, fighters, light aircraft, helicopters... | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, A/T | ROUTE page, **2L** (PLAN ID), then **EXEC** |
 
-The Airbus, A350/A380, Boeing, 787 and Embraer units are drawn from
-photos of the real ones: the A320-family MCDU, the A350's FMS pages on the
-MFD with the KCCU keyboard, the 777-style CDU (also used for the 737-777),
-the 787's CDU, which is drawn on the lower display with a keypad panel
-beside it, and the E-Jet MCDU.
+The Airbus, A350/A380, A220, Boeing, 787 and Embraer units are drawn
+from photos of the real ones: the A320-family MCDU, the A350's FMS pages
+on the MFD with the KCCU keyboard, the A220's Pro Line Fusion FMS pages
+with its MKP keyboard, the 777-style CDU (also used for the 737-777), the
+787's CDU, which is drawn on the lower display with a keypad panel beside
+it, and the E-Jet MCDU.
+
+The A220 works like the A350 below, with two tab rows (ACT / DBASE / POS /
+FPLN / PERF / ROUTE, then that page's own tabs), and like the real
+aircraft its changes need **EXEC** (**CNCL** cancels them).
 
 The A350/A380 has no line select keys, like the real aircraft: each line's
 left and right halves are fields you click. Click a field and type, then
@@ -165,8 +170,10 @@ change pages; CLEAR INFO clears a message.
 Pages, in each style's own names: route/INIT, LEGS/F-PLN (scroll with the
 arrows or PREV/NEXT), PROGRESS, PERF/VNAV/CRZ (type an altitude and press
 the CRZ ALT line to change cruise) and DIRECT TO. Direct-to works like the
-real units: Airbus DIR page then **INSERT\***; Boeing/Bombardier/Embraer
-type the waypoint onto the first LEGS line (or the DIR page) then **EXEC**.
+real units: Airbus DIR page then **INSERT\***; Boeing, 787 and Default
+type the waypoint onto the first LEGS line (or the DIR page) then
+**EXEC**; Embraer the same on FPL, then **INSERT\***; A350/A380 and A220
+type it and click the first waypoint (A220 then **EXEC**).
 You can type on the on-screen keypad or your keyboard.
 
 **How it flies.** Every tracking update (heading, altitude and speed off
