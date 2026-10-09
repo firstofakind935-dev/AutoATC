@@ -7,6 +7,7 @@ const { loadAirports } = require('./lib/airports');
 const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
 const { createMouseSteer } = require('./lib/mouseSteer');
 const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
+const { createRelayClient, newRelayCredentials } = require('./lib/relayClient');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
@@ -51,7 +52,23 @@ let overlayWindow = null;
 let fmsWindow = null;
 let inputSender = null; // created on the first autopilot input
 let mouseSteer = null;
-let remoteServer = null; // phone/tablet control - see lib/remoteServer.js
+let remoteServer = null; // phone/tablet control on this Wi-Fi - see lib/remoteServer.js
+let relayClient = null; // phone/tablet control from anywhere - see lib/relayClient.js
+
+function sendToFms(channel, payload) {
+  if (fmsWindow) fmsWindow.webContents.send(channel, payload);
+}
+
+function getRelayClient() {
+  if (!relayClient) {
+    relayClient = createRelayClient({
+      onInput: (message) => sendToFms('remote-input', message),
+      onClients: (count) => sendToFms('remote-clients', count),
+      onStatus: (state, detail) => sendToFms('relay-status', { state, detail }),
+    });
+  }
+  return relayClient;
+}
 
 function getRemoteServer() {
   if (!remoteServer) {
@@ -136,6 +153,7 @@ function openFmsWindow() {
     if (inputSender) inputSender.releaseAll();
     // Remote control drives the FMS window - nothing to control without it.
     if (remoteServer) remoteServer.stop();
+    if (relayClient) relayClient.stop();
   });
 }
 
@@ -246,7 +264,11 @@ ipcMain.handle('autopilot-cursor', () => screen.getCursorScreenPoint());
 // Phone / tablet remote control.
 ipcMain.on('fms-view', (event, view) => {
   if (remoteServer && remoteServer.running) remoteServer.publish(view);
+  if (relayClient) relayClient.publish(view);
 });
+ipcMain.handle('relay-start', (event, options) => getRelayClient().start(options));
+ipcMain.handle('relay-stop', () => relayClient && relayClient.stop());
+ipcMain.handle('relay-new-credentials', () => newRelayCredentials());
 ipcMain.handle('remote-start', (event, { port, code }) => getRemoteServer().start({ port, pairingCode: code }));
 ipcMain.handle('remote-stop', () => remoteServer && remoteServer.stop());
 ipcMain.handle('remote-set-code', (event, code) => remoteServer && remoteServer.setCode(code));

@@ -840,6 +840,13 @@ companion FMS window's Settings. Plans are saved to `planner/data/plans.json`
 - on Railway that's wiped on each deploy unless you attach a volume and
 set `PLANS_FILE` to a path on it. Plans expire after 7 days.
 
+It also relays the companion app's **phone/tablet remote control from
+anywhere** (`planner/lib/relay.js`): the pilot's PC connects out to the
+planner, a phone opens `https://<planner>/remote/` and enters the code the
+PC shows, and the planner passes the cockpit view and button presses
+between them - no router setup. Nothing is stored; see the companion
+README's "Phone / tablet control".
+
 ```
 POST /api/plans          {callsign, aircraftType, origin, destination, cruiseAltFt?, route?}
 GET  /api/plans/:id      a plan by ID

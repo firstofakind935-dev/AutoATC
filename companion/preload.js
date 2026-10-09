@@ -71,6 +71,11 @@ contextBridge.exposeInMainWorld('companion', {
   remoteStop: () => ipcRenderer.invoke('remote-stop'),
   remoteSetCode: (code) => ipcRenderer.invoke('remote-set-code', code),
   remoteNewCode: () => ipcRenderer.invoke('remote-new-code'),
+  // ...and from anywhere, through the flight planner's relay (lib/relayClient.js)
+  relayStart: (options) => ipcRenderer.invoke('relay-start', options),
+  relayStop: () => ipcRenderer.invoke('relay-stop'),
+  relayNewCredentials: () => ipcRenderer.invoke('relay-new-credentials'),
+  onRelayStatus: (callback) => ipcRenderer.on('relay-status', (event, status) => callback(status)),
   setFmsPassthrough: (on) => ipcRenderer.invoke('fms-set-passthrough', on),
 
   // Control window <-> overlay window messaging, relayed through main

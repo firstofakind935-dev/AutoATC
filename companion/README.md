@@ -213,30 +213,40 @@ root) but has not flown PTFS itself - expect to tune `DEFAULT_TUNING` in
 
 Work the MCDU and autopilot panel from a phone or tablet instead of the PC -
 so your hand never touches the PC's mouse, which PTFS steers with (and
-which disconnects the autopilot when moved).
+which disconnects the autopilot when moved). In the FMS window's
+**Settings**, set **Allow control from** to:
 
-1. In the FMS window, open **Settings** and tick **Allow control from a
-   phone or tablet on this Wi-Fi**. It shows an address like
-   `http://192.168.1.23:8765` and a 6-digit **pairing code**.
-2. On the phone (same Wi-Fi as the PC), open that address and enter the
-   code. The phone remembers it. To use it like an app, add the page to
-   your home screen (Share > Add to Home Screen on iPhone; menu > Add to
-   Home screen on Android).
-3. The phone shows the same MCDU, autopilot panel and mode annunciator as
-   the PC window, live - tabs on a phone, everything at once on a tablet.
-   Both stay in sync; either can be used at any time.
+- **Anywhere (through the flight planner)** - the phone can be on any
+  network (mobile data, another Wi-Fi). The PC connects out to your flight
+  planner service, which relays between them, so there's nothing to set up
+  on your router. Needs the **Flight planner URL** set. On the phone, open
+  `https://<your planner>/remote/` and type the 12-character code shown
+  (e.g. `K7Q2-9XMP-4HDA` - dashes and case don't matter).
+- **This Wi-Fi only** - no internet involved: the companion app serves the
+  page itself at an address like `http://192.168.1.23:8765`, with a 6-digit
+  code. The phone must be on the same Wi-Fi. The first time, Windows may
+  ask whether to let the app through the firewall - allow it on
+  **private** networks. If port 8765 is taken, the settings say so.
 
-Safety: it's off until you turn it on, and only reachable on your own
-network - nothing goes over the internet. Every request needs the pairing
-code; **New code** disconnects every device; ten wrong codes from one
-device lock it out for a minute. A phone can switch the autopilot to DRY
-RUN but never to LIVE - going LIVE is only possible at the PC, behind its
-warning.
+The phone remembers the code. To use it like an app, add the page to your
+home screen (Share > Add to Home Screen on iPhone; menu > Add to Home
+screen on Android). It shows the same MCDU, autopilot panel and mode
+annunciator as the PC window, live - tabs on a phone, everything at once
+on a tablet - and either can be used at any time. If the PC goes offline
+(app closed, PC asleep), the phone shows **PC OFFLINE** and reconnects by
+itself when it's back.
 
-The first time you turn it on, Windows may ask whether to allow the
-companion app through the firewall - allow it on **private** networks, or
-the phone can't connect. If port 8765 is taken by another program, the
-settings say so.
+Safety:
+- Off until you turn it on. Codes are saved, so a paired phone keeps
+  working after a restart; **New code** cuts off every device.
+- Anywhere mode: the 12-character code has about a quintillion
+  combinations and wrong guesses get the guesser locked out, so it can't
+  be guessed. The PC also holds a separate secret (never shown) so nobody
+  who learns a code can impersonate your PC. The relay stores nothing; a
+  session exists only while your companion app is connected.
+- This Wi-Fi mode: ten wrong codes from one device lock it out for a minute.
+- Either way, a phone can switch the autopilot to DRY RUN but never to
+  LIVE - going LIVE is only possible at the PC, behind its warning.
 
 ## Module layout
 
@@ -257,10 +267,15 @@ settings say so.
   SendInput via PowerShell, macOS System Events/CoreGraphics, Linux xdotool).
 - `lib/mouseSteer.js` - pitch/bank nudges via the cursor, and the
   "pilot moved the mouse" override.
-- `lib/remoteServer.js` - the phone/tablet remote-control web server
-  (pairing code, live view updates, inputs).
+- `lib/remoteServer.js` - the phone/tablet remote-control web server for
+  this Wi-Fi (pairing code, live view updates, inputs).
+- `lib/relayClient.js` - remote control from anywhere: the PC's outbound
+  connection to the flight planner's relay (`planner/lib/relay.js`).
 - `remote/` - the page phones and tablets open (plus its manifest/icon for
-  Add to Home Screen).
+  Add to Home Screen). The planner serves a copy at `/remote/` for
+  anywhere mode - after editing these files (or `renderer/fms.css` /
+  `fmsView.js`), run `node scripts/sync-remote-page.js`; `npm test` fails
+  if the copy is stale.
 - `main.js` - creates both windows, relays messages between them, and
   hosts the desktop-capture/settings/airports IPC handlers.
 - `preload.js` - exposes IPC calls and direct `lib/` logic to both

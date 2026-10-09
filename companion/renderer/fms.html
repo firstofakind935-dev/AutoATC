@@ -76,11 +76,17 @@
       <p class="dim small">Keys the autopilot presses. Test presses the key 3 s later, so click into PTFS and watch the aircraft.</p>
       <div id="keymap"></div>
       <h3>Phone / tablet control</h3>
-      <label class="check"><input id="remote-enabled" type="checkbox"> Allow control from a phone or tablet on this Wi-Fi</label>
+      <label class="field">Allow control from
+        <select id="remote-mode">
+          <option value="off">Off</option>
+          <option value="lan">This Wi-Fi only</option>
+          <option value="relay">Anywhere (through the flight planner)</option>
+        </select>
+      </label>
       <div id="remote-info" hidden>
         <p class="small">On your phone, open <strong id="remote-urls"></strong></p>
         <div class="row tight">
-          <span class="small">Pairing code</span>
+          <span class="small">Code</span>
           <strong id="remote-code" class="pair-code"></strong>
           <button id="remote-new-code" class="btn secondary small">New code</button>
         </div>

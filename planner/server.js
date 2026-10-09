@@ -11,11 +11,21 @@ const { buildPlan } = require('./lib/plan');
 const { PlanStore } = require('./lib/store');
 const { navdata, airports, fixes } = require('./lib/navdata');
 const { AIRCRAFT } = require('./lib/aircraft');
+const { createRelayRouter } = require('./lib/relay');
 
 const PORT = process.env.PORT || 3100;
 const store = new PlanStore(process.env.PLANS_FILE || path.join(__dirname, 'data', 'plans.json'));
 
 const app = express();
+// Railway puts its proxy in front - trust it for the client's real address,
+// which the relay's wrong-code lockout counts per.
+app.set('trust proxy', true);
+
+// Remote control relay + the phone page it serves (see lib/relay.js and
+// public/remote/). Mounted before the JSON body parser below, which would
+// otherwise reject cockpit views larger than its limit.
+app.use('/remote', createRelayRouter());
+
 app.use(express.json({ limit: '32kb' }));
 
 // The companion app (an Electron window) and anyone else's tools call this

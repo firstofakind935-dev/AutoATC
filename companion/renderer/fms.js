@@ -59,9 +59,13 @@ const settings = {
   mouseCenter: null, // {x, y} screen point where the aircraft flies straight and level
   mouseDeflectionPx: 120, // how far off center a nudge moves the cursor
   invertPitch: false,
-  remoteEnabled: false, // phone/tablet control (lib/remoteServer.js)
+  // Phone/tablet control: off | lan (this Wi-Fi, lib/remoteServer.js) |
+  // relay (anywhere, through the flight planner - lib/relayClient.js).
+  remoteMode: 'off',
   remotePort: 8765,
-  remoteCode: null,
+  remoteCode: null, // 6 digits, for lan
+  relayCode: null, // 12 characters, for relay
+  relaySecret: null,
   live: false,
 };
 const ap = Autopilot.create();
@@ -847,7 +851,9 @@ async function loadSettings() {
   $('invert-pitch').checked = settings.invertPitch;
   showMouseCenter();
   syncSteeringVisibility();
-  $('remote-enabled').checked = settings.remoteEnabled;
+  // Settings saved before remote modes existed had a plain on/off.
+  if (saved.remoteEnabled && !saved.remoteMode) settings.remoteMode = 'lan';
+  $('remote-mode').value = settings.remoteMode;
 }
 
 function saveSettings() {
@@ -896,6 +902,7 @@ $('save-settings').addEventListener('click', async () => {
   ui.navdata = null;
   await saveSettings();
   loadNavdata();
+  if (settings.remoteMode === 'relay') startRemote(); // the relay lives at the planner URL
   $('settings-msg').textContent = 'Saved';
   render();
 });
@@ -959,8 +966,15 @@ for (const [id, axis, direction, label] of [
 
 // ---------------------------------------------------------------- phone / tablet control
 
-async function startRemote() {
-  $('remote-error').textContent = '';
+const formatRelayCode = (code) => (code || '').match(/.{1,4}/g)?.join('-') || '';
+
+function showRemoteInfo(urls, code) {
+  $('remote-urls').textContent = urls;
+  $('remote-code').textContent = code;
+  $('remote-info').hidden = false;
+}
+
+async function startLan() {
   if (!settings.remoteCode) {
     // Saved, so a paired phone keeps working after the app restarts.
     settings.remoteCode = await api.remoteNewCode();
@@ -968,35 +982,71 @@ async function startRemote() {
   }
   try {
     const { urls } = await api.remoteStart({ port: settings.remotePort, code: settings.remoteCode });
-    $('remote-urls').textContent = urls.length ? urls.join('  or  ') : `http://<this PC's IP>:${settings.remotePort}`;
-    $('remote-code').textContent = settings.remoteCode;
-    $('remote-info').hidden = false;
-    render(); // so a phone that connects straight away has a view
+    showRemoteInfo(urls.length ? urls.join('  or  ') : `http://<this PC's IP>:${settings.remotePort}`, settings.remoteCode);
   } catch (err) {
-    $('remote-info').hidden = true;
     $('remote-error').textContent = err.code === 'EADDRINUSE'
       ? `Port ${settings.remotePort} is already in use by another program.`
       : `Could not start remote control: ${err.message}`;
   }
 }
 
-$('remote-enabled').addEventListener('change', async () => {
-  settings.remoteEnabled = $('remote-enabled').checked;
-  await saveSettings();
-  if (settings.remoteEnabled) startRemote();
-  else {
-    await api.remoteStop();
-    $('remote-info').hidden = true;
+async function startRelay() {
+  if (!settings.plannerUrl) {
+    $('remote-error').textContent = 'Set the Flight planner URL above first - the phone connects through it.';
+    return;
   }
+  if (!settings.relayCode || !settings.relaySecret) {
+    const { code, secret } = await api.relayNewCredentials();
+    Object.assign(settings, { relayCode: code, relaySecret: secret });
+    await saveSettings();
+  }
+  showRemoteInfo(`${settings.plannerUrl.replace(/\/$/, '')}/remote/`, formatRelayCode(settings.relayCode));
+  $('remote-clients').textContent = 'Connecting to the flight planner…';
+  api.relayStart({ baseUrl: settings.plannerUrl, code: settings.relayCode, secret: settings.relaySecret });
+}
+
+async function startRemote() {
+  $('remote-error').textContent = '';
+  $('remote-info').hidden = true;
+  await api.remoteStop();
+  await api.relayStop();
+  if (settings.remoteMode === 'lan') await startLan();
+  if (settings.remoteMode === 'relay') await startRelay();
+  render(); // so a phone that connects straight away has a view
+}
+
+$('remote-mode').addEventListener('change', async () => {
+  settings.remoteMode = $('remote-mode').value;
+  await saveSettings();
+  startRemote();
 });
 $('remote-new-code').addEventListener('click', async () => {
-  settings.remoteCode = await api.remoteNewCode();
-  await api.remoteSetCode(settings.remoteCode);
-  $('remote-code').textContent = settings.remoteCode;
+  if (settings.remoteMode === 'relay') {
+    // Old code stops working; every phone must enter the new one.
+    const { code, secret } = await api.relayNewCredentials();
+    Object.assign(settings, { relayCode: code, relaySecret: secret });
+  } else {
+    settings.remoteCode = await api.remoteNewCode();
+    await api.remoteSetCode(settings.remoteCode);
+    $('remote-code').textContent = settings.remoteCode;
+  }
   await saveSettings();
+  if (settings.remoteMode === 'relay') startRemote();
 });
 api?.onRemoteClients?.((count) => {
-  $('remote-clients').textContent = count ? `${count} device${count > 1 ? 's' : ''} connected` : 'No devices connected';
+  const none = settings.remoteMode === 'relay' ? 'Online - waiting for a device' : 'No devices connected';
+  $('remote-clients').textContent = count ? `${count} device${count > 1 ? 's' : ''} connected` : none;
+});
+api?.onRelayStatus?.(async ({ state, detail }) => {
+  if (state === 'connected') $('remote-clients').textContent = 'Online - waiting for a device';
+  else if (state === 'offline') $('remote-clients').textContent = `Can't reach the flight planner (${detail}) - retrying…`;
+  else if (state === 'error' && detail === 'conflict') {
+    // Someone else has this code (vanishingly unlikely) - take a new one.
+    const { code, secret } = await api.relayNewCredentials();
+    Object.assign(settings, { relayCode: code, relaySecret: secret });
+    await saveSettings();
+    startRemote();
+  } else if (state === 'error') $('remote-error').textContent = `Remote control stopped: ${detail}. Check the Flight planner URL.`;
 });
 
 $('skin-select').addEventListener('change', () => {
@@ -1030,6 +1080,6 @@ $('live-dialog').addEventListener('close', () => {
   api?.onRemoteInput?.(handleInput);
   setInterval(render, 1000); // keeps ages/ETEs ticking, here and on remotes
   render();
-  if (settings.remoteEnabled && api?.remoteStart) startRemote();
+  if (settings.remoteMode !== 'off' && api?.remoteStart) startRemote();
   loadNavdata();
 })();
