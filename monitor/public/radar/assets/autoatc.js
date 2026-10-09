@@ -417,36 +417,98 @@
     };
   }
 
-  // Charts view: airport facts, frequencies and chart links.
+  // Charts view: the airport's charts shown in the panel itself (images get a
+  // pan/zoom viewer, Google Drive/Docs files are embedded), with the airport
+  // facts above and an "open in new tab" link for anything that won't embed.
+  function chartEmbed(url) {
+    let m;
+    if (/\.(png|jpe?g|webp|gif|svg)(\?|$)/i.test(url)) return { kind: 'image', src: url };
+    if ((m = url.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+\.(?:png|jpe?g|svg|webp))$/i))) return { kind: 'image', src: `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}` };
+    if ((m = url.match(/drive\.google\.com\/file\/d\/([^/?#]+)/))) return { kind: 'frame', src: `https://drive.google.com/file/d/${m[1]}/preview` };
+    if ((m = url.match(/docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([^/?#]+)/))) return { kind: 'frame', src: `https://docs.google.com/${m[1]}/d/${m[2]}/preview` };
+    return { kind: 'link', src: url };
+  }
+
+  function showChart(view, chart) {
+    view.replaceChildren();
+    const emb = chartEmbed(chart.url);
+    const open = document.createElement('a');
+    open.href = chart.url; open.target = '_blank'; open.rel = 'noopener';
+    open.textContent = 'Open in new tab';
+    open.style.cssText = 'position:absolute;right:10px;top:8px;z-index:2;background:#2b2b31;color:#fff;padding:3px 8px;border-radius:4px;font-size:12px;text-decoration:none;border:1px solid #444';
+    view.appendChild(open);
+    const fail = (msg) => { view.querySelectorAll('img,iframe').forEach((n) => n.remove()); const p = document.createElement('p'); p.style.cssText = 'padding:20px;color:#aaa'; p.textContent = msg; view.appendChild(p); };
+    if (emb.kind === 'frame') {
+      const f = document.createElement('iframe');
+      f.src = emb.src; f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff';
+      f.setAttribute('referrerpolicy', 'no-referrer'); f.setAttribute('allow', 'fullscreen');
+      view.appendChild(f);
+    } else if (emb.kind === 'image') {
+      const img = document.createElement('img');
+      img.referrerPolicy = 'no-referrer';
+      img.style.cssText = 'position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none;max-width:none';
+      const v = { s: 1, x: 0, y: 0 };
+      const apply = () => { img.style.transform = `translate(${v.x}px,${v.y}px) scale(${v.s})`; };
+      const fit = () => {
+        const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+        v.s = Math.min(view.clientWidth / w, view.clientHeight / h) * 0.98;
+        v.x = (view.clientWidth - w * v.s) / 2; v.y = (view.clientHeight - h * v.s) / 2; apply();
+      };
+      img.onload = fit;
+      img.onerror = () => fail('This chart could not be loaded here. Use "Open in new tab".');
+      img.src = emb.src;
+      view.appendChild(img);
+      let drag = null;
+      view.onpointerdown = (e) => { if (e.target === open) return; drag = [e.clientX, e.clientY]; view.setPointerCapture(e.pointerId); };
+      view.onpointermove = (e) => { if (!drag) return; v.x += e.clientX - drag[0]; v.y += e.clientY - drag[1]; drag = [e.clientX, e.clientY]; apply(); };
+      view.onpointerup = () => { drag = null; };
+      view.ondblclick = fit;
+      view.onwheel = (e) => { e.preventDefault(); const f = Math.exp(-e.deltaY * 0.0015), r = view.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top; v.x = mx - (mx - v.x) * f; v.y = my - (my - v.y) * f; v.s *= f; apply(); };
+      chartsPanel._refit = fit;
+    } else {
+      fail('This chart cannot be shown inside the page. Use "Open in new tab".');
+    }
+  }
+
   async function openCharts() {
     const icao = sel.value, spy = airportByIcao(icao);
     groundPanel.style.display = 'none';
     chartsPanel.style.display = 'flex';
     chartsPanel.querySelector('.aa-title').textContent = `Charts view - ${icao} ${spy ? spy.real_name : ''}`;
     chartsPanel.querySelectorAll('.aa-body').forEach((n) => n.remove());
-    const body = document.createElement('div'); body.className = 'aa-body';
+    chartsPanel._refit = null;
+    const body = document.createElement('div'); body.className = 'aa-body'; body.style.cssText = 'display:flex;flex-direction:column;min-height:0;padding:0';
     chartsPanel.appendChild(body);
+    const list = spy && spy.charts ? spy.charts.map(([name, url]) => ({ name, url })) : [];
+
+    // chart tabs + the viewer
+    const tabs = document.createElement('div');
+    tabs.className = 'aa-chart-links'; tabs.style.cssText = 'padding:8px 12px;border-bottom:1px solid #333;display:flex;flex-wrap:wrap;gap:4px';
+    const view = document.createElement('div');
+    view.style.cssText = 'position:relative;flex:1;min-height:260px;overflow:hidden;background:#0e0e11;cursor:grab';
+    if (!list.length) tabs.textContent = 'No charts listed for this airport.';
+    list.forEach((chart, i) => {
+      const b = document.createElement('button'); b.textContent = chart.name;
+      b.onclick = () => { tabs.querySelectorAll('button').forEach((x) => { x.style.outline = ''; }); b.style.outline = '1px solid #4b7eff'; showChart(view, chart); };
+      tabs.appendChild(b);
+      if (i === 0) setTimeout(() => b.click(), 0);
+    });
+
+    // airport facts, collapsed under the charts
     let info = null;
     try { info = await fetch(`charts/${icao}.json`).then((r) => (r.ok ? r.json() : null)); } catch (e) { /* no data */ }
     const esc = (t) => String(t ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     const freqs = spy ? [['Tower', spy.towerfreq], ['Ground', spy.groundfreq]].filter(([, f]) => f && f !== 'None') : [];
     let html = '';
-    if (info) html += `<h3>${esc(info.name)} (${esc(info.icao)}${info.iata ? ' / ' + esc(info.iata) : ''})</h3><p>${esc(info.location)} - elevation ${esc(info.elevationFt)} - ${esc(info.coordinates)}</p>`;
+    if (info) html += `<h3 style="margin:4px 0">${esc(info.name)} (${esc(info.icao)}${info.iata ? ' / ' + esc(info.iata) : ''})</h3><p>${esc(info.location)} - elevation ${esc(info.elevationFt)} - ${esc(info.coordinates)}</p>`;
     if (freqs.length) html += `<h4>Frequencies</h4><table class="aa">${freqs.map(([n, f]) => `<tr><td>${n}</td><td>${esc(f)}</td></tr>`).join('')}</table>`;
     if (info && info.runways && info.runways.length) html += `<h4>Runways</h4><table class="aa"><tr><th>Runway</th><th>Heading</th></tr>${info.runways.map((r) => `<tr><td>${esc(r.designator)}</td><td>${esc(r.heading)}</td></tr>`).join('')}</table>`;
     if (info && info.groundLayout) html += `<h4>Ground layout</h4><p>${esc(info.groundLayout)}</p>`;
-    html += '<h4>Charts</h4><div class="aa-chart-links"></div>';
-    body.innerHTML = html || '<p>No data for this airport.</p>';
-    const links = body.querySelector('.aa-chart-links');
-    const list = spy && spy.charts ? spy.charts : [];
-    if (!list.length) links.textContent = 'No chart links for this airport.';
-    for (const [name, url] of list) {
-      const b = document.createElement('button'); b.textContent = name; b.onclick = () => window.open(url, '_blank', 'noopener');
-      links.appendChild(b);
-    }
-    const note = document.createElement('div'); note.className = 'aa-note';
-    note.textContent = 'Chart links open the chart packs 24SPY lists for this airport.';
-    body.appendChild(note);
+    const details = document.createElement('details');
+    details.style.cssText = 'padding:6px 12px;border-top:1px solid #333;max-height:40%;overflow:auto';
+    details.innerHTML = `<summary style="cursor:pointer">Airport info</summary>${html || '<p>No data for this airport.</p>'}`;
+    if (!list.length) details.open = true;
+    body.append(tabs, view, details);
   }
 
   bar.querySelector('#aa-ground').onclick = openGround;
