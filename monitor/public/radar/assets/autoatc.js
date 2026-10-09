@@ -360,6 +360,34 @@
       lab.firstChild.onchange = (e) => { g.style.display = e.target.checked ? 'inline' : 'none'; };
       tools.appendChild(lab);
     }
+    // Taxiway names (and the marker circles) from the chart overlay TAXIWAYS.svg.
+    // It shares GROUND.svg's coordinate frame, so its elements drop straight in.
+    try {
+      const r = await fetch(`ground/maps/${icao}/TAXIWAYS.svg`);
+      if (r.ok) {
+        const doc = new DOMParser().parseFromString(await r.text(), 'image/svg+xml').documentElement;
+        const NS = 'http://www.w3.org/2000/svg';
+        const names = document.createElementNS(NS, 'g');
+        names.setAttribute('class', 'aa-taxi-names');
+        for (const el of doc.querySelectorAll('text, circle')) {
+          const copy = document.importNode(el, true);
+          if (copy.tagName === 'text') {
+            // keep position and rotation, restyle: readable size, light fill, dark halo
+            copy.setAttribute('style', `font-size:${12 / K}px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;fill:#ffd866;stroke:#0e0e11;stroke-width:${3 / K}px;paint-order:stroke;text-anchor:start`);
+            copy.querySelectorAll('tspan').forEach((t) => t.removeAttribute('style'));
+          } else {
+            copy.setAttribute('fill', 'none'); copy.setAttribute('stroke', '#ffd866'); copy.setAttribute('stroke-width', 1.2 / K);
+            copy.removeAttribute('style');
+          }
+          names.appendChild(copy);
+        }
+        svg.appendChild(names);
+        const lab = document.createElement('label');
+        lab.innerHTML = '<input type="checkbox" checked> Taxiway names';
+        lab.firstChild.onchange = (e) => { names.style.display = e.target.checked ? '' : 'none'; };
+        tools.appendChild(lab);
+      }
+    } catch (e) { /* the diagram still works without the names */ }
     const view = { s: 1, x: 0, y: 0 };
     const apply = () => { svg.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.s})`; };
     const fit = () => {
