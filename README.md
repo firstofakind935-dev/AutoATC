@@ -908,3 +908,23 @@ need their own `planner/data/procedures/<ICAO>.json`.
 - `CENTER_FALLBACK_TOKEN` is a single token — a fleet with more than one
   independent Center region can only have Bot Manager cover one outage at a
   time with it.
+
+### Altitude restrictions and auto-throttle
+
+VNAV follows the restrictions on the plan's waypoints (`altMinFt` at or above,
+`altMaxFt` at or below, `altAtFt` exactly - they come from the chart
+procedures, see the planner). An at / at-or-below restriction caps the
+descent path as *restriction + feet-per-nm x distance to the fix*, so the
+aircraft is down to it by the fix and not earlier; an at / at-or-above one is
+a floor until that fix is passed (the target climbs to meet it). The legs page
+shows them Boeing-style (`3000A`, `1500B`, `1300`). The selected FCU altitude
+is still the clearance limit - VNAV never goes through it.
+
+Auto-throttle holds a speed, not a thrust: the target is the plan's speed for
+the phase (climb / cruise / descent / approach) or the FCU speed in SEL mode.
+Each update it compares the HUD speed to the target and taps **W** (more) or
+**S** (less) for a time proportional to the error - nothing inside a 4 kt
+deadband, no extra thrust while the speed is already closing the gap, and
+every tap clamped to 40-450 ms. So when the autopilot levels off or starts a
+descent and the speed drifts, throttle taps follow it; it cannot see engine
+power, only the speed it reads from the screen.

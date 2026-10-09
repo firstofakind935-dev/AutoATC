@@ -306,7 +306,9 @@ function legsPage(s) {
     const prev = waypoints[index - 1];
     const leg = prev ? Fms.distanceBearing(prev, w) : null;
     const planned = ui.plan.navlog.find((n) => n.ident === w.ident);
-    const alt = planned ? fmtAlt(planned.altFt) : '-----';
+    // A chart restriction beats the planned altitude: 3000A = at or above, 1500B = at or below.
+    const restriction = w.altAtFt != null ? `${w.altAtFt}` : w.altMinFt != null ? `${w.altMinFt}A` : w.altMaxFt != null ? `${w.altMaxFt}B` : null;
+    const alt = restriction || (planned ? fmtAlt(planned.altFt) : '-----');
     // The planned speed for that point's phase of flight.
     let spd = '---';
     if (index === waypoints.length - 1) spd = profile.approachKt;

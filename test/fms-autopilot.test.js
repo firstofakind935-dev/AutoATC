@@ -206,3 +206,43 @@ test('moving the mouse yourself is reported as an override, and nothing moves', 
   assert.equal(steer.steer({ center: CENTER, deflectionPx: 100, roll: { direction: 1, ms: 100 } }).override, true);
   assert.equal(io.moves.length, moves);
 });
+
+// --- altitude restrictions from procedures ---------------------------------
+
+test('an "at or above" departure restriction is a floor, and an "at" restriction caps the path', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 5000, sid: 'DARRK3', depRunway: '25L' });
+  const fms = Fms.load(plan);
+  assert.equal(fms.waypoints.find((w) => w.ident === 'DOCKR').altMinFt, 1000, 'restrictions survive loading the plan');
+  const start = plan.waypoints[0];
+  const g = Fms.guidance(fms, { lat: start.lat, lon: start.lon }, { altFt: 20, speedKt: 150 });
+  assert.equal(g.phase, 'CLB');
+  assert.equal(g.vnav.targetAltFt, 5000);
+});
+
+test('a descent is held to an "at" restriction: down to it by the fix, not before', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IPPH', destination: 'IRFD', cruiseAltFt: 6000, star: 'JAMSI1', arrRunway: '7L' });
+  const fms = Fms.load(plan);
+  const pepul = fms.waypoints.find((w) => w.ident === 'PEPUL');
+  assert.equal(pepul.altAtFt, 1300);
+  const ftPerNm = (plan.profile.descentFpm * 60) / plan.profile.descentKt;
+  // standing on the leg's start the path must already respect 1300 at PEPUL
+  Fms.directTo(fms, 'PEPUL', { lat: pepul.lat + 0.1, lon: pepul.lon }, null);
+  const g = Fms.guidance(fms, { lat: pepul.lat + 0.1, lon: pepul.lon }, { altFt: 6000, speedKt: 250 });
+  const nm = Fms.distanceBearing({ lat: pepul.lat + 0.1, lon: pepul.lon }, pepul).distanceNm;
+  assert.ok(g.vnav.targetAltFt <= Math.round((1300 + nm * ftPerNm) / 10) * 10 + 10, `target ${g.vnav.targetAltFt}`);
+  assert.deepEqual({ ident: g.vnav.constraint.ident, kind: g.vnav.constraint.kind }, { ident: 'PEPUL', kind: 'AT' });
+  // 1 nm short of PEPUL the target is essentially 1300
+  const close = Fms.guidance(fms, { lat: pepul.lat + 1 / 60, lon: pepul.lon }, { altFt: 2000, speedKt: 200 });
+  assert.ok(close.vnav.targetAltFt <= 1300 + Math.ceil(ftPerNm) + 10, `target ${close.vnav.targetAltFt}`);
+});
+
+test('an "at or above" restriction ahead lifts the target and calls for a climb', () => {
+  const fms = Fms.load(buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 5000, sid: 'DARRK3', depRunway: '25C' }));
+  const aloha = fms.waypoints.find((w) => w.ident === 'ALOHA');
+  assert.equal(aloha.altMinFt, 2500);
+  Fms.directTo(fms, 'ALOHA', { lat: aloha.lat - 0.05, lon: aloha.lon }, null);
+  // still on the ground: the nearest floor (2500 at ALOHA) must show as the shaping limit
+  const g = Fms.guidance(fms, { lat: aloha.lat - 0.05, lon: aloha.lon }, { altFt: 100, speedKt: 160 });
+  assert.equal(g.phase, 'CLB');
+  assert.ok(g.vnav.targetAltFt >= 2500);
+});

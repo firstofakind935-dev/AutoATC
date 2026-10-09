@@ -55,7 +55,13 @@
     if (!plan?.waypoints?.length || plan.waypoints.length < 2) throw new Error('Plan has no route');
     return {
       plan,
-      waypoints: plan.waypoints.map((w) => ({ ident: w.ident, type: w.type, lat: w.lat, lon: w.lon })),
+      // Altitude restrictions from SIDs/STARs/approaches ride along: altMinFt = at or above,
+      // altMaxFt = at or below, altAtFt = exactly.
+      waypoints: plan.waypoints.map((w) => {
+        const out = { ident: w.ident, type: w.type, lat: w.lat, lon: w.lon };
+        for (const k of ['altMinFt', 'altMaxFt', 'altAtFt']) if (typeof w[k] === 'number') out[k] = w[k];
+        return out;
+      }),
       activeIndex: 1, // the waypoint we're flying TO
       legFrom: { lat: plan.waypoints[0].lat, lon: plan.waypoints[0].lon, ident: plan.waypoints[0].ident },
       cruiseAltFt: plan.profile.cruiseAltFt,
@@ -150,9 +156,34 @@
 
     // VNAV: climb to cruise, then follow the descent path down to the
     // destination - feet per nm from the plan's descent rate and speed.
+    // Altitude restrictions on the route bend that path:
+    //  - "at / at or below X" at a fix caps the altitude as X + (feet per nm x
+    //    distance to the fix), so the aircraft is down to X by the fix;
+    //  - "at / at or above X" at a fix is a floor until that fix is passed.
     const ftPerNm = (p.descentFpm * 60) / p.descentKt;
-    const pathAltFt = p.destElevFt + toDest * ftPerNm;
-    const targetAltFt = Math.round(Math.min(state.cruiseAltFt, pathAltFt) / 10) * 10;
+    let pathAltFt = p.destElevFt + toDest * ftPerNm;
+    let nextFloor = null; // the nearest restriction ahead that sets a minimum altitude
+    let limitedBy = null; // the restriction currently shaping the path
+    if (!state.arrived) {
+      let distance = active ? distanceBearing(position, active).distanceNm : 0;
+      for (let i = state.activeIndex; i < state.waypoints.length; i++) {
+        const w = state.waypoints[i];
+        if (i > state.activeIndex) distance += distanceBearing(state.waypoints[i - 1], w).distanceNm;
+        const ceiling = w.altAtFt ?? w.altMaxFt;
+        const floor = w.altAtFt ?? w.altMinFt;
+        if (ceiling != null && ceiling + distance * ftPerNm < pathAltFt) {
+          pathAltFt = ceiling + distance * ftPerNm;
+          limitedBy = { ident: w.ident, kind: w.altAtFt != null ? 'AT' : 'BELOW', altFt: ceiling };
+        }
+        if (floor != null && nextFloor === null) nextFloor = { ident: w.ident, altFt: floor, kind: w.altAtFt != null ? 'AT' : 'ABOVE' };
+      }
+    }
+    let targetAltFt = Math.min(state.cruiseAltFt, pathAltFt);
+    if (nextFloor && targetAltFt < nextFloor.altFt) {
+      targetAltFt = nextFloor.altFt;
+      limitedBy = nextFloor;
+    }
+    targetAltFt = Math.round(targetAltFt / 10) * 10;
     const alt = typeof telemetry.altFt === 'number' ? telemetry.altFt : null;
 
     let phase;
@@ -160,6 +191,7 @@
     else if (toDest <= APPROACH_NM) phase = 'APP';
     else if (pathAltFt < state.cruiseAltFt && (alt === null || alt > pathAltFt - 300)) phase = 'DES';
     else if (alt !== null && alt < state.cruiseAltFt - 300) phase = 'CLB';
+    else if (nextFloor && alt !== null && alt < nextFloor.altFt - 100) phase = 'CLB'; // climb to meet an at-or-above restriction
     else phase = 'CRZ';
 
     const speedKt = { CLB: p.climbKt, CRZ: p.cruiseKt, DES: p.descentKt, APP: p.approachKt, DONE: p.approachKt }[phase];
@@ -169,7 +201,7 @@
       passed: passed ? passed.ident : null,
       phase,
       lnav,
-      vnav: { targetAltFt, verticalSpeedFpm, pathAltFt: Math.round(pathAltFt) },
+      vnav: { targetAltFt, verticalSpeedFpm, pathAltFt: Math.round(pathAltFt), constraint: limitedBy },
       speedKt,
       distanceToDestNm: toDest,
       // Minutes to go at the current speed (or the plan's cruise speed).
