@@ -587,10 +587,12 @@ it from a clone of the 24SPY repo with
 `node scripts/import-24spy.js [path-to-clone]` (24SPY's repo is being
 archived, so the file in this repo is the copy to keep). The toolbar has
 **Draw Fixes**, **FIR / TMA Outlines**, **24SPY Airports** and **Airways**
-toggles for them. The 24 airports (names, tower/ground frequencies, and two
-the radar didn't have: ITRN and OWO) are drawn as amber diamonds beside the
-radar's own pixel-measured airport markers, which stay the main ones - the two
-datasets disagree by up to ~1 nm, and by far more for IZOL and IBAR.
+toggles for them. The radar now places **all airports at their 24SPY positions** (the older
+measured anchors in `worldMapAnchors.js` are only a fallback), and aircraft
+are placed relative to those. The 24 airports also carry names and
+tower/ground frequencies, including ITRN and OWO. The toggle draws amber
+diamonds at the 24SPY positions. Caveat: IZOL and IBAR are the two airports
+where 24SPY and the old measurements disagree most (2-3 nm).
 
 Reachable two ways:
 

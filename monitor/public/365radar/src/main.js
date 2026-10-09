@@ -35,7 +35,12 @@ import airportInfo from '../src/data/AirportInfo.js';
 // is kept solely for the separate Ground View side panel's own camera
 // zoom/pan (loadGroundChartSVG()), which is a self-contained local view
 // this change doesn't touch.
+// Airport positions come from 24SPY (converted to this map's pixels); the
+// original measured anchors only fill in any airport 24SPY doesn't list.
 const worldMapAnchorsMap = new Map(Object.entries(WorldMapAnchorsData.anchors));
+for (const ap of spyData.airports) {
+    worldMapAnchorsMap.set(ap.icao, { ...(worldMapAnchorsMap.get(ap.icao) || {}), x: ap.x, y: ap.y, confidence: '24SPY' });
+}
 const WORLD_MAP_PX_PER_NM = WorldMapAnchorsData.pxPerNm;
 const WORLD_MAP_WIDTH = WorldMapAnchorsData.imageWidth;
 const WORLD_MAP_HEIGHT = WorldMapAnchorsData.imageHeight;
