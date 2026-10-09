@@ -2,7 +2,7 @@
 // post to /api/plans, and render the returned plan as a briefing.
 
 const $ = (id) => document.getElementById(id);
-const FMS_NAMES = { airbus: 'Airbus MCDU', boeing: 'Boeing CDU', bombardier: 'Bombardier FMS', embraer: 'Embraer MCDU' };
+const FMS_NAMES = { airbus: 'Airbus MCDU', boeing: 'Boeing CDU', boeing787: 'Boeing 787 CDU', bombardier: 'Bombardier FMS', embraer: 'Embraer MCDU', generic: 'Default FMS' };
 let navdata = null;
 
 function option(value, label) {

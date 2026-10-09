@@ -142,10 +142,18 @@ the plan), or pick one at the top:
 
 | Style | Aircraft | Autopilot panel | Route import |
 |---|---|---|---|
-| Airbus MCDU | A320-A380, Beluga, ATR | FCU: SPD/HDG/ALT/V/S knobs (push = managed, pull = selected), AP1/AP2, A/THR | INIT page, type plan ID or callsign, press **1L** (CO RTE) |
-| Boeing CDU | 7x7, MD-11/90, most others | MCP: A/T ARM, SPEED, LNAV, VNAV, HDG SEL, ALT HOLD, V/S, CMD A | RTE page, type it, press **2L** (CO ROUTE), then **EXEC** |
+| Airbus MCDU | A320, A330 (and MRTT), A340, A350, A380, Beluga | FCU: SPD/HDG/ALT/V/S knobs (push = managed, pull = selected), AP1/AP2, A/THR | INIT page, type plan ID or callsign, press **1L** (CO RTE) |
+| Boeing CDU | 707-777, MD-11/90, P-8, E-3 | MCP: A/T ARM, SPEED, LNAV, VNAV, HDG SEL, ALT HOLD, V/S, CMD A | RTE page, type it, press **2L** (CO ROUTE), then **EXEC** |
+| Boeing 787 CDU | 787 | Same MCP as the Boeing CDU | Same as the Boeing CDU |
 | Bombardier FMS | CRJ700, Q400, Learjet, A220 | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, YD, A/T | FPL page, **2L** (RTE ID), then **EXEC** |
 | Embraer MCDU | E190 | Guidance panel, same buttons (FLCH, VS/FPA) | RTE page, **2L** (LOAD RTE), then **EXEC** |
+| Default FMS | Everything else - An-225, C-130, fighters, light aircraft, helicopters... | Guidance panel: HDG, NAV, FLC, VS, VNAV, ALT, AP, A/T | ROUTE page, **2L** (PLAN ID), then **EXEC** |
+
+The Airbus, Boeing and 787 units are drawn from photos of the real ones:
+the A320-family MCDU, the 777-style CDU (also used for the 737-777), and
+the 787's CDU, which is drawn on the lower display with a keypad panel
+beside it. The A350/A380 currently use the Airbus MCDU until they get
+their own (they have no MCDU in the real aircraft).
 
 Pages, in each style's own names: route/INIT, LEGS/F-PLN (scroll with the
 arrows or PREV/NEXT), PROGRESS, PERF/VNAV/CRZ (type an altitude and press

@@ -79,6 +79,22 @@ body[data-skin="embraer"] {
   --fma-text: #3cf06e;
 }
 
+/* Default FMS - neutral graphite unit for aircraft without their own style */
+body[data-skin="generic"] {
+  --body: #34373c;
+  --body-edge: #222428;
+  --key: #2a2c30;
+  --key-text: #f0f0f0;
+  --alnum: #2a2c30;
+  --alnum-text: #f0f0f0;
+  --panel: #3a3d42;
+  --window: #000;
+  --window-text: #f0f0f0;
+  --btn-lit: #3cf06e;
+  --scr-label: #9aa4b0;
+  --fma-text: #3cf06e;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -177,7 +193,8 @@ body[data-skin="airbus"] .line.label-line { color: var(--scr-white); }
   height: 34px; background: var(--key); color: var(--key-text); border: 1px solid #000; border-radius: 4px;
   font-size: 10px; font-weight: 700; line-height: 1.05; padding: 2px; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.4);
 }
-.fkey.blank { visibility: hidden; }
+.fkey.spacer { visibility: hidden; }
+.fkey.small { font-size: 9px; }
 .fkey.exec { position: relative; }
 .fkey.exec::after { content: ""; position: absolute; left: 8px; right: 8px; top: 3px; height: 3px; border-radius: 2px; background: #333; }
 .fkey.exec.lit::after { background: #fff7c2; box-shadow: 0 0 8px #fff7c2; }
@@ -216,3 +233,122 @@ dialog h3 { margin-top: 0; }
 .check { display: flex; gap: 6px; align-items: center; color: var(--dim); margin-bottom: 8px; }
 .pair-code { font: 700 18px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 3px; color: var(--good); }
 #remote-urls { word-break: break-all; }
+
+/* ---------- per-unit key layouts ---------- */
+.annun { display: flex; justify-content: center; gap: 10px; margin: -4px 0 8px; }
+.annun-light {
+  min-width: 46px; height: 15px; padding: 0 6px; border-radius: 8px; background: #2c2e30; border: 1px solid #1b1c1d;
+  color: #6d5148; font: 700 9px/13px -apple-system, "Segoe UI", sans-serif; letter-spacing: 0.6px; text-align: center;
+}
+.annun-light.on { color: #63ff84; text-shadow: 0 0 6px rgba(99, 255, 132, 0.8); }
+.keypad-left { display: flex; flex-direction: column; gap: 6px; order: 2; }
+.navkeys { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.navkeys .fkey { height: 34px; }
+.fkey.blank-key { color: transparent; }
+.fkey.knob-deco { display: block; justify-self: center; align-self: center; width: 26px; height: 26px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #f1e2b8, #b9a46f 45%, #6f6040 100%); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); border: 0; }
+
+/* ---------- Airbus MCDU (A320 family), from a photo of the real unit ---------- */
+body[data-skin="airbus"] {
+  --body: #a2a7aa;
+  --body-edge: #868b8f;
+  --key: #1b1c1e;
+  --key-text: #f4e9c9;
+  --alnum: #1b1c1e;
+  --alnum-text: #f4e9c9;
+  --scr-bg: #0d0f10;
+  --scr-label: #f2f2f2;
+}
+body[data-skin="airbus"] .mcdu {
+  background:
+    radial-gradient(circle at 14px 14px, #4f5357 0 4px, #c3c7ca 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #4f5357 0 4px, #c3c7ca 5px, transparent 6px),
+    radial-gradient(circle at 14px calc(100% - 14px), #4f5357 0 4px, #c3c7ca 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #4f5357 0 4px, #c3c7ca 5px, transparent 6px),
+    linear-gradient(var(--body), var(--body-edge));
+  border: 1px solid #6f7478;
+  padding-top: 18px;
+}
+body[data-skin="airbus"] .screen { border: 7px solid #2c2f31; border-radius: 16px 16px 10px 10px; font-weight: 600; }
+body[data-skin="airbus"] .lsk { height: 16px; width: 30px; border-radius: 2px; background: #151617; box-shadow: inset 0 1px 0 #3a3c3e; }
+body[data-skin="airbus"] .lsk-col { gap: 18px; padding-top: 36px; }
+body[data-skin="airbus"] .fkey { border-radius: 3px; height: 32px; font-size: 10px; box-shadow: inset 0 1px 0 #3a3c3e, 0 2px 0 #111; }
+body[data-skin="airbus"] .fkey.small { background: #232527; font-size: 9px; }
+body[data-skin="airbus"] .fkey.arrow { color: #f2ae2e; font-size: 18px; }
+body[data-skin="airbus"] .keypad-left { order: 0; width: 132px; }
+body[data-skin="airbus"] .alpha .key { border-radius: 4px; }
+body[data-skin="airbus"] .alpha .key.small { font-size: 9px; line-height: 1.05; }
+
+/* ---------- Boeing CDU (737-777), from a photo of the real unit ---------- */
+body[data-skin="boeing"] {
+  --body: #6f645a;
+  --body-edge: #564c44;
+  --key: #131313;
+  --key-text: #f4f4f4;
+  --alnum: #131313;
+  --alnum-text: #f4f4f4;
+  --scr-bg: #050906;
+  --scr-label: #f2f2f2;
+}
+body[data-skin="boeing"] .mcdu { border: 1px solid #463d36; }
+body[data-skin="boeing"] .screen { border: 9px solid #3d3530; border-radius: 26px; }
+body[data-skin="boeing"] .lsk { height: 22px; width: 30px; border-radius: 4px; background: #151515; border: 2px solid #3d3530; position: relative; }
+body[data-skin="boeing"] .lsk::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; margin-top: -1px; background: #e9e9e9; border-radius: 1px; }
+body[data-skin="boeing"] .fkey { border: 3px solid #3d3530; border-radius: 8px; height: 38px; font-size: 10px; box-shadow: inset 0 2px 0 #333, 0 1px 0 #2a2420; }
+body[data-skin="boeing"] .fkey.exec { position: relative; overflow: visible; }
+body[data-skin="boeing"] .fkey.exec::after { top: -10px; left: 8px; right: 8px; height: 4px; background: #4a4640; }
+body[data-skin="boeing"] .fkey.exec.lit::after { background: #f5efcf; box-shadow: 0 0 10px #f5efcf; }
+body[data-skin="boeing"] .fkeys { margin-top: 18px; row-gap: 14px; }
+body[data-skin="boeing"] .keypad-left { order: 0; width: 132px; }
+body[data-skin="boeing"] .navkeys .fkey { height: 40px; }
+body[data-skin="boeing"] .alpha .key { border-radius: 6px; border: 2px solid #3d3530; }
+body[data-skin="boeing"] .key.num { border: 2px solid #3d3530; }
+
+/* ---------- Boeing 787: CDU drawn on the lower display + keypad panel ---------- */
+body[data-skin="boeing787"] {
+  --scr-bg: #000;
+  --scr-label: #e8e8e8;
+  --key: #cfcbe8;
+  --key-text: #1b1d3b;
+  --alnum: #26282c;
+  --alnum-text: #f2f2f2;
+  --soft-bg: #aca8d4;
+}
+body[data-skin="boeing787"] .mcdu {
+  display: grid; grid-template-columns: minmax(0, 1fr) 214px; grid-template-areas: "screen pad" "fkeys pad";
+  column-gap: 12px; width: 690px; padding: 0; background: none; box-shadow: none;
+}
+body[data-skin="boeing787"] .mcdu-screen-row { grid-area: screen; background: var(--soft-bg); padding: 12px 8px 6px; border-radius: 8px 8px 0 0; }
+body[data-skin="boeing787"] .screen { border: 0; border-radius: 2px; }
+body[data-skin="boeing787"] .lsk { width: 30px; height: 22px; border-radius: 3px; background: #c4c0e2; border: 1px solid #8d89b8; box-shadow: none; }
+body[data-skin="boeing787"] .fkeys { grid-area: fkeys; margin: 0; padding: 6px 46px 14px; background: var(--soft-bg); border-radius: 0 0 8px 8px; }
+body[data-skin="boeing787"] .fkey { height: 34px; border-radius: 4px; border: 1px solid #8d89b8; box-shadow: none; font-size: 10px; }
+body[data-skin="boeing787"] .fkey.exec::after { background: #9d99c4; }
+body[data-skin="boeing787"] .fkey.exec.lit::after { background: #39e36a; box-shadow: 0 0 6px #39e36a; }
+body[data-skin="boeing787"] .keypad {
+  grid-area: pad; flex-direction: column; gap: 10px; background: linear-gradient(#3d4045, #2e3135); border-radius: 10px; padding: 14px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+body[data-skin="boeing787"] .keypad-left { order: 0; }
+body[data-skin="boeing787"] .navkeys { grid-template-columns: repeat(3, 1fr); }
+body[data-skin="boeing787"] .navkeys .fkey { height: 26px; background: #232529; color: #eee; border: 1px solid #111; border-radius: 4px; font-size: 9px; }
+body[data-skin="boeing787"] .navkeys .fkey.on { outline: 1px solid #e8e8e8; outline-offset: -4px; }
+body[data-skin="boeing787"] .numeric { grid-template-columns: repeat(3, 34px); justify-content: center; }
+body[data-skin="boeing787"] .alpha { grid-template-columns: repeat(5, 1fr); }
+body[data-skin="boeing787"] .alpha .key { border-radius: 50%; height: 32px; }
+body[data-skin="boeing787"] .alpha .key[data-ch="E"],
+body[data-skin="boeing787"] .alpha .key[data-ch="N"],
+body[data-skin="boeing787"] .alpha .key[data-ch="S"],
+body[data-skin="boeing787"] .alpha .key[data-ch="W"] { box-shadow: inset 0 0 0 2px #26282c, inset 0 0 0 3px #e8e8e8; }
+
+@media (max-width: 760px) {
+  body[data-skin="boeing787"] .mcdu { grid-template-columns: 1fr; grid-template-areas: "screen" "fkeys" "pad"; width: 100%; row-gap: 0; }
+  body[data-skin="boeing787"] .keypad { margin-top: 12px; }
+  body[data-skin="boeing787"] .fkeys { padding: 6px 8px 12px; }
+}
+
+/* The compass letters are boxed on the real Airbus and Boeing units. */
+body[data-skin="airbus"] .alpha .key:is([data-ch="E"], [data-ch="N"], [data-ch="S"], [data-ch="W"]),
+body[data-skin="boeing"] .alpha .key:is([data-ch="E"], [data-ch="N"], [data-ch="S"], [data-ch="W"]) {
+  box-shadow: inset 0 0 0 4px var(--alnum), inset 0 0 0 6px var(--alnum-text);
+}

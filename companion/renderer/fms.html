@@ -13,8 +13,10 @@
       <option value="auto">Auto (from aircraft)</option>
       <option value="airbus">Airbus MCDU</option>
       <option value="boeing">Boeing CDU</option>
+      <option value="boeing787">Boeing 787 CDU</option>
       <option value="bombardier">Bombardier FMS</option>
       <option value="embraer">Embraer MCDU</option>
+      <option value="generic">Default FMS</option>
     </select>
   </label>
   <span id="trk-status" class="pill">NO TRACKING DATA</span>
@@ -27,6 +29,7 @@
 
 <main class="lower">
   <div id="mcdu" class="mcdu">
+    <div class="annun" id="annun" hidden></div>
     <div class="mcdu-screen-row">
       <div class="lsk-col" id="lsk-left"></div>
       <div class="screen" id="screen" aria-live="polite"></div>
@@ -34,8 +37,11 @@
     </div>
     <div class="fkeys" id="fkeys"></div>
     <div class="keypad">
+      <div class="keypad-left">
+        <div class="navkeys" id="navkeys" hidden></div>
+        <div class="numeric" id="numeric"></div>
+      </div>
       <div class="alpha" id="alpha"></div>
-      <div class="numeric" id="numeric"></div>
     </div>
   </div>
 

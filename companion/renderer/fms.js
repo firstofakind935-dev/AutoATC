@@ -40,11 +40,13 @@ const KEYMAP_LABELS = {
   throttleDown: 'Throttle down',
 };
 
-// Aircraft names as the HUD shows them -> FMS style. Anything else falls
-// back to the plan's own style, then Boeing.
+// Aircraft names as the HUD shows them -> FMS style. Anything not listed
+// (An-225, C-130, fighters, light aircraft...) gets the Default FMS.
 const HUD_TYPE_SKINS = [
-  [/airbus a220/i, 'bombardier'],
-  [/airbus|atr|eurofighter/i, 'airbus'],
+  [/airbus a220/i, 'bombardier'], // designed as the Bombardier CSeries
+  [/airbus|a330 mrtt/i, 'airbus'],
+  [/boeing 787/i, 'boeing787'],
+  [/boeing|douglas md|\bc40\b|kc-?7[06]7|707af1|747af1|dreamlifter|\bp8\b|c-32|e-3 sentry|ec-18b/i, 'boeing'],
   [/bombardier|crj|q400|learjet/i, 'bombardier'],
   [/e190|embraer/i, 'embraer'],
 ];
@@ -102,7 +104,8 @@ function currentSkinId() {
   if (settings.skin !== 'auto') return settings.skin;
   const hudType = ui.telemetry?.aircraftType || '';
   for (const [re, skin] of HUD_TYPE_SKINS) if (re.test(hudType)) return skin;
-  return ui.plan?.aircraft?.fms || 'boeing';
+  const fromPlan = ui.plan?.aircraft?.fms;
+  return SKINS[fromPlan] ? fromPlan : 'generic';
 }
 const skin = () => SKINS[currentSkinId()];
 
@@ -433,11 +436,17 @@ const SKINS = {
     colors: { active: 'white', legs: 'green' },
     labels: { coRoute: 'CO RTE' },
     titles: { rte: 'INIT', legs: 'F-PLN', prog: 'PROG', perf: 'PERF', dir: 'DIR TO', menu: 'MCDU MENU' },
+    // Layout from an A320-family MCDU: two rows of page keys with BRT/DIM
+    // at the end, AIRPORT and the arrow keys above the number pad on the
+    // left, and FM1/IND/RDY/FM2 lights above the screen.
+    keyCols: 7,
     keys: [
-      ['DIR', 'dir'], ['PROG', 'prog'], ['PERF', 'perf'], ['INIT', 'rte'], ['DATA', null], ['', null],
-      ['F-PLN', 'legs'], ['RAD NAV', null], ['FUEL PRED', null], ['SEC F-PLN', null], ['ATC COMM', null], ['MCDU MENU', 'menu'],
-      ['AIRPORT', 'airport'], ['', null], ['←', 'prev'], ['↑', 'up'], ['→', 'next'], ['↓', 'down'],
+      ['DIR', 'dir'], ['PROG', 'prog'], ['PERF', 'perf'], ['INIT', 'rte'], ['DATA', null], ['', 'blank'], ['BRT', 'noop', 'small'],
+      ['F-PLN', 'legs'], ['RAD NAV', null], ['FUEL PRED', null], ['SEC F-PLN', null], ['ATC COMM', null], ['MCDU MENU', 'menu'], ['DIM', 'noop', 'small'],
+      ['AIR PORT', 'airport', 'nav'], ['', 'blank', 'nav'], ['←', 'prev', 'nav arrow'], ['↑', 'up', 'nav arrow'], ['→', 'next', 'nav arrow'], ['↓', 'down', 'nav arrow'],
     ],
+    alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', '/', 'SP', 'OVFY', 'CLR'],
+    annunciators: [['FM1', ''], ['IND', ''], ['RDY', 'on'], ['', ''], ['FM2', '']],
   },
   boeing: {
     name: 'Boeing CDU',
@@ -446,11 +455,39 @@ const SKINS = {
     colors: { active: 'magenta', legs: 'white' },
     labels: { coRoute: 'CO ROUTE' },
     titles: { rte: 'RTE 1', legs: 'RTE 1 LEGS', prog: 'PROGRESS', perf: 'CRZ', dir: 'DIR INTC', menu: 'MENU' },
+    // Layout from a 777-style CDU: two rows of page keys (EXEC with its
+    // light bar at the end of the second, the BRT knob above it), then
+    // MENU / NAV RAD / PREV PAGE / NEXT PAGE above the number pad on the
+    // left. Direct-to is done on LEGS: type the waypoint onto 1L.
+    keyCols: 6,
     keys: [
-      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ALTN', null], ['VNAV', 'perf'], ['', null],
+      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ATC', null], ['VNAV', 'perf'], ['', 'knob'],
       ['FIX', null], ['LEGS', 'legs'], ['HOLD', null], ['FMC COMM', null], ['PROG', 'prog'], ['EXEC', 'exec'],
-      ['MENU', 'menu'], ['NAV RAD', null], ['DIR INTC', 'dir'], ['PREV PAGE', 'up'], ['NEXT PAGE', 'down'], ['', null],
+      ['MENU', 'menu', 'nav'], ['NAV RAD', null, 'nav'], ['PREV PAGE', 'up', 'nav'], ['NEXT PAGE', 'down', 'nav'],
     ],
+    alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', 'SP', 'DEL', '/', 'CLR'],
+  },
+  // Boeing 787: no separate CDU unit - the CDU is drawn on the lower
+  // display (soft line select and page keys around a black text window),
+  // with a physical keypad panel beside it (LOWER MFD select keys, round
+  // number and letter keys).
+  boeing787: {
+    name: 'Boeing 787 CDU',
+    execRequired: true,
+    eraseLabel: '<ERASE',
+    colors: { active: 'magenta', legs: 'white' },
+    labels: { coRoute: 'CO ROUTE' },
+    titles: { rte: 'RTE 1', legs: 'RTE 1 LEGS', prog: 'PROGRESS', perf: 'CRZ', dir: 'DIR INTC', menu: 'MENU' },
+    keyCols: 5,
+    keys: [
+      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ALTN', null], ['VNAV', 'perf'],
+      ['FIX', null], ['LEGS', 'legs'], ['HOLD', null], ['FMC COMM', null], ['PROG', 'prog'],
+      ['NAV RAD', null], ['OFST', null], ['RTA', null], ['PREV PAGE', 'up'], ['NEXT PAGE', 'down'],
+      ['EXEC', 'exec'], ['', null], ['', null], ['', null], ['', null],
+      ['SYS', 'noop', 'nav mfd'], ['CDU', 'noop', 'nav mfd on'], ['INFO', 'noop', 'nav mfd'],
+      ['CHKL', 'noop', 'nav mfd'], ['COMM', 'noop', 'nav mfd'], ['ND', 'noop', 'nav mfd'],
+    ],
+    alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', 'SP', 'DEL', '/', 'CLR'],
   },
   bombardier: {
     name: 'Bombardier FMS',
@@ -478,6 +515,20 @@ const SKINS = {
       ['PREV', 'up'], ['NEXT', 'down'], ['', null], ['', null], ['', null], ['', null],
     ],
   },
+  // Default FMS: a neutral unit for every aircraft without a
+  // manufacturer style of its own (An-225, C-130, fighters, light aircraft...).
+  generic: {
+    name: 'Default FMS',
+    execRequired: true,
+    eraseLabel: '<CANCEL',
+    colors: { active: 'magenta', legs: 'green' },
+    labels: { coRoute: 'PLAN ID' },
+    titles: { rte: 'ROUTE', legs: 'LEGS', prog: 'PROGRESS', perf: 'PERF', dir: 'DIRECT TO', menu: 'MENU' },
+    keys: [
+      ['ROUTE', 'rte'], ['LEGS', 'legs'], ['DIR', 'dir'], ['PERF', 'perf'], ['PROG', 'prog'], ['MENU', 'menu'],
+      ['PREV', 'up'], ['NEXT', 'down'], ['', null], ['', null], ['', null], ['EXEC', 'exec'],
+    ],
+  },
 };
 
 function goPage(page) {
@@ -486,7 +537,12 @@ function goPage(page) {
   render();
 }
 
+const DEFAULT_ALPHA = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'SP', 'DEL', '/', 'CLR'];
+// Key actions that do nothing on purpose: lighting controls and blank keys.
+const INERT_KEYS = new Set(['noop', 'blank', 'knob']);
+
 function onFunctionKey(action) {
+  if (INERT_KEYS.has(action)) return null;
   if (!action) return flash('NOT AVAILABLE');
   if (PAGES[action]) return goPage(action);
   if (action === 'exec') return ui.pending ? execPending() : null;
@@ -512,6 +568,7 @@ function onLsk(id) {
 }
 
 function onKey(key) {
+  if (key === 'OVFY') return flash('NOT AVAILABLE'); // overfly - no fly-over waypoints in PTFS
   if (ui.message) ui.message = null;
   if (key === 'CLR') ui.scratch = ui.scratch.slice(0, -1);
   else if (key === 'DEL') ui.scratch = '';
@@ -609,7 +666,7 @@ function panelFor(skinId) {
       button('APPR', false, () => flash('NOT AVAILABLE')),
     ];
   }
-  if (skinId === 'boeing') {
+  if (skinId === 'boeing' || skinId === 'boeing787') {
     return [
       button('A/T ARM', ap.autothrottle, toggleAt, 'switch'),
       spdKnob({ label: 'IAS/MACH', managed: ap.speedMode === 'MANAGED' }),
@@ -627,7 +684,9 @@ function panelFor(skinId) {
   return [
     hdgKnob({ label: 'HDG' }),
     { type: 'group', items: [button('HDG', ap.lateral === 'HDG', () => setLateral('HDG')), button('NAV', ap.lateral === 'LNAV', () => setLateral('LNAV')), button('APPR', false, () => flash('NOT AVAILABLE'))] },
-    { type: 'group', items: [button('AP', ap.engaged, toggleAp), button('YD', ap.engaged, () => {}), button('A/T', ap.autothrottle, toggleAt)] },
+    { type: 'group', items: skinId === 'generic'
+      ? [button('AP', ap.engaged, toggleAp), button('A/T', ap.autothrottle, toggleAt)]
+      : [button('AP', ap.engaged, toggleAp), button('YD', ap.engaged, () => {}), button('A/T', ap.autothrottle, toggleAt)] },
     spdKnob({ label: 'SPD', managed: ap.speedMode === 'MANAGED', push: () => { ap.speedMode = ap.speedMode === 'MANAGED' ? 'SEL' : 'MANAGED'; }, pushLabel: 'FMS' }),
     { type: 'group', items: [button(skinId === 'embraer' ? 'FLCH' : 'FLC', false, () => { ap.vertical = 'ALT'; render(); }), button('VS', ap.vertical === 'VS', () => setVertical('VS')), button('VNAV', ap.vertical === 'VNAV', () => setVertical('VNAV')), button('ALT', ap.vertical === 'ALT', altHold)] },
     altKnob({ label: 'ALT' }),
@@ -653,10 +712,11 @@ function fmaColumns(skinId) {
     ];
   }
   const pitch = ap.vertical === 'VNAV' ? (vnavPhase === 'CRZ' ? 'VNAV PTH' : 'VNAV SPD') : ap.vertical === 'VS' ? 'V/S' : 'ALT HOLD';
-  if (skinId === 'boeing') {
+  if (skinId === 'boeing' || skinId === 'boeing787') {
     return [ap.autothrottle ? (ap.vertical === 'VNAV' && vnavPhase === 'CLB' ? 'N1' : 'MCP SPD') : '', ap.lateral === 'LNAV' ? 'LNAV' : 'HDG SEL', pitch, ap.engaged ? 'CMD' : ''];
   }
-  return [ap.autothrottle ? 'SPD' : '', ap.lateral === 'LNAV' ? 'LNAV' : 'HDG', ap.vertical === 'VNAV' ? 'VPTH' : ap.vertical === 'VS' ? 'VS' : 'ALT', [ap.engaged ? 'AP' : '', ap.engaged ? 'YD' : ''].filter(Boolean).join(' ')];
+  const apText = skinId === 'generic' ? (ap.engaged ? 'AP' : '') : [ap.engaged ? 'AP' : '', ap.engaged ? 'YD' : ''].filter(Boolean).join(' ');
+  return [ap.autothrottle ? 'SPD' : '', ap.lateral === 'LNAV' ? 'LNAV' : 'HDG', ap.vertical === 'VNAV' ? 'VPTH' : ap.vertical === 'VS' ? 'VS' : 'ALT', apText];
 }
 
 // ---------------------------------------------------------------- view model + input
@@ -720,7 +780,19 @@ function buildView() {
         ? { text: ui.message, cls: ui.message === 'LOADING...' ? 'white' : 'amber' }
         : { text: ui.scratch, cls: '' },
     },
-    fkeys: s.keys.map(([label, action]) => ({ label, exec: action === 'exec' })),
+    // Each key: its label, which block it sits in (main rows, or the small
+    // block above the number pad), and how it's drawn. Indexes are the
+    // skin's key indexes, which input messages refer back to.
+    fkeys: s.keys.map(([label, action, opts = '']) => ({
+      label,
+      exec: action === 'exec',
+      group: opts.includes('nav') ? 'nav' : 'main',
+      kind: action === 'knob' ? 'knob' : action === 'blank' ? 'blank' : label ? 'key' : 'spacer',
+      cls: opts.replace('nav', '').trim(),
+    })),
+    fkeyCols: s.keyCols || 6,
+    alpha: s.alpha || DEFAULT_ALPHA,
+    annunciators: s.annunciators || [],
     execLit: Boolean(ui.pending),
     panel: buildPanel(skinId),
     fma: { cols: fmaColumns(skinId), warn: ap.disconnectReason || '' },
@@ -734,7 +806,7 @@ function render() {
   api?.publishFmsView?.(vm);
 }
 
-const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-']));
+const KEYPAD = new Set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'.split('').concat(['SP', 'DEL', 'CLR', '+/-', 'OVFY']));
 
 /** The one entry point for every cockpit input - local clicks and remotes. */
 function handleInput(msg) {
@@ -743,7 +815,7 @@ function handleInput(msg) {
   if (msg.type === 'key' && KEYPAD.has(msg.ch)) return onKey(msg.ch);
   if (msg.type === 'fkey' && Number.isInteger(msg.index)) {
     const key = skin().keys[msg.index];
-    if (key && key[0]) onFunctionKey(key[1]);
+    if (key && (key[0] || key[1] === 'blank')) onFunctionKey(key[1]);
     return null;
   }
   if (msg.type === 'panel') {

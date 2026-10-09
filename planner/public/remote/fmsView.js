@@ -13,7 +13,6 @@
 
 (function (root) {
   const $ = (id) => document.getElementById(id);
-  const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').concat(['SP', 'DEL', '/', 'CLR']);
   const NUMERIC = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '+/-'];
 
   function escapeHtml(text) {
@@ -23,6 +22,8 @@
 
   let dispatch = () => {};
   let lastFkeys = '';
+  let lastAlpha = '';
+  let lastAnnun = '';
 
   /** Builds the fixed parts (line select keys, keypad) and wires input. */
   function mount(onMessage) {
@@ -36,20 +37,25 @@
         el.append(b);
       }
     }
-    for (const [list, el, cls] of [[ALPHA, $('alpha'), 'key'], [NUMERIC, $('numeric'), 'key num']]) {
-      for (const ch of list) {
-        const b = document.createElement('button');
-        b.className = `${cls} ${ch.length > 1 && cls === 'key' ? 'small' : ''}`;
-        b.textContent = ch;
-        b.addEventListener('click', () => dispatch({ type: 'key', ch }));
-        el.append(b);
-      }
+    for (const ch of NUMERIC) {
+      const b = document.createElement('button');
+      b.className = 'key num';
+      b.textContent = ch;
+      b.addEventListener('click', () => dispatch({ type: 'key', ch }));
+      $('numeric').append(b);
     }
-    // Function keys and the autopilot panel are redrawn often, so they're
-    // wired once here by delegation rather than per button.
-    $('fkeys').addEventListener('click', (e) => {
-      const b = e.target.closest('button[data-index]');
-      if (b) dispatch({ type: 'fkey', index: Number(b.dataset.index) });
+    // Function keys, letters (each style has its own set) and the autopilot
+    // panel are redrawn when they change, so they're wired once here by
+    // delegation rather than per button.
+    for (const id of ['fkeys', 'navkeys']) {
+      $(id).addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-index]');
+        if (b) dispatch({ type: 'fkey', index: Number(b.dataset.index) });
+      });
+    }
+    $('alpha').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-ch]');
+      if (b) dispatch({ type: 'key', ch: b.dataset.ch });
     });
     $('ap-panel').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-id]');
@@ -87,17 +93,39 @@
     $('screen').innerHTML = html;
   }
 
-  function renderFkeys(fkeys, execLit) {
-    const key = JSON.stringify(fkeys);
-    const el = $('fkeys');
+  function keyHtml(k, i) {
+    if (k.kind === 'spacer') return '<span class="fkey spacer"></span>';
+    if (k.kind === 'knob') return '<span class="fkey knob-deco" aria-hidden="true"></span>';
+    const label = escapeHtml(k.label).replace(' ', '<br>');
+    return `<button class="fkey ${k.exec ? 'exec' : ''} ${k.kind === 'blank' ? 'blank-key' : ''} ${escapeHtml(k.cls || '')}" data-index="${i}">${label}</button>`;
+  }
+
+  function renderKeys(vm) {
+    const key = JSON.stringify([vm.fkeys, vm.fkeyCols]);
     if (key !== lastFkeys) {
       lastFkeys = key;
-      el.innerHTML = fkeys.map((k, i) => (k.label
-        ? `<button class="fkey ${k.exec ? 'exec' : ''}" data-index="${i}">${escapeHtml(k.label)}</button>`
-        : '<button class="fkey blank" disabled></button>')).join('');
+      const main = [];
+      const nav = [];
+      vm.fkeys.forEach((k, i) => (k.group === 'nav' ? nav : main).push(keyHtml(k, i)));
+      $('fkeys').innerHTML = main.join('');
+      $('fkeys').style.gridTemplateColumns = `repeat(${vm.fkeyCols}, 1fr)`;
+      $('navkeys').innerHTML = nav.join('');
+      $('navkeys').hidden = nav.length === 0;
     }
-    const exec = el.querySelector('.exec');
-    if (exec) exec.classList.toggle('lit', Boolean(execLit));
+    for (const exec of document.querySelectorAll('.fkey.exec')) exec.classList.toggle('lit', Boolean(vm.execLit));
+
+    const alpha = JSON.stringify(vm.alpha);
+    if (alpha !== lastAlpha) {
+      lastAlpha = alpha;
+      $('alpha').innerHTML = vm.alpha.map((ch) => `<button class="key ${ch.length > 1 ? 'small' : ''}" data-ch="${escapeHtml(ch)}">${ch === 'OVFY' ? 'OVFY<br>△' : escapeHtml(ch)}</button>`).join('');
+    }
+
+    const annun = JSON.stringify(vm.annunciators);
+    if (annun !== lastAnnun) {
+      lastAnnun = annun;
+      $('annun').innerHTML = vm.annunciators.map(([text, state]) => `<span class="annun-light ${state}">${escapeHtml(text)}</span>`).join('');
+      $('annun').hidden = vm.annunciators.length === 0;
+    }
   }
 
   function panelItemHtml(item, skin) {
@@ -135,7 +163,7 @@
   function render(vm) {
     document.body.dataset.skin = vm.skin;
     renderScreen(vm.screen);
-    renderFkeys(vm.fkeys, vm.execLit);
+    renderKeys(vm);
     $('ap-panel').innerHTML = vm.panel.map((i) => panelItemHtml(i, vm.skin)).join('');
     $('fma').innerHTML = vm.fma.cols.map((text, i) => `<div class="fma-col ${i === 3 ? 'ap' : ''}">${escapeHtml(text || '')}</div>`).join('')
       + (vm.fma.warn ? `<div class="fma-warn">${escapeHtml(vm.fma.warn)}</div>` : '');
