@@ -1300,3 +1300,6 @@ canvas {
 .footer-link:hover {
     text-decoration: underline;
 }
+/* 365Radar wordmark (replaces the 24SPY logo in the header; 24SPY is still credited in the footer) */
+.radar-wordmark { display: flex; align-items: center; height: 100%; padding: 0 22px; font: 800 26px Arial, sans-serif; letter-spacing: .5px; color: #fff; text-decoration: none; white-space: nowrap; }
+.radar-wordmark span { color: #4b7eff; margin-left: 3px; font-weight: 600; }

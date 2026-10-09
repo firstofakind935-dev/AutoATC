@@ -579,7 +579,7 @@ repo - is traced from a 24SPY screenshot registered to its waypoints
 runway heading), so `import-24spy.js` now fits scale and shift only, no
 rotation. Needs `pip install opencv-python-headless numpy pillow`.
 
-**`/radar` is a fork of 24SPY.** `monitor/public/radar/` is a modified copy of
+**`/radar` (365Radar) is a fork of 24SPY.** `monitor/public/radar/` is a modified copy of
 [24SPY](https://github.com/tiaguinho2009/24SPY) by Tiago Murteira
 (tiaguinho_2009), used with his permission and under its licence
 (attribution, non-commercial only - this must not be sold or earn money). It

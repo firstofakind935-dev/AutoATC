@@ -1,4 +1,4 @@
-# About this radar
+# About 365Radar (served at /radar)
 
 This is a **modified fork of 24SPY** (https://github.com/tiaguinho2009/24SPY)
 by **Tiago Murteira (nickname: tiaguinho_2009)**, used with his permission and
@@ -13,7 +13,7 @@ flight-plan tools in `index.html`, `assets/main.js`, `assets/areas.js`,
   original also tried its author's private backend); the update check against
   the original repo and the Discord pop-up were removed; a hook draws AutoATC
   aircraft on the map.
-- `index.html`: title, footer credit, loads `assets/autoatc.js`.
+- `index.html`: renamed to 365Radar (title, meta tags, header wordmark in place of the 24SPY logo; 24SPY is still credited in the footer and here), footer credit, loads `assets/autoatc.js`.
 - `assets/autoatc.js` (new): live AutoATC aircraft layer, Ground view and
   Charts view, and the radar controller tools (data blocks, trails, speed
   leaders, ATC vectors, conflict alerts, range rings, measuring, direct-to,
