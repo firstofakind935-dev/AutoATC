@@ -1,0 +1,95 @@
+{
+  "icao": "IZOL",
+  "iata": "IZO",
+  "name": "Izolirani Intl.",
+  "location": "Izolirani, Izolirani",
+  "elevationFt": "0'",
+  "coordinates": "N41 48.1  E000 16.1",
+  "runways": [
+    {
+      "designator": "10",
+      "heading": "106°",
+      "length": null
+    },
+    {
+      "designator": "28",
+      "heading": "286°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "127.800"
+    },
+    {
+      "facility": "IZOLIRANI Delivery",
+      "frequency": "128.200"
+    },
+    {
+      "facility": "IZOLIRANI Ground",
+      "frequency": "121.900"
+    },
+    {
+      "facility": "IZOLIRANI Tower",
+      "frequency": "118.700"
+    },
+    {
+      "facility": "IZOLIRANI Departure",
+      "frequency": "124.300"
+    }
+  ],
+  "groundLayout": "Runway 10/28 is a single runway with a parallel taxiway system (taxiways D and E, running together) along its full length on the northeast side. Perpendicular connector taxiways link the runway to that D/E spine: E1 and E2 near the Rwy 28 end, down through E6 and E7 near the Rwy 10 end. Taxiway A branches off the D/E spine to East Apron (stands 1-4, 8-9) and the Ground Crew Station. Taxiway B branches off to West Apron (stands 5-7), next to the Terminal and Control Tower. Taxiway C branches off further south (near the D5 area) to Cargo Apron (stands 10-13), the Cargo Terminal, Hangars, Fuel, and the Heli pads. A real taxi route from an apron stand to Rwy 28 goes via A or B to the D/E spine, then a connector near the Rwy 28 end (e.g. E1); to Rwy 10, follow the D/E spine to a connector near that end (e.g. E6 or E7). Always use the real connector nearest the relevant runway end and apron, not just a single taxiway letter.",
+  "otherLabels": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "N",
+    "Terminal",
+    "Hangars",
+    "Heli 2",
+    "Heli 1",
+    "Fuel",
+    "Cargo",
+    "CARGO",
+    "APRON",
+    "WEST",
+    "EAST",
+    "Backtrack",
+    "Area",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "A",
+    "B",
+    "C",
+    "D",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "E",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "4375'",
+    "1333m",
+    "Control",
+    "Tower",
+    "Ground Crew",
+    "Station"
+  ],
+  "sourceFile": "Izolirani/Izolirani/IZOL Ground Chart.svg"
+}

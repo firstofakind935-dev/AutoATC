@@ -1,0 +1,1302 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #2d2d2d;
+    color: #fff;
+    overflow: hidden;
+}
+
+header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to right, rgb(27, 76, 109) 0%, rgba(19, 19, 22, 1) 10%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    justify-content: space-between;
+    user-select: none;
+}
+
+header h1 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Ajuste o espaço entre os botões conforme necessário */
+}
+
+.header-left-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Alinha os botões à esquerda */
+    gap: 20px; /* Ajuste o espaço entre os botões conforme necessário */
+    width: 100%; /* Ocupa a largura total disponível */
+}
+
+.fpl-button {
+    font-size: 16px;
+    color: #e2e2e2;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #202024;
+    height: 40px;
+    width: 150px;
+    margin-left: 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.fpl-button.on {
+    background-color: #3b6cec; /* Cor ativa */
+    color: #ffffff; /* Cor do texto quando ativo */
+}
+
+.fpl-button.on:hover {
+    background-color: #4b7eff;
+}
+
+.fpl-button .fpl-icon {
+    height: 30px;
+    width: 30px;
+    margin-right: 7px;
+    filter: brightness(0.8);
+    transition: filter 0.2s ease-in-out;
+}
+
+.fpl-button:hover {
+    background-color: #323237; 
+}
+
+.fpl-button:active {
+    background-color: #3b6cec;
+    color: #ffffff;
+}
+
+.atc-left-button {
+    font-size: 16px;
+    color: #a0a0a0; /* Texto mais escuro */
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #17171a; /* Fundo mais escuro */
+    height: 40px;
+    width: 110px;
+    margin-left: 5px;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    text-decoration: none;
+    user-select: none;
+    opacity: 0.7; /* Deixa o botão visualmente mais apagado */
+}
+
+.atc-left-button .atc-left-icon {
+    height: 30px;
+    width: 30px;
+    margin-right: 7px;
+    filter: brightness(0.6); /* Ícone mais escuro */
+    transition: filter 0.2s ease-in-out;
+}
+
+.atc-online {
+    font-size: 15px;
+    color: rgb(255, 255, 255);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #202024;
+    height: 35px;
+    width: 75px;
+    border: none;
+    border-radius: 5px;
+}
+
+.atc-online .online-number {
+    color: #3b6cec;
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.mapUpdateTime {
+    font-size: 15px;
+    color: rgb(190, 190, 190);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(32, 32, 36, 1);
+    height: 35px;
+    min-width: 100px;
+    padding: 0 15px;
+    border: none;
+    border-radius: 5px;
+    transition: background-color ease-in-out 0.15s;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mapUpdateTime .time {
+    margin-left: 5px;
+    user-select: text;
+}
+
+header a {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.SPY-logo {
+    width: 150px;
+    height: auto;
+    align-self: center;
+}
+
+.Changelog-menu {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #131316; /* Cor de fundo escura */
+    color: #ffffff; /* Cor do texto */
+    width: 60%; /* Largura do menu */
+    max-width: 800px; /* Limite de largura máxima */
+    height: 400px; /* Altura do menu */
+    position: fixed;
+    overflow-y: hidden;
+    border-radius: 10px; /* Borda arredondada */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); /* Sombra */
+    z-index: 101;
+    flex-direction: column;
+    display: none;
+}
+
+.Changelog-menu .title {
+    background-color: #202024; /* Fundo do título */
+    padding: 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid #444; /* Linha separadora */
+    position: relative; /* Necessário para posicionar o botão de fechamento */
+}
+
+.cl-close-button {
+    position: absolute;
+    top: 50%;
+    right: 15px; /* Ajuste de espaçamento da borda direita */
+    transform: translateY(-50%); /* Centraliza verticalmente */
+    background-color: #131316;
+    border: none;
+    border-radius: 5px;
+    padding: 5px; /* Espaçamento interno para centralizar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 35px;
+    width: 35px;
+    transition: background-color 0.3s ease;
+}
+
+.cl-close-button:hover {
+    background-color: rgba(50, 50, 55, 1);
+}
+
+.Changelog-menu .content {
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    overflow-y: auto;
+}
+
+.Changelog-menu .content h2 {
+    font-size: 1.5em;
+    color: #3b6cec; /* Cor chamativa */
+    margin-bottom: 10px;
+    border-bottom: 2px solid #444; /* Linha separadora */
+    padding-bottom: 5px;
+}
+
+.Changelog-menu .content h3 {
+    font-size: 1.4em;
+    color: #4276fa; /* Cor do subtítulo */
+    margin-bottom: 8px;
+}
+
+.Changelog-menu .content ul {
+    list-style-type: disc;
+    margin-left: 20px;
+    padding-left: 10px;
+}
+
+.Changelog-menu .content li {
+    margin-bottom: 8px;
+    color: #ffffff; /* Cor do texto */
+}
+
+.Changelog-menu .content li::marker {
+    color: #ff6b6b; /* Cor do marcador */
+}
+
+.Changelog-menu .content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.Changelog-menu .content::-webkit-scrollbar-track {
+    background: none;
+}
+
+.Changelog-menu .content::-webkit-scrollbar-thumb {
+    background-color: #3b6cec;
+    border-radius: 4px;
+}
+
+/* Compatibilidade com navegadores que suportam scrollbar não-Webkit */
+.Changelog-menu {
+    scrollbar-color: #3b6cec transparent;
+    scrollbar-width: thin;
+}
+
+.header-button2 {
+    background-color: rgba(32, 32, 36, 1);
+    border: none;
+    border-radius: 5px;
+    padding: 5px; /* Espaçamento interno para centralizar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 25px;
+    width: 25px;
+    transition: background-color 0.3s ease;
+}
+
+.header-button2:hover {
+    background-color: rgba(50, 50, 55, 1);
+}
+
+.header-button2 .icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Estilo do botão de configurações */
+.settings-button,
+.close-button {
+    background-color: rgba(32, 32, 36, 1);
+    border: none;
+    border-radius: 5px;
+    padding: 5px; /* Espaçamento interno para centralizar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 35px;
+    width: 35px;
+    transition: background-color 0.3s ease;
+}
+
+.settings-button:hover {
+    background-color: rgba(50, 50, 55, 1);
+}
+
+.settings-button:active {
+    background-color: #3b6cec;
+}
+
+.settings-button.on {
+    background-color: #3b6cec; /* Cor ativa */
+}
+
+.close-button:hover {
+    background-color: rgba(50, 50, 55, 1);
+}
+
+.settings-icon,
+.close-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.settings-menu {
+    display: none;
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    max-height: 90vh; /* Limita a altura ao tamanho da tela */
+    overflow-y: auto;
+    background-color: #131316;
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 4px 0px 10px rgba(0, 0, 0, 0.5);
+    z-index: 101;
+}
+
+.settings-menu h2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+    color: #3b6cec;
+}
+
+.settings-menu p {
+    color: #bdbdbd;
+    margin: 10px 0;
+}
+
+/* Estilo para o contêiner de configurações do mapa */
+.map-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Estilo para cada opção de configuração */
+.map-option {
+    display: flex;
+    align-items: center;
+    background-color: #131316;
+    padding: 8px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+/* Estilo da checkbox personalizada */
+.map-option input[type="checkbox"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background-color: #2d2d2d;
+    border: 1px solid #3b6cec;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 10px;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.map-option input[type="checkbox"]:hover {
+    background-color: #464646;
+}
+
+/* Estilo para o ícone de checkmark */
+.map-option input[type="checkbox"]:checked {
+    background-color: #3b6cec;
+    background-image: url('Icons/checkmark-svgrepo-com.svg');
+    background-size: 100%; /* Ajusta o tamanho do ícone */
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-color 0.3s ease;
+}
+
+.map-option input[type="checkbox"]:checked:hover {
+    background-color: #0048ff;
+}
+
+/* Estilo do texto da opção */
+.map-option label {
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.flp-menu {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    position: fixed;
+    top: 80px; /* Ajuste para ficar abaixo do cabeçalho */
+    left: 20px; /* Ajuste para ficar no canto superior esquerdo */
+    width: 300px;
+    padding: 0 15px 15px 15px;
+    background-color: #131316;
+    border-radius: 10px;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    overflow: hidden; /* Necessário para a animação */
+    transform-origin: top; /* Define a origem da transformação */
+    transition: transform 0.5s ease, opacity 0.5s ease; /* Animação suave */
+}
+
+.flp-menu.open {
+    display: flex;
+    transform: scaleY(1); /* Escala para 100% */
+    opacity: 1;
+}
+
+.flp-menu.closed {
+    transform: scaleY(0); /* Escala para 0% */
+    opacity: 0;
+}
+
+@media (max-width: 768px) {
+    .flp-menu {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .settings-menu {
+        top: 50%;
+        left: 50%;
+        right: 0;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.flp-menu h3 {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    color: #3b6cec;
+    text-align: left;
+    width: 100%;
+}
+
+.menu-divider {
+    border: none;
+    height: 2px;
+    width: 100%;
+    background-color: #3b6cec;
+    margin-bottom: 15px;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.form-row label {
+    font-size: 1rem;
+    color: #bdbdbd;
+    width: 35%;
+    text-align: right;
+    padding-right: 10px;
+}
+
+.form-row textarea {
+    background-color: #2d2d2d;
+    border: 2px solid #3b6cec;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 1rem;
+    resize: none;
+    text-align: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    padding: 2px;
+    text-transform: uppercase;
+}
+
+.small-input {
+    width: 60px;
+    height: 20px;
+    overflow: hidden;
+}
+
+.form-row span {
+    width: 70px;
+}
+
+.large-input {
+    width: 100%;
+    height: 40px;
+}
+
+textarea:focus, textarea:hover {
+    outline: none;
+    border-color: #0048ff;
+    box-shadow: 0 0 5px rgba(59, 108, 236, 0.7);
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.buttons button {
+    background-color: #3b6cec;
+    color: #fff;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 48%;
+}
+
+.buttons button:hover {
+    background-color: #4b7eff;
+    transform: scale(1.05);
+}
+
+.buttons button:active {
+    background-color: #002d99;
+    transform: scale(0.95);
+}
+
+.buttons .save {
+    background-color: #28a745;
+}
+
+.buttons .save:hover {
+    background-color: #4b7eff;
+}
+
+.buttons .save:active {
+    background-color: #1e7e34;
+}
+
+.buttons .reset {
+    background-color: #dc3545;
+}
+
+.buttons .reset:hover {
+    background-color: #4b7eff;
+}
+
+.buttons .reset:active {
+    background-color: #bd2130;
+}
+
+.mini-slider {
+    display: none;
+    position: absolute;
+    background-color: #131316; /* Cor de fundo escura */
+    color: #ffffff; /* Cor do texto */
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    z-index: 101;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+}
+
+.mini-slider.open {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mini-slider label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 1rem;
+    color: #bdbdbd; /* Cor do texto */
+}
+
+.mini-slider input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #3b6cec 0%, #3b6cec 50%, #202024 50%, #202024 100%);
+    height: 5px;
+    border-radius: 5px;
+    outline: none;
+    transition: background 0.3s ease;
+}
+
+.mini-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.mini-slider input[type="range"]::-webkit-slider-thumb:hover {
+    background: #4b7eff;
+}
+
+.mini-slider input[type="range"]::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: #ffffff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.mini-slider span {
+    display: block;
+    margin-top: 5px;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #3b6cec; /* Cor do valor */
+}
+
+/* Estilo para o container da lista */
+.list-container {
+    position: absolute;
+    max-height: 150px; /* Limite de altura para tornar a lista rolável */
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #3b6cec;
+    background-color: #131316;
+    z-index: 101;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+}
+
+/* Estilo para os botões de opções */
+.list-container button {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    background-color: #2d2d2d;
+    color: #fff;
+    padding: 8px 0px 8px 0px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.list-container button:hover {
+    background-color: #3b6cec;
+    color: #ffffff;
+}
+
+.list-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.list-container::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 10px;
+}
+
+.list-container::-webkit-scrollbar-thumb {
+    background-color: #3b6cec;
+    border-radius: 10px;
+    border: 1px solid #1e1e1e;
+}
+
+/* Container principal para o mapa */
+#map-container {
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(19, 19, 19, 255);
+    cursor: grab;
+}
+
+#map-container:active {
+    cursor: grabbing;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.disable-pointer-events * {
+    pointer-events: none !important;
+}
+
+.airport-ui {
+    position: absolute;
+    background-color: rgba(40, 40, 60, 0);
+    padding: 3px 0px;
+    border-radius: 5px;
+    color: #7d7d85;
+    font-size: 0.85em;
+    text-align: center;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+}
+
+.airport-ui .icao-code {
+    background-color: transparent;
+    border: none;
+    color: #7d7d85;
+    font-size: 1em;
+    text-align: center;
+    padding: auto 2px;
+    cursor: pointer;
+    transition: color 0.1s ease-in-out;
+}
+
+.airport-ui .icao-code:hover {
+    color: #ffffff;
+}
+
+.icao-code.active {
+    color: #dcdcdc;
+}
+
+.airport-ui .badges-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    margin: 1px 4px;
+}
+
+.airport-ui .badge {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 0.9em;
+    text-align: center;
+    color: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.airport-ui .badge:first-child {
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.airport-ui .badge:last-child {
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.airport-ui .badge.O {
+    background-color: #193381;
+}
+
+.airport-ui .badge.C {
+    background-color: #3b6cec;
+}
+
+.airport-ui .badge.A {
+    background-color: #ff7a00;
+}
+
+.airport-ui .badge.T {
+    background-color: #b82a14;
+}
+
+.airport-ui .badge.G {
+    background-color: #008856;
+}
+
+.airport-ui .badge.D {
+    background-color: #174acf;
+}
+
+.airport-ui .badge.S {
+    background-color: #2647ad;
+}
+
+.airport-ui .badge.special {
+    background-color: #44b4b4;
+}
+
+.airport-ui .badge.active {
+    transform: scale(1.1);
+    z-index: 11;
+    box-shadow: 0 0 10px rgba(50, 50, 50, 0.999);
+}
+
+.icao-menu {
+    position: absolute;
+    background-color: #131316;
+    color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 1em;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 20;
+    transform-origin: bottom; /* Define a origem da animação */
+    transform: scaleY(0); /* Inicialmente fechado */
+    opacity: 0; /* Invisível inicialmente */
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Animação suave */
+}
+
+.icao-menu.open {
+    transform: scaleY(1); /* Escala para 100% */
+    opacity: 1; /* Totalmente visível */
+}
+
+.icao-menu.closed {
+    transform: scaleY(0); /* Escala para 0% */
+    opacity: 0; /* Invisível */
+}
+
+.icao-menu .title {
+    color: #3b6cec;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.icao-menu .menu-divider {
+    border: none;
+    height: 1px;
+    font-weight: normal;
+    background-color: #3b6cec;
+    width: 100%;
+    margin: 4px 0;
+    opacity: 0.3;
+}
+
+.icao-code .charts-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.no-charts {
+    font-size: 15px;
+    color: rgb(190, 190, 190);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.chart-button {
+    font-size: 15px;
+    color: rgb(190, 190, 190);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(32, 32, 36, 1);
+    height: 35px;
+    width: 210px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer; /* Aponta que o elemento é clicável */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Efeitos suaves */
+    margin-top: 5px;
+}
+
+.chart-button:hover {
+    background-color: rgba(50, 50, 55, 1);
+    color: white;
+}
+
+.chart-button:active {
+    background-color: #3b6cec;
+    color: white;
+}
+
+.chart-button.special {
+    background-color: #3b6cec;
+    color: rgb(223, 223, 223);
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centraliza o texto */
+    position: relative; /* Necessário para posicionar o ícone */
+}
+
+.chart-button.special:hover {
+    background-color: #4b7eff;
+    color: white;
+}
+
+.chart-button.special .radar-icon {
+    position: absolute;
+    right: 10px; /* Posiciona o ícone à direita */
+    width: 20px; /* Ajusta o tamanho do ícone */
+    height: 20px;
+    filter: brightness(1); /* Ajusta o brilho do ícone */
+    transition: filter 0.3s ease;
+}
+
+.chart-button.special:hover .radar-icon {
+    filter: brightness(1.2); /* Aumenta o brilho ao passar o mouse */
+}
+
+.airport-info-menu {
+    position: fixed;
+    background-color: #131316;
+    color: #fff;
+    padding: 10px 10px 5px 10px;
+    border-radius: 5px;
+    font-size: 1em;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 20;
+}
+
+/* Estilo do título do aeroporto e posição */
+.airport-info-menu .title {
+    color: #3b6cec;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.airport-info-menu .title .role1 {
+    color: white;
+    background-color: #3b6cec;
+    font-size: 1em;
+    font-weight: normal;
+    width: 150px;
+    height: 25px;
+    line-height: 25px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    vertical-align: middle;
+    display: flex;
+}
+
+.airport-info-menu .title .role2 {
+    color: white;
+    background-color: #3b6cec;
+    font-size: 1em;
+    font-weight: normal;
+    width: 150px;
+    height: 25px;
+    line-height: 25px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    vertical-align: middle;
+    display: none;
+}
+
+/* Estilo das informações do controlador */
+.airport-info-menu .controller-info {
+    font-size: 1em; /* Tamanho normal */
+    color: #bdbdbd; /* Cor cinza clara */
+    font-weight: normal;
+}
+
+.airport-info-menu .menu-divider {
+    border: none;
+    height: 1px;
+    font-weight: normal;
+    background-color: #3b6cec; /* Cor azul para combinar com o texto */
+    width: 100%;
+    margin: 4px 0; /* Ajuste o espaçamento conforme necessário */
+    opacity: 0.3; /* Para dar um efeito de sombra */
+}
+
+.special-tag {
+    color: #ffffff;
+    background-color: #3b6cec;
+    font-size: 0.9em;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.info-sections {
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-color: #3b6cec transparent;
+    scrollbar-width: thin;
+    margin-bottom: 5px;
+}
+
+.controller-info-section {
+    background-color: rgba(32,32,36,1);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 5px;
+    text-align: left;
+    transition: background-color 0.3s ease;
+}
+
+.controller-info-section:hover {
+    background-color: rgba(40, 40, 45, 1);
+}
+
+.controller-info-section p {
+    margin: 4px 0;
+    color: #ddd;
+    font-size: 0.9em;
+}
+
+.controller-info-section.queue {
+    padding: 5px 10px 5px 10px;
+}
+
+.atis-info-section {
+    background-color: rgba(32, 32, 36, 1);
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 5px;
+    text-align: left;
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+
+.atis-info-section:hover {
+    background-color: rgba(40, 40, 45, 1);
+}
+
+.atis-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9em;
+    color: #bdbdbd;
+}
+
+.atis-ident {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.atis-uptime {
+    font-size: 0.9em;
+    color: #bdbdbd;
+}
+
+.atis-chart {
+    font-size: 0.9em;
+    color: white;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.atis-icon {
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+}
+
+.atis-info-section .separator {
+    color: #3b6cec;
+}
+
+.atis-tooltip {
+    position: relative; /* Define o contexto de posicionamento para o tooltip */
+    display: inline-block;
+    cursor: pointer;
+}
+
+.atis-tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #292930;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px;
+    position: fixed; /* Posiciona em relação ao elemento pai */
+    z-index: 10000;
+    bottom: auto; /* Posiciona acima do botão */
+    transform: translateX(-50%); /* Ajusta para centralizar */
+    margin-bottom: 10px; /* Espaçamento entre o botão e o tooltip */
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.atis-tooltip:hover .atis-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-50px); /* Animação suave para cima */
+}
+
+.atis-text {
+    margin-top: 5px;
+    font-size: 0.85em;
+    color: #ddd;
+    line-height: 1.2;
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(29, 29, 29, 0.7);
+    z-index: 101;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.message-menu {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #131316;
+    color: #ffffff;
+    width: 60%;
+    max-width: 400px;
+    max-height: 350px;
+    min-height: 150px;
+    position: fixed;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    z-index: 102;
+    display: none;
+    flex-direction: column;
+}
+
+.message-menu .title {
+    background-color: #202024;
+    padding: 10px 15px 10px 15px;
+    font-size: 1.5em;
+    font-weight: bold;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid #444;
+    position: relative;
+}
+
+.message-menu .content {
+    margin: 0px 15px 0px 15px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    text-align: left;
+    max-height: 150px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.message-menu .close-button {
+    background-color: #3b6cec;
+    color: #fff;
+    font-size: 1.2rem;
+    border: none;
+    cursor: pointer;
+    width: calc(100% - 20px);
+    border-radius: 10px;
+    transition: background-color 0.3s ease transform 0.2s ease;
+    padding: 15px;
+    margin: 0 10px 10px 10px;
+    align-self: flex-end;
+}
+
+.message-menu .close-button:hover {
+    background-color: #4b7eff;
+    transform: scale(1.025);
+}
+
+.message-menu .content::-webkit-scrollbar {
+    width: 8px;
+}
+.message-menu .content::-webkit-scrollbar-track {
+    background: none;
+}
+.message-menu .content::-webkit-scrollbar-thumb {
+    background-color: #3b6cec;
+    border-radius: 4px;
+}
+
+.message-menu .content {
+    scrollbar-color: #3b6cec transparent;
+    scrollbar-width: thin;
+}
+
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(29, 29, 29, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    background-color: #131316;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.loading-text {
+    font-size: 1.5em;
+    color: #ffffff;
+    margin-right: 10px;
+}
+
+.loading-icon {
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.footer {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    color: #bdbdbd;
+    font-size: 0.7em;
+    z-index: 1000;
+    user-select: none;
+}
+
+.footer-link {
+    color: #bdbdbd;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.footer-link:hover {
+    text-decoration: underline;
+}

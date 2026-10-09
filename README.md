@@ -571,6 +571,14 @@ shows a simple marker + label at each airport's verified anchor instead,
 and the detailed diagram is still available in the Ground View side
 panel.
 
+**`/radar` is a fork of 24SPY.** `monitor/public/radar/` is a modified copy of
+[24SPY](https://github.com/tiaguinho2009/24SPY) by Tiago Murteira
+(tiaguinho_2009), used with his permission and under its licence
+(attribution, non-commercial only - this must not be sold or earn money). It
+adds AutoATC's live aircraft, a Ground view and a Charts view (see
+`monitor/public/radar/NOTICE-AUTOATC.md` for exactly what changed). The
+older 365Radar controller workstation is still at `/365radar/`.
+
 **Waypoints, airports, airways and airspace come from 24SPY.** The radar's
 waypoints (196, including every one 24Radar had), the NATA/NATJ oceanic
 airways and the FIR/TMA outlines come from

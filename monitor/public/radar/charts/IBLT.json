@@ -1,0 +1,34 @@
+{
+  "icao": "IBLT",
+  "iata": "BOL",
+  "name": "Boltic Airfield",
+  "location": "Boltic, Rockford",
+  "elevationFt": "1238'",
+  "coordinates": "N41 38.7  W000 03.4",
+  "runways": [
+    {
+      "designator": "1",
+      "heading": "014°",
+      "length": {
+        "feet": "1378'",
+        "meters": "420m"
+      }
+    },
+    {
+      "designator": "19",
+      "heading": "194°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "groundLayout": "IBLT is a single-runway airfield (Runway 1/19) with no separate taxiway system - the Apron and FBO sit directly alongside the runway near the Runway 19 end, and aircraft taxi on the runway itself to reach them. There's a Backtrack Area near the Runway 1 end for turning around after landing/before departure. No taxiway letters exist here - never invent one.",
+  "otherLabels": [
+    "APRON",
+    "FBO",
+    "Elev 1238'",
+    "N",
+    "Backtrack",
+    "Area"
+  ],
+  "sourceFile": "Rockford/Boltic Airfield/IBLT Ground Chart.svg"
+}

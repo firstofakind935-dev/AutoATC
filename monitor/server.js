@@ -458,7 +458,10 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
 app.use('/api/public/v1', createPublicApiRouter({ getPositions: freshPositions }));
 app.use('/developers', express.static(path.join(__dirname, 'developers')));
 
-app.get(['/radar', '/radar/'], (req, res) => res.redirect('/365radar/'));
+// /radar is the 24SPY-based radar (a modified fork of 24SPY by tiaguinho_2009,
+// non-commercial licence - see public/radar/LICENSE.md and README). The older
+// 365Radar controller workstation stays at /365radar/.
+app.use('/radar', express.static(path.join(__dirname, 'public', 'radar')));
 
 // The 365radar bundle (HTML/CSS/JS, the world map image + anchors, plane
 // icons, static airport/fix reference data) is plain reference data or

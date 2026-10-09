@@ -1,0 +1,36 @@
+{
+  "icao": "ITEY",
+  "iata": "TEY",
+  "name": "Pingeyri Airport",
+  "location": "Pingeyri, Grindavik",
+  "elevationFt": "229'",
+  "coordinates": "N41 46.8  W000 12.4",
+  "runways": [
+    {
+      "designator": "31",
+      "heading": "313°",
+      "length": null
+    },
+    {
+      "designator": "13",
+      "heading": "133°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "groundLayout": "Runway 13/31, with a Backtrack Area at each end. A single taxiway A connects the runway near the Rwy 31 end to the Apron (FBO, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
+  "otherLabels": [
+    "APRON",
+    "A",
+    "Backtrack",
+    "Area",
+    "Elev",
+    "229'",
+    "N",
+    "FBO",
+    "Fuel",
+    "1387'",
+    "423m"
+  ],
+  "sourceFile": "Grindavik/Pingeyri/ITEY Ground Chart.svg"
+}

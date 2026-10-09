@@ -1,0 +1,53 @@
+{
+  "icao": "IBTH",
+  "iata": "SBH",
+  "name": "Saint Barthélemy",
+  "location": "Aéroport, Saint Barthélemy",
+  "elevationFt": "9'",
+  "coordinates": "N41 50.8  E000 04.2",
+  "runways": [
+    {
+      "designator": "27",
+      "heading": "270°",
+      "length": null
+    },
+    {
+      "designator": "09",
+      "heading": "090°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "SAINT BARTHELEMY Information",
+      "frequency": "118.450"
+    }
+  ],
+  "groundLayout": "Runway 09/27, with a Backtrack Area near the Rwy 27 end. Taxiway E runs alongside the runway's east side, from hold point C (mid-field) south through hold point B down to hold point A near the Rwy 09 end, serving Main Apron (Terminal, Control Tower, Ground Crew Station). Taxiway D connects General Aviation (Hangar, Fuel) on the west side to hold point D, also near the Rwy 09 end. Several hold points here are marked as hot spots on the chart (extra caution/confirm intentions, not special ATC phraseology) - real taxiway/hold-point letters are C, B, A, D, and E. IBTH is also the gateway to uncontrolled IUFO (UFO Base). Departing IUFO: aircraft leave VFR on UNICOM 122.8, contact Barths Center for flight following, get vectored, and are handed off to Barths VFR Tower (118.450) to be sequenced to land at IBTH. Inbound to IUFO: works Barths VFR until near IUFO, then leaves the frequency to self-announce on UNICOM 122.8 for the approach. Barths Delivery (118.705) is a separate, optional step - it only comes up if a pilot who arrived VFR from IUFO wants to continue onward via IFR after landing; IUFO never issues a clearance itself.",
+  "otherLabels": [
+    "MAIN",
+    "APRON",
+    "GENERAL",
+    "AVIATION",
+    "Backtrack Area",
+    "Hangar",
+    "Fuel",
+    "Terminal",
+    "Control",
+    "Tower",
+    "Ground Crew",
+    "Station",
+    "E",
+    "C",
+    "B",
+    "A",
+    "D",
+    "HS",
+    "HOT SPOT",
+    "ATC instructions.",
+    "N",
+    "1547'",
+    "472m"
+  ],
+  "sourceFile": "Saint Barthelemy/Saint Barthelemy/IBTH Ground Chart.svg"
+}
