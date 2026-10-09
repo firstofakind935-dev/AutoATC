@@ -3,11 +3,13 @@
 // were doing it. Runs in the Electron main process (see main.js's
 // 'autopilot-press' / 'autopilot-steer' handlers), never in a renderer.
 //
-// One method per OS, all built into the OS (nothing to install on Windows
-// or macOS):
-// - Windows: a long-lived PowerShell process calling SendInput - hardware
-//   scan codes for keys, absolute moves for the mouse - which games read
-//   like a real keyboard and mouse.
+// One method per OS (nothing extra to install on Windows or macOS):
+// - Windows: Windows' own SendInput, called directly from this process
+//   through koffi (a Node library for calling system functions, prebuilt
+//   for every platform) - hardware scan codes for keys, absolute moves for
+//   the mouse, which games read like a real keyboard and mouse. No helper
+//   process and no PowerShell: an app that spawns hidden, encoded
+//   PowerShell to inject input looks exactly like malware to antivirus.
 // - macOS: osascript (System Events for keys, CoreGraphics for the mouse).
 //   The companion app needs Accessibility permission (System Settings >
 //   Privacy & Security > Accessibility).
@@ -49,66 +51,81 @@ const KEYS = {
 
 const MAX_HOLD_MS = 1000;
 
-const WINDOWS_SCRIPT = `
-$ErrorActionPreference = 'Stop'
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public static class AutoAtcKeys {
-  [StructLayout(LayoutKind.Sequential)] struct MOUSEINPUT { public int dx; public int dy; public uint mouseData; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
-  [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk; public ushort wScan; public uint dwFlags; public uint time; public IntPtr dwExtraInfo; }
-  [StructLayout(LayoutKind.Explicit)] struct INPUTUNION { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; }
-  [StructLayout(LayoutKind.Sequential)] struct INPUT { public uint type; public INPUTUNION u; }
-  [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] inputs, int size);
-  [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
-  [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
-  public static void Init() { SetProcessDPIAware(); }
-  // Absolute move in physical pixels across the whole virtual desktop.
-  public static void Move(int x, int y) {
-    int vx = GetSystemMetrics(76), vy = GetSystemMetrics(77), vw = GetSystemMetrics(78), vh = GetSystemMetrics(79);
-    INPUT input = new INPUT();
-    input.type = 0;
-    input.u.mi.dx = (int)Math.Round((x - vx) * 65535.0 / Math.Max(1, vw - 1));
-    input.u.mi.dy = (int)Math.Round((y - vy) * 65535.0 / Math.Max(1, vh - 1));
-    input.u.mi.dwFlags = 0x0001 | 0x8000 | 0x4000; // MOVE | ABSOLUTE | VIRTUALDESK
-    SendInput(1, new INPUT[] { input }, Marshal.SizeOf(typeof(INPUT)));
-  }
-  public static void Send(ushort scan, bool extended, bool up) {
-    INPUT input = new INPUT();
-    input.type = 1;
-    input.u.ki.wScan = scan;
-    input.u.ki.dwFlags = (uint)(0x0008 | (extended ? 0x0001 : 0) | (up ? 0x0002 : 0));
-    SendInput(1, new INPUT[] { input }, Marshal.SizeOf(typeof(INPUT)));
-  }
-}
-"@
-[AutoAtcKeys]::Init()
-while (($line = [Console]::In.ReadLine()) -ne $null) {
-  $p = $line.Split(' ')
-  if ($p[0] -eq 'move') { [AutoAtcKeys]::Move([int]$p[1], [int]$p[2]) }
-  else { [AutoAtcKeys]::Send([uint16]$p[1], $p[2] -eq '1', $p[0] -eq 'up') }
-}
-`;
+// ---- Windows: SendInput through koffi
 
-function createWindowsBackend() {
-  // The script goes in as -EncodedCommand so stdin is left free for the
-  // script's own command loop (one "down|up <scan> <extended>" per line).
-  const encoded = Buffer.from(WINDOWS_SCRIPT, 'utf16le').toString('base64');
-  const proc = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], {
-    stdio: ['pipe', 'ignore', 'pipe'],
-    windowsHide: true,
+const INPUT_MOUSE = 0;
+const INPUT_KEYBOARD = 1;
+const KEYEVENTF_EXTENDEDKEY = 0x0001;
+const KEYEVENTF_KEYUP = 0x0002;
+const KEYEVENTF_SCANCODE = 0x0008;
+const MOUSEEVENTF_MOVE = 0x0001;
+const MOUSEEVENTF_VIRTUALDESK = 0x4000;
+const MOUSEEVENTF_ABSOLUTE = 0x8000;
+const SM_XVIRTUALSCREEN = 76;
+const SM_YVIRTUALSCREEN = 77;
+const SM_CXVIRTUALSCREEN = 78;
+const SM_CYVIRTUALSCREEN = 79;
+
+const definedTypes = new WeakMap(); // koffi rejects declaring the same type name twice
+
+/** The Win32 INPUT struct (and its parts) declared for koffi, once. */
+function defineWindowsInputTypes(koffi) {
+  // Keyed on koffi.struct, not the module object, so a test's stand-in
+  // koffi (the real one with load() replaced) shares the same types.
+  if (definedTypes.has(koffi.struct)) return definedTypes.get(koffi.struct);
+  const MOUSEINPUT = koffi.struct('MOUSEINPUT', {
+    dx: 'int32', dy: 'int32', mouseData: 'uint32', dwFlags: 'uint32', time: 'uint32', dwExtraInfo: 'uintptr_t',
   });
-  proc.on('error', (err) => console.error(`[inputSender] PowerShell failed to start: ${err.message}`));
-  proc.stderr.on('data', (d) => console.error(`[inputSender] ${d}`));
-  // Lines written before Add-Type finishes compiling just wait in the pipe.
-  const send = (dir, [scan, extended]) => proc.stdin.write(`${dir} ${scan} ${extended ? 1 : 0}\n`);
+  const KEYBDINPUT = koffi.struct('KEYBDINPUT', {
+    wVk: 'uint16', wScan: 'uint16', dwFlags: 'uint32', time: 'uint32', dwExtraInfo: 'uintptr_t',
+  });
+  const INPUT_UNION = koffi.union('INPUT_UNION', { mi: MOUSEINPUT, ki: KEYBDINPUT });
+  const INPUT = koffi.struct('INPUT', { type: 'uint32', u: INPUT_UNION });
+  definedTypes.set(koffi.struct, { INPUT });
+  return { INPUT };
+}
+
+/** One key going down or up, by hardware scan code (what games read). */
+function keyboardInput([scan, extended], up) {
+  const dwFlags = KEYEVENTF_SCANCODE | (extended ? KEYEVENTF_EXTENDEDKEY : 0) | (up ? KEYEVENTF_KEYUP : 0);
+  return { type: INPUT_KEYBOARD, u: { ki: { wVk: 0, wScan: scan, dwFlags, time: 0, dwExtraInfo: 0 } } };
+}
+
+/**
+ * An absolute mouse move to physical pixel (x, y). SendInput wants 0-65535
+ * across the whole virtual desktop (all monitors), so `desk` is that
+ * desktop's {left, top, width, height}.
+ */
+function mouseMoveInput(x, y, desk) {
+  const scale = (v, origin, size) => Math.round(((v - origin) * 65535) / Math.max(1, size - 1));
   return {
-    down: (key) => send('down', key),
-    up: (key) => send('up', key),
-    moveMouse: (x, y) => proc.stdin.write(`move ${Math.round(x)} ${Math.round(y)}\n`),
-    close: () => proc.kill(),
+    type: INPUT_MOUSE,
+    u: { mi: { dx: scale(x, desk.left, desk.width), dy: scale(y, desk.top, desk.height), mouseData: 0, dwFlags: MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, time: 0, dwExtraInfo: 0 } },
   };
 }
+
+function createWindowsBackend(koffi = require('koffi')) {
+  const { INPUT } = defineWindowsInputTypes(koffi);
+  const user32 = koffi.load('user32.dll');
+  const SendInput = user32.func('uint32_t __stdcall SendInput(uint32_t cInputs, INPUT *pInputs, int cbSize)');
+  const GetSystemMetrics = user32.func('int __stdcall GetSystemMetrics(int nIndex)');
+  const size = koffi.sizeof(INPUT);
+  const send = (input) => {
+    if (SendInput(1, input, size) !== 1) console.error('[inputSender] SendInput was blocked (is PTFS running as administrator?)');
+  };
+  return {
+    down: (key) => send(keyboardInput(key, false)),
+    up: (key) => send(keyboardInput(key, true)),
+    moveMouse: (x, y) => send(mouseMoveInput(x, y, {
+      left: GetSystemMetrics(SM_XVIRTUALSCREEN),
+      top: GetSystemMetrics(SM_YVIRTUALSCREEN),
+      width: GetSystemMetrics(SM_CXVIRTUALSCREEN),
+      height: GetSystemMetrics(SM_CYVIRTUALSCREEN),
+    })),
+  };
+}
+
+// ---- macOS / Linux: the OS's own tools
 
 function runDetached(cmd, args) {
   const proc = spawn(cmd, args, { stdio: 'ignore' });
@@ -186,4 +203,13 @@ function createInputSender(platform = process.platform) {
   };
 }
 
-module.exports = { createInputSender, KEY_NAMES: Object.keys(KEYS) };
+module.exports = {
+  createInputSender,
+  KEY_NAMES: Object.keys(KEYS),
+  // Exposed for tests: the exact Windows input structs, checkable on any OS.
+  KEYS,
+  defineWindowsInputTypes,
+  createWindowsBackend,
+  keyboardInput,
+  mouseMoveInput,
+};

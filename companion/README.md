@@ -213,7 +213,13 @@ yourself** - like a real autopilot when the pilot moves the controls.
 
 macOS needs Accessibility permission for the app (System Settings >
 Privacy & Security > Accessibility). Linux needs `xdotool` installed.
-Windows needs nothing extra.
+Windows needs nothing extra: the app calls Windows' own `SendInput`
+directly (through [koffi](https://koffi.dev), installed with the app's
+other dependencies), with no helper process or PowerShell - so antivirus
+has nothing that looks like malware to flag. If PTFS is ever run as
+administrator, Windows blocks input from non-administrator apps; run both
+the same way. (If you package the app with electron-builder, add koffi to
+`asarUnpack` so its native file stays loadable.)
 
 **Risk:** Roblox's rules can treat outside software that automates gameplay
 as a violation. LIVE mode is that, and using it is at each player's own
@@ -279,7 +285,8 @@ Safety:
 - `lib/autopilot.js` - autopilot modes and the rate-based controller that
   turns targets into key taps (also loaded directly by the FMS window).
 - `lib/inputSender.js` - presses keys and moves the mouse cursor (Windows
-  SendInput via PowerShell, macOS System Events/CoreGraphics, Linux xdotool).
+  SendInput called directly via koffi, macOS System Events/CoreGraphics,
+  Linux xdotool).
 - `lib/mouseSteer.js` - pitch/bank nudges via the cursor, and the
   "pilot moved the mouse" override.
 - `lib/remoteServer.js` - the phone/tablet remote-control web server for
