@@ -20,12 +20,38 @@ and persona (e.g. "Springfield Tower", "Springfield Ground"). A bot:
 
 ## How the human handoff works today
 
-The bot does **not** yet know how to detect a real human controller taking
-a position — every server's existing ATC/roster system is different, and
-that integration is intentionally left as a stub for you to wire up
-(`src/bot/HumanHandoff.js`, see `isExternalHandoffActive()`).
+When a human controller logs on to a position, that position's bot leaves
+its voice channel; when they log off, it rejoins. The bots post both
+events to their log channel ("Sam has the position. AI ATC leaving the
+frequency." / "Sam logged off. AI ATC back on frequency.").
 
-Until you wire that in, each bot registers its own slash commands
+On each log-on the controller chooses whether to **cover below** as well:
+if they do, every lower position at the same airport also leaves, using
+the same seniority order Bot Manager's failover uses (Delivery < Apron <
+Ground < Tower < Approach/Departure < Center). A Tower controller covering
+below takes Ground, Apron and Delivery; a Center controller covering below
+takes everything at that Center's airport. Two positions of equal rank
+(Approach and Departure) never cover each other.
+
+All of this lives in `src/handoff/HandoffRegistry.js`, one shared list of
+who's logged on where for the whole fleet (every bot runs in one process).
+**How a controller actually logs on is not wired up yet** - that's still
+to be decided for this server. Whatever it ends up being (joining a voice
+channel with a controller role, a slash command, an external roster) only
+has to call:
+
+```js
+const { handoffRegistry } = require('./src/handoff/HandoffRegistry');
+handoffRegistry.logon({ controllerId, controllerName, airport: 'IRFD', position: 'Tower', coverBelow: true });
+handoffRegistry.logoff(controllerId);
+```
+
+A controller logging on again just moves them to the new position. If a
+rejoin fails after a log-off (a Discord hiccup), the bot retries every 30
+seconds rather than leaving the position unstaffed. `npm test` covers the
+coverage rules and the leave/rejoin behavior.
+
+Separately, each bot registers its own slash commands
 (per-guild, on startup) for a manual override:
 
 ```
@@ -830,8 +856,9 @@ something other than what their own flight strip shows was assigned.
   that implements the same request/response contract (see above) — an
   incompatible server needs a small adapter change in
   `src/speech/providers/`.
-- The human-controller handoff is a stub (see above) plus a manual chat
-  command — there's no automatic detection of a human joining as ATC yet.
+- Bots leave and rejoin for human controllers (see "How the human handoff
+  works today"), but how a controller logs on isn't wired up yet - until
+  it is, only the manual `/pause` and `/resume` commands do anything.
 - One voice utterance is processed at a time per bot; if two pilots key up
   on the same frequency simultaneously, replies still go out in order but
   playback isn't real radio-style priority/blocking.

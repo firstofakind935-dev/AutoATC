@@ -22,6 +22,7 @@ const { makeLogger } = require('../utils/logger');
 
 const MIN_TRANSCRIPT_LENGTH = 2;
 const HEARTBEAT_INTERVAL_MS = 60_000; // keeps the monitor dashboard's "online" status fresh during quiet periods
+const HANDOFF_REJOIN_RETRY_MS = 30_000; // after a human controller logs off, how long to wait before retrying a failed voice rejoin
 
 // TEST-ONLY: when set, this bot ignores its own configured persona per
 // transmission and instead plays whichever fleet position the pilot
@@ -43,7 +44,13 @@ class AtcBot {
   constructor(config) {
     this.config = config;
     this.logger = makeLogger(config.name);
-    this.handoff = new HumanHandoff();
+    this.handoff = new HumanHandoff(config.persona);
+    // The human controller's log-on this bot has left its voice channel
+    // for, or null while the AI is working the position - see
+    // _syncWithHandoff.
+    this.standingDownFor = null;
+    this.rejoinPending = false;
+    this.handoffSync = Promise.resolve();
     this.activePersona = config.persona;
     this.oceanicTracksContext = getOceanicTracksContext(); // static fleet-wide, fetched once
     this.frequencyContext = getFrequencyContext(); // static fleet-wide, fetched once
@@ -91,9 +98,17 @@ class AtcBot {
       this.logChannel = await this.guild.channels.fetch(this.config.logChannelId).catch(() => null);
     }
 
-    await this._connectVoice();
-
-    await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
+    const logon = this.handoff.coveringLogon();
+    if (logon) {
+      this.standingDownFor = logon;
+      await this._announce(
+        `${this.config.persona.callsign} online. ${logon.controllerName} has the position, so AI ATC is staying off frequency.`
+      );
+    } else {
+      await this._connectVoice();
+      await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
+    }
+    this.handoff.registry.on('change', () => this._queueHandoffSync());
 
     this.heartbeatInterval = setInterval(() => {
       this.logger.info('heartbeat');
@@ -161,15 +176,20 @@ class AtcBot {
    * from scratch via _connectVoice, same as the initial join.
    */
   _watchConnectionHealth() {
-    this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
+    const connection = this.connection;
+    connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
         await Promise.race([
-          entersState(this.connection, VoiceConnectionStatus.Signalling, 5_000),
-          entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000),
+          entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+          entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
         ]);
       } catch {
+        // Left on purpose for a human controller (or already replaced by a
+        // newer connection) - rejoining here would put the AI back on a
+        // frequency a human is working.
+        if (this.standingDownFor || connection !== this.connection) return;
         this.logger.warn('Voice connection lost. Destroying and attempting to rejoin...');
-        this.connection.destroy();
+        connection.destroy();
         try {
           await this._connectVoice();
           this.logger.info('Rejoined voice channel after a lost connection.');
@@ -178,6 +198,57 @@ class AtcBot {
         }
       }
     });
+  }
+
+  // Registry changes can arrive in bursts (a log-on replacing another is a
+  // logoff + logon), so syncs run one at a time, each against the latest
+  // state, never two leave/rejoins racing on the same connection.
+  _queueHandoffSync() {
+    this.handoffSync = this.handoffSync
+      .then(() => this._syncWithHandoff())
+      .catch((err) => this.logger.error('Failed to follow a human controller log-on/log-off:', err.message));
+  }
+
+  /**
+   * Leaves the voice channel when a human controller logs on to this
+   * position (or covers it from above), and rejoins once they log off.
+   */
+  async _syncWithHandoff() {
+    const logon = this.handoff.coveringLogon();
+    const callsign = this.config.persona.callsign;
+
+    if (logon && !this.standingDownFor) {
+      this.standingDownFor = logon;
+      this.player.stop(true);
+      if (this.capture) this.capture.stop();
+      if (this.connection) this.connection.destroy();
+      this.connection = null;
+      const how = logon.position === this.config.persona.position
+        ? 'has the position'
+        : `is covering from ${logon.position}`;
+      this.logger.info(`${logon.controllerName} ${how} - leaving the voice channel.`);
+      await this._announce(`${callsign}: ${logon.controllerName} ${how}. AI ATC leaving the frequency.`);
+    } else if (logon) {
+      // Still covered, maybe by someone else now - nothing to do but keep
+      // the record current for the eventual log-off message.
+      this.standingDownFor = logon;
+    } else if (this.standingDownFor || this.rejoinPending) {
+      const previous = this.standingDownFor;
+      this.standingDownFor = null;
+      this.rejoinPending = false;
+      if (previous) this.logger.info(`${previous.controllerName} logged off - rejoining the voice channel.`);
+      try {
+        await this._connectVoice();
+      } catch (err) {
+        // Don't leave the position unstaffed for good over one failed join.
+        this.rejoinPending = true;
+        this.logger.error(`Failed to rejoin the voice channel, retrying in ${HANDOFF_REJOIN_RETRY_MS / 1000}s: ${err.message}`);
+        setTimeout(() => this._queueHandoffSync(), HANDOFF_REJOIN_RETRY_MS);
+        return;
+      }
+      const who = previous ? `${previous.controllerName} logged off. ` : '';
+      await this._announce(`${callsign}: ${who}AI ATC back on frequency.`);
+    }
   }
 
   _enqueue(task) {
