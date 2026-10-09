@@ -1,5 +1,5 @@
 // AutoATC additions to the 24SPY fork (new code, written for this fork).
-//   - live AutoATC aircraft drawn on the map
+//   - live AutoATC aircraft drawn on the map, with radar controller tools
 //   - Ground view: airport diagrams (ground/maps/<ICAO>/)
 //   - Charts view: airport data (charts/<ICAO>.json) plus chart links
 // Original site: 24SPY by Tiago Murteira (tiaguinho_2009), see LICENSE.md.
@@ -12,7 +12,24 @@
   const airports = () => controlAreas.filter((a) => a.type === 'Airport' && Array.isArray(a.coordinates));
   const airportByIcao = (icao) => airports().find((a) => a.name === icao);
 
-  // ---- live aircraft --------------------------------------------------------
+  // ---- live aircraft + radar controller tools -------------------------------
+  // Data blocks, speed leaders, trails, ATC vectors, conflict alerts, range
+  // rings, a measuring tool, direct-to distance/time, scratchpad and handoff
+  // tags. All of it is drawn from the aircraft feed; tags and notes stay in
+  // this browser (they are not sent anywhere).
+  const TRAIL_POINTS = 14;
+  const CA_NM = 3, CA_FT = 1000; // conflict alert: closer than this, laterally AND vertically
+  const trails = new Map();       // callsign -> [[x, y], ...] in map units
+  const opts = { blocks: true, trails: true, leaders: true, vectors: true, alerts: true, rings: false };
+  let leaderMin = 1;              // speed-leader length, minutes
+  let selected = null;            // callsign
+  let measure = null;             // { a: [x, y], b: [x, y] | null } while the tool is active/finished
+  let measuring = false;
+  let directTo = null;            // ICAO the selected aircraft is shown heading direct to
+  let conflicts = new Set();
+  const tags = (() => { try { return JSON.parse(localStorage.getItem('aa-tags') || '{}'); } catch (e) { return {}; } })();
+  const saveTags = () => { try { localStorage.setItem('aa-tags', JSON.stringify(tags)); } catch (e) { /* private mode */ } };
+
   function toMapUnits(row) {
     const p = row.position || {};
     const ref = airportByIcao(p.referenceAirport);
@@ -20,13 +37,230 @@
     const rad = (p.bearingDeg * Math.PI) / 180;
     return [ref.coordinates[0] + p.distanceNm * UNITS_PER_NM * Math.sin(rad), ref.coordinates[1] - p.distanceNm * UNITS_PER_NM * Math.cos(rad)];
   }
+  const nmBetween = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) / UNITS_PER_NM;
+  const bearingTo = (a, b) => (((Math.atan2(b[0] - a[0], -(b[1] - a[1])) * 180) / Math.PI) + 360) % 360;
+
+  function findConflicts() {
+    const found = new Set();
+    for (let i = 0; i < aircraft.length; i++) {
+      for (let j = i + 1; j < aircraft.length; j++) {
+        const a = aircraft[i], b = aircraft[j];
+        const fa = a.row.position.altitudeFt, fb = b.row.position.altitudeFt;
+        if (typeof fa !== 'number' || typeof fb !== 'number') continue;
+        if (Math.min(fa, fb) < 400) continue; // on the ground / just rolling: not a conflict
+        if (nmBetween(a.xy, b.xy) < CA_NM && Math.abs(fa - fb) < CA_FT) { found.add(a.row.callsign); found.add(b.row.callsign); }
+      }
+    }
+    return found;
+  }
 
   async function poll() {
     try {
       const rows = await fetch('/api/dashboard/positions').then((r) => r.json());
       aircraft = rows.map((row) => ({ row, xy: toMapUnits(row) })).filter((a) => a.xy);
     } catch (e) { aircraft = []; }
+    const live = new Set();
+    for (const { row, xy } of aircraft) {
+      live.add(row.callsign);
+      const t = trails.get(row.callsign) || [];
+      const last = t[t.length - 1];
+      if (!last || last[0] !== xy[0] || last[1] !== xy[1]) t.push(xy);
+      if (t.length > TRAIL_POINTS) t.shift();
+      trails.set(row.callsign, t);
+    }
+    for (const cs of trails.keys()) if (!live.has(cs)) trails.delete(cs);
+    if (selected && !live.has(selected)) selected = null;
+    conflicts = opts.alerts ? findConflicts() : new Set();
+    renderPanel();
     if (typeof draw === 'function') draw();
+  }
+
+  const fl = (ft) => (typeof ft === 'number' ? String(Math.round(ft / 100)).padStart(3, '0') : '---');
+
+  window.autoatcDraw = function (ctx, transform, scale) {
+    ctx.save();
+    ctx.font = '11px monospace';
+    const sel = aircraft.find((a) => a.row.callsign === selected);
+
+    // range rings around the selected aircraft (5 nm steps)
+    if (opts.rings && sel) {
+      const [cx, cy] = transform(sel.xy);
+      ctx.strokeStyle = 'rgba(111,138,125,.45)'; ctx.fillStyle = 'rgba(111,138,125,.8)'; ctx.lineWidth = 1;
+      for (let nm = 5; nm <= 15; nm += 5) {
+        ctx.beginPath(); ctx.arc(cx, cy, nm * UNITS_PER_NM * scale, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillText(`${nm} nm`, cx + nm * UNITS_PER_NM * scale + 3, cy);
+      }
+    }
+
+    for (const { row, xy } of aircraft) {
+      const p = row.position, [x, y] = transform(xy);
+      const isSel = row.callsign === selected, alert = conflicts.has(row.callsign);
+      const color = alert ? '#ff5555' : isSel ? '#ffe066' : '#6dff9c';
+
+      if (opts.trails) {
+        ctx.fillStyle = 'rgba(207,227,214,.5)';
+        for (const t of (trails.get(row.callsign) || []).slice(0, -1)) { const [tx, ty] = transform(t); ctx.fillRect(tx - 1, ty - 1, 2, 2); }
+      }
+      if (opts.leaders && p.headingDeg != null && row.speed) {
+        const len = (row.speed / 60) * leaderMin * UNITS_PER_NM * scale, rad = (p.headingDeg * Math.PI) / 180;
+        ctx.strokeStyle = color; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(rad) * len, y - Math.cos(rad) * len); ctx.stroke();
+      }
+      if (opts.vectors && row.assignedHeadingDeg != null) {
+        const len = 5 * UNITS_PER_NM * scale, rad = (row.assignedHeadingDeg * Math.PI) / 180;
+        ctx.strokeStyle = '#ffbf47'; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(rad) * len, y - Math.cos(rad) * len); ctx.stroke(); ctx.setLineDash([]);
+      }
+      if (alert) { ctx.strokeStyle = '#ff5555'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, CA_NM / 2 * UNITS_PER_NM * scale, 0, Math.PI * 2); ctx.stroke(); }
+
+      // symbol
+      ctx.translate(x, y); ctx.rotate(((p.headingDeg || 0) * Math.PI) / 180);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (isSel) { ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(x - 10, y - 10, 20, 20); }
+
+      // data block with a short leader line
+      if (opts.blocks || isSel) {
+        const tag = tags[row.callsign] || {};
+        const lines = [`${row.callsign}${tag.handoff ? ' >' + tag.handoff : ''}`, `${fl(p.altitudeFt)} ${row.speed ? Math.round(row.speed / 10) : '--'}  ${row.aircraftType || ''}`];
+        if (tag.note) lines.push(tag.note);
+        if (alert) lines.unshift('CA');
+        ctx.strokeStyle = 'rgba(207,227,214,.35)';
+        ctx.beginPath(); ctx.moveTo(x + 6, y - 6); ctx.lineTo(x + 20, y - 18); ctx.stroke();
+        ctx.fillStyle = color;
+        lines.forEach((t, i) => ctx.fillText(t, x + 22, y - 14 + i * 12));
+      }
+    }
+
+    // direct-to line for the selected aircraft
+    if (sel && directTo) {
+      const ap = airportByIcao(directTo);
+      if (ap) {
+        const [x, y] = transform(sel.xy), [ax, ay] = transform(ap.coordinates);
+        const nm = nmBetween(sel.xy, ap.coordinates);
+        ctx.strokeStyle = '#7aa7ff'; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ax, ay); ctx.stroke(); ctx.setLineDash([]);
+        const eta = sel.row.speed ? ` ${Math.round((nm / sel.row.speed) * 60)} min` : '';
+        ctx.fillStyle = '#7aa7ff';
+        ctx.fillText(`${directTo} ${nm.toFixed(1)} nm  ${String(Math.round(bearingTo(sel.xy, ap.coordinates))).padStart(3, '0')}°${eta}`, (x + ax) / 2 + 6, (y + ay) / 2 - 6);
+      }
+    }
+
+    // measuring tool
+    if (measure) {
+      const [x1, y1] = transform(measure.a);
+      ctx.fillStyle = '#fff'; ctx.fillRect(x1 - 3, y1 - 3, 6, 6);
+      if (measure.b) {
+        const [x2, y2] = transform(measure.b);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.fillRect(x2 - 3, y2 - 3, 6, 6);
+        const nm = nmBetween(measure.a, measure.b), brg = String(Math.round(bearingTo(measure.a, measure.b))).padStart(3, '0');
+        let txt = `${nm.toFixed(1)} nm  ${brg}°`;
+        if (sel && sel.row.speed) txt += `  ${Math.round((nm / sel.row.speed) * 60)} min @${sel.row.speed}kt`;
+        ctx.fillText(txt, (x1 + x2) / 2 + 8, (y1 + y2) / 2 - 8);
+      }
+    }
+    ctx.restore();
+  };
+
+  // ---- selecting / measuring with the mouse ---------------------------------
+  const mapCanvas = document.getElementById('map');
+  let down = null;
+  mapCanvas.addEventListener('mousedown', (e) => { down = [e.clientX, e.clientY]; });
+  mapCanvas.addEventListener('mouseup', (e) => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) { down = null; return; } // it was a drag
+    down = null;
+    const r = mapCanvas.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const point = [(sx - offsetX) / scale, (sy - offsetY) / scale];
+    if (measuring) {
+      if (!measure || measure.b) measure = { a: point, b: null }; else measure.b = point;
+      if (measure.b) { measuring = false; measureBtn.classList.remove('on'); }
+      draw(); return;
+    }
+    let best = null, bestD = 16;
+    for (const a of aircraft) {
+      const [x, y] = transformCoordinates(a.xy), d = Math.hypot(x - sx, y - sy);
+      if (d < bestD) { best = a.row.callsign; bestD = d; }
+    }
+    selected = best; directTo = null;
+    renderPanel(); draw();
+  });
+
+  // ---- controller panel -----------------------------------------------------
+  const ctrlStyle = document.createElement('style');
+  ctrlStyle.textContent = `
+  #aa-ctrl{position:fixed;top:72px;left:12px;width:250px;max-height:calc(100vh - 130px);overflow:auto;z-index:4000;background:rgba(32,32,36,.94);color:#e6e6e6;border-radius:8px;font:12px sans-serif;padding:8px 10px}
+  #aa-ctrl h4{margin:8px 0 4px;font-size:12px;color:#9aa}
+  #aa-ctrl label{display:flex;gap:6px;align-items:center;margin:2px 0}
+  #aa-ctrl button,#aa-ctrl select,#aa-ctrl input[type=text]{background:#2b2b31;color:#fff;border:1px solid #444;border-radius:4px;padding:3px 6px;font:inherit}
+  #aa-ctrl button{cursor:pointer}#aa-ctrl button.on{background:#2f5fd0;border-color:#4a7bf0}
+  #aa-ctrl .row{display:flex;gap:6px;align-items:center;margin:3px 0}
+  #aa-ctrl .ac{display:flex;justify-content:space-between;padding:2px 4px;border-radius:4px;cursor:pointer}
+  #aa-ctrl .ac:hover{background:#3a3a42}#aa-ctrl .ac.sel{background:#3b3a20}#aa-ctrl .ac.ca{color:#ff7777}
+  #aa-ctrl table{border-collapse:collapse;width:100%}#aa-ctrl td{padding:1px 0}#aa-ctrl td:first-child{color:#9aa}
+  #aa-ctrl .min{float:right;cursor:pointer;color:#9aa}`;
+  document.head.appendChild(ctrlStyle);
+  const ctrl = document.createElement('div');
+  ctrl.id = 'aa-ctrl';
+  ctrl.innerHTML = `<span class="min" title="hide / show">_</span><b>Radar tools</b>
+    <div class="body">
+    <div id="aa-toggles"></div>
+    <div class="row">Leader <select id="aa-leader"><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select></div>
+    <div class="row"><button id="aa-measure">Measure</button><button id="aa-clear">Clear</button></div>
+    <div id="aa-sel"></div>
+    <h4>Traffic</h4><div id="aa-list"></div></div>`;
+  document.body.appendChild(ctrl);
+  const TOGGLES = [['blocks', 'Data blocks'], ['trails', 'Trails'], ['leaders', 'Speed leaders'], ['vectors', 'ATC vectors'], ['alerts', 'Conflict alerts'], ['rings', 'Range rings (selected)']];
+  const togBox = ctrl.querySelector('#aa-toggles');
+  for (const [key, label] of TOGGLES) {
+    const l = document.createElement('label');
+    l.innerHTML = `<input type="checkbox" ${opts[key] ? 'checked' : ''}> ${label}`;
+    l.firstChild.onchange = (e) => { opts[key] = e.target.checked; if (key === 'alerts') conflicts = opts.alerts ? findConflicts() : new Set(); draw(); };
+    togBox.appendChild(l);
+  }
+  ctrl.querySelector('#aa-leader').onchange = (e) => { leaderMin = Number(e.target.value); draw(); };
+  const measureBtn = ctrl.querySelector('#aa-measure');
+  measureBtn.onclick = () => { measuring = !measuring; measureBtn.classList.toggle('on', measuring); if (measuring) measure = null; draw(); };
+  ctrl.querySelector('#aa-clear').onclick = () => { measure = null; measuring = false; measureBtn.classList.remove('on'); draw(); };
+  ctrl.querySelector('.min').onclick = () => { const b = ctrl.querySelector('.body'); b.style.display = b.style.display === 'none' ? '' : 'none'; };
+
+  const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let panelSig = '';
+  function renderPanel() {
+    const list = ctrl.querySelector('#aa-list'), selBox = ctrl.querySelector('#aa-sel');
+    const sorted = [...aircraft].sort((a, b) => a.row.callsign.localeCompare(b.row.callsign));
+    list.replaceChildren();
+    if (!sorted.length) list.textContent = 'No aircraft reporting.';
+    for (const { row } of sorted) {
+      const d = document.createElement('div');
+      d.className = `ac${row.callsign === selected ? ' sel' : ''}${conflicts.has(row.callsign) ? ' ca' : ''}`;
+      d.innerHTML = `<span>${esc(row.callsign)}</span><span>${fl(row.position.altitudeFt)} ${esc(row.aircraftType || '')}</span>`;
+      d.onclick = () => { selected = row.callsign; directTo = null; renderPanel(); draw(); };
+      list.appendChild(d);
+    }
+    const sel = aircraft.find((a) => a.row.callsign === selected);
+    // rebuild the detail box only when the selection changes, so typing in it isn't interrupted
+    const sig = `${selected}|${sel ? 1 : 0}`;
+    const refresh = sig !== panelSig;
+    panelSig = sig;
+    if (!sel) { selBox.replaceChildren(); return; }
+    const p = sel.row.position, tag = tags[sel.row.callsign] || {};
+    if (refresh) {
+      selBox.innerHTML = `<h4>${esc(sel.row.callsign)}</h4><table id="aa-info"></table>
+        <div class="row">Scratchpad <input type="text" id="aa-note" maxlength="12" size="10" value="${esc(tag.note || '')}"></div>
+        <div class="row">Handoff <select id="aa-handoff"><option value="">-</option>${['TWR', 'GND', 'APP', 'DEP', 'CTR'].map((h) => `<option ${tag.handoff === h ? 'selected' : ''}>${h}</option>`).join('')}</select></div>
+        <div class="row">Direct to <select id="aa-direct"><option value="">-</option>${airports().map((a) => `<option value="${a.name}">${a.name}</option>`).join('')}</select></div>`;
+      selBox.querySelector('#aa-note').oninput = (e) => { (tags[selected] ||= {}).note = e.target.value.trim(); saveTags(); draw(); };
+      selBox.querySelector('#aa-handoff').onchange = (e) => { (tags[selected] ||= {}).handoff = e.target.value; saveTags(); draw(); };
+      selBox.querySelector('#aa-direct').onchange = (e) => { directTo = e.target.value || null; draw(); };
+    }
+    selBox.querySelector('#aa-info').innerHTML = [
+      ['Type', sel.row.aircraftType || '-'], ['Altitude', `${p.altitudeFt ?? '-'} ft`], ['Speed', `${sel.row.speed ?? '-'} kt`],
+      ['Heading', p.headingDeg != null ? `${String(Math.round(p.headingDeg)).padStart(3, '0')}°` : '-'],
+      ['From', `${esc(p.referenceAirport)} ${p.distanceNm?.toFixed?.(1)} nm / ${String(Math.round(p.bearingDeg)).padStart(3, '0')}°`],
+      ['ATC vector', sel.row.assignedHeadingDeg != null ? `${String(Math.round(sel.row.assignedHeadingDeg)).padStart(3, '0')}° ${esc(sel.row.vectorReason || '')}` : '-'],
+      ['Conflict', conflicts.has(sel.row.callsign) ? 'YES' : 'no'],
+    ].map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
   }
 
   // Islands the 24SPY tiles lack (Grindavik), drawn under the airspace lines.
@@ -43,25 +277,6 @@
       const [x, y] = transform(it.originUnits);
       ctx.drawImage(it.img, x, y, it.unitsWide * scale, it.unitsHigh * scale);
     }
-  };
-
-  window.autoatcDraw = function (ctx, transform) {
-    ctx.save();
-    ctx.font = '11px monospace';
-    for (const { row, xy } of aircraft) {
-      const [x, y] = transform(xy);
-      const p = row.position;
-      ctx.translate(x, y);
-      ctx.rotate(((p.headingDeg || 0) * Math.PI) / 180);
-      ctx.fillStyle = '#6dff9c';
-      ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const alt = typeof p.altitudeFt === 'number' ? String(Math.round(p.altitudeFt / 100)).padStart(3, '0') : '---';
-      ctx.fillStyle = '#cfe3d6';
-      ctx.fillText(row.callsign, x + 9, y - 5);
-      ctx.fillText(`${alt} ${row.speed ? Math.round(row.speed / 10) : '--'}`, x + 9, y + 7);
-    }
-    ctx.restore();
   };
 
   // ---- ground + charts views ------------------------------------------------

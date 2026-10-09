@@ -86,6 +86,7 @@ spy_blur = cv2.GaussianBlur(spy_land, (0, 0), 6).astype(np.float32) / 255
 
 out = np.empty_like(wm); out[:] = ocean.astype(np.uint8)
 # keep labels: copy label pixels from the original into the background
+isl_only = out.copy()   # islands without labels, for the /radar fork overlays
 out[label_zone] = wm[label_zone]
 report = []
 for k in range(1, count):
@@ -126,6 +127,7 @@ for k in range(1, count):
     alpha = cv2.warpAffine(grown, new, wm.shape[1::-1], flags=cv2.INTER_LINEAR)
     alpha = cv2.GaussianBlur(alpha, (0, 0), 1)[..., None].astype(np.float32) / 255
     out = (out * (1 - alpha) + patch * alpha).astype(np.uint8)
+    isl_only = (isl_only * (1 - alpha) + patch * alpha).astype(np.uint8)
 
 cv2.imwrite(os.path.join(ASSETS, 'world-map.png'), out)
 
@@ -139,17 +141,26 @@ for name in sorted(os.listdir(MASKS)):
     meta = json.load(open(os.path.join(MASKS, name)))
     m = cv2.imread(os.path.join(MASKS, meta['file']), 0)
     ppu = meta['pxPerUnit']; ox, oy = meta['originUnits']
-    dst_size = (m.shape[1], m.shape[0])
-    k = ppu
+    UP = 1.6                                   # render larger than the trace so it stays crisp when zoomed in
+    dst_size = (int(m.shape[1] * UP), int(m.shape[0] * UP))
+    k = ppu * UP
     # dest px -> units -> new world px
     T = np.float64([[1 / k, 0, ox], [0, 1 / k, oy], [0, 0, 1]])
     to_src = (h(G) @ T)[:2]
-    pic = cv2.warpAffine(out, to_src, dst_size, flags=cv2.INTER_AREA | cv2.WARP_INVERSE_MAP)
+    pic = cv2.warpAffine(isl_only, to_src, dst_size, flags=cv2.INTER_LANCZOS4 | cv2.WARP_INVERSE_MAP)
     dd = np.abs(pic.astype(int) - ocean).sum(2)
     alpha = np.clip((dd - 70) * 6, 0, 255).astype(np.uint8)
     alpha = cv2.erode(alpha, np.ones((3, 3), np.uint8))
-    alpha = cv2.GaussianBlur(alpha, (0, 0), 1)
-    rgba = np.dstack([pic, alpha])
+    alpha = cv2.GaussianBlur(alpha, (0, 0), 1.2)
+    # match 24SPY's dark theme: its land is dark grey (about 18-55 of 255), so
+    # keep our island's shading and detail but drop the colour into that range
+    lum = cv2.cvtColor(pic, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    lum = cv2.GaussianBlur(lum, (0, 0), 0.8)
+    lum = cv2.addWeighted(lum, 1.6, cv2.GaussianBlur(lum, (0, 0), 3), -0.6, 0)   # mild sharpen
+    lo, hi = np.percentile(lum[alpha > 200], [2, 98])
+    grey = np.clip((lum - lo) / max(hi - lo, 1), 0, 1) * 34 + 20
+    grey = grey.astype(np.uint8)
+    rgba = np.dstack([grey, grey, grey, alpha])
     cv2.imwrite(os.path.join(ISLAND_OUT, meta['file']), rgba)
     index.append({'file': meta['file'], 'originUnits': meta['originUnits'], 'unitsWide': dst_size[0] / k, 'unitsHigh': dst_size[1] / k})
 json.dump(index, open(os.path.join(ISLAND_OUT, 'index.json'), 'w'), indent=1)

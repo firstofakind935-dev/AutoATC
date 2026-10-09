@@ -583,7 +583,7 @@ rotation. Needs `pip install opencv-python-headless numpy pillow`.
 [24SPY](https://github.com/tiaguinho2009/24SPY) by Tiago Murteira
 (tiaguinho_2009), used with his permission and under its licence
 (attribution, non-commercial only - this must not be sold or earn money). It
-adds AutoATC's live aircraft, a Ground view and a Charts view (see
+adds AutoATC's live aircraft with radar controller tools (click an aircraft for its details, scratchpad, handoff tag and direct-to; measuring tool; conflict alerts), a Ground view and a Charts view (see
 `monitor/public/radar/NOTICE-AUTOATC.md` for exactly what changed). The
 older 365Radar controller workstation is still at `/365radar/`.
 
