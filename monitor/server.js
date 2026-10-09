@@ -507,6 +507,9 @@ const server = app.listen(PORT, () => {
   console.log(`[monitor] listening on port ${PORT}`);
 });
 
+// Optional: push live positions to flightradar365 (needs FR365_BOT_KEY, see flightradar365Push.js).
+require('./flightradar365Push').startFromEnv(freshPositions);
+
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 wss.on('connection', (ws, req) => {
