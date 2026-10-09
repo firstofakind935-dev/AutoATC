@@ -571,13 +571,11 @@ shows a simple marker + label at each airport's verified anchor instead,
 and the detailed diagram is still available in the Ground View side
 panel.
 
-**Pushing positions to flightradar365.** Set `FR365_BOT_KEY` (the key their
-site gave you) in the monitor service's environment and it POSTs the live
+**Pushing positions to flightradar365.** The monitor POSTs (using a built-in key; set `FR365_BOT_KEY` to override it, or to an empty value to turn it off) the live
 aircraft to `https://flightradar365.lovable.app/api/public/track` every 3 s
 (`FR365_URL` and `FR365_INTERVAL_MS` are optional). Only callsign, x/y
 (world-grid nautical miles, x east / y south from the north-west corner - the
-same as the public API), altitude, speed and heading are sent. Without the key
-nothing is sent. See `monitor/flightradar365Push.js`.
+same as the public API), altitude, speed and heading are sent. See `monitor/flightradar365Push.js`.
 
 **Island alignment.** `scripts/align-islands.py` moves each island in
 `world-map.png` to where 24SPY draws it (the untouched original is kept as

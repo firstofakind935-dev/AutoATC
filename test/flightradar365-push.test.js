@@ -44,6 +44,6 @@ test('the pusher POSTs with the bot key header and does not log the key', async 
   assert.ok(!logs.join('').includes('sekret-key'));
 });
 
-test('nothing starts without FR365_BOT_KEY', () => {
-  assert.equal(startFromEnv(() => [], {}), null);
+test('an empty FR365_BOT_KEY switches the push off', () => {
+  assert.equal(startFromEnv(() => [], { FR365_BOT_KEY: '' }), null);
 });

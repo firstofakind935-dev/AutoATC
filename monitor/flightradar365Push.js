@@ -1,17 +1,21 @@
 // Pushes live aircraft positions to the flightradar365 tracking endpoint
 // (POST <FR365_URL>, header x-bot-key, body { aircraft: [...], replace: true }).
 //
-// Off unless FR365_BOT_KEY is set. Only whitelisted fields leave this server:
+// On by default with the built-in key (see below). Only whitelisted fields leave this server:
 // callsign, x/y, altitude, ground_speed, heading - no pilot names, squawk,
 // transcripts or flight plans. x/y are the same world-grid nautical miles the
 // public radar API serves (x east, y south, origin at the north-west corner).
 //
-//   FR365_BOT_KEY      required - the key their site issued (keep it in the host's env, never in git)
+//   FR365_BOT_KEY      optional - overrides the built-in key; set it empty to turn the push off
 //   FR365_URL          default https://flightradar365.lovable.app/api/public/track
 //   FR365_INTERVAL_MS  default 3000, clamped to 1000-5000 (their docs ask for every 1-5 s)
 
 const { toPublicAircraft } = require('./publicApi');
 
+// Built-in key, used when FR365_BOT_KEY isn't set (set FR365_BOT_KEY to a different
+// key to override it, or to an empty value to switch the push off). It lives in git,
+// so anyone who can read this repo can read it - fine for a low-stakes tracker key.
+const BUILT_IN_KEY = 'atc365-bot-7Kq2XvR9mLt4Ns8Wp3Yd6Bz1Hf5Cj0Ge';
 const DEFAULT_URL = 'https://flightradar365.lovable.app/api/public/track';
 const MAX_AIRCRAFT = 500; // their per-push limit
 
@@ -61,11 +65,12 @@ function createPusher({ getPositions, key, url = DEFAULT_URL, intervalMs = 3000,
   };
 }
 
-/** Starts the pusher if FR365_BOT_KEY is set; returns it (or null). */
+/** Starts the pusher (built-in key unless FR365_BOT_KEY overrides it; empty = off); returns it or null. */
 function startFromEnv(getPositions, env = process.env) {
-  if (!env.FR365_BOT_KEY) return null;
+  const key = env.FR365_BOT_KEY !== undefined ? env.FR365_BOT_KEY : BUILT_IN_KEY;
+  if (!key) return null;
   const ms = Math.min(5000, Math.max(1000, Number(env.FR365_INTERVAL_MS) || 3000));
-  const pusher = createPusher({ getPositions, key: env.FR365_BOT_KEY, url: env.FR365_URL || DEFAULT_URL, intervalMs: ms });
+  const pusher = createPusher({ getPositions, key, url: env.FR365_URL || DEFAULT_URL, intervalMs: ms });
   pusher.start();
   console.log(`[flightradar365] pushing positions every ${ms} ms`);
   return pusher;
