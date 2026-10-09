@@ -27,6 +27,19 @@
       <label>Arrival <select name="destination" required></select></label>
       <label>Cruise altitude <input name="cruiseAltFt" type="number" step="500" min="0" placeholder="Auto"></label>
       <label class="wide">Route <input name="route" placeholder="Leave blank to find one, or type waypoints: SHELL NIKON" autocomplete="off"></label>
+      <details class="wide" id="procs" hidden>
+        <summary>Departure / arrival procedures <span class="dim small" id="procs-hint"></span></summary>
+        <div class="procs-grid">
+          <label>Departure runway <select name="depRunway"></select></label>
+          <label>SID <select name="sid"></select></label>
+          <label>Arrival runway <select name="arrRunway"></select></label>
+          <label>STAR <select name="star"></select></label>
+          <label>STAR entry <select name="starEntry"></select></label>
+          <label>Approach <select name="approach"></select></label>
+          <label>Approach start (IAF) <select name="approachIaf"></select></label>
+        </div>
+        <p class="dim small">From the AeroNav charts. Fixes the charts use that have no position are skipped and flagged in the plan.</p>
+      </details>
       <div class="wide actions">
         <button class="primary" type="submit">Generate flight plan</button>
         <span id="form-error" class="error" role="alert"></span>
@@ -69,7 +82,7 @@
   </section>
 </main>
 
-<footer class="wrap dim small">Routes use PTFS waypoints and VORs. There are no airways, SIDs or STARs. Fuel and times are game estimates, not real dispatch figures.</footer>
+<footer class="wrap dim small">Routes use PTFS waypoints and VORs. SIDs, STARs and approaches are available for Greater Rockford (IRFD) so far; elsewhere routes go waypoint to waypoint. Fuel and times are game estimates, not real dispatch figures.</footer>
 <script src="app.js"></script>
 </body>
 </html>

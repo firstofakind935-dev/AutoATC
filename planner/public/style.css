@@ -77,3 +77,6 @@ tr.total td { font-weight: 700; border-top: 2px solid var(--border); }
 #map .endpoint { fill: var(--good); }
 
 footer { padding: 24px 16px 40px; }
+
+.procs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 14px; margin-top: 10px; }
+details summary { cursor: pointer; color: var(--text); }

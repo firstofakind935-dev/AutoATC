@@ -1,0 +1,692 @@
+{
+  "icao": "IRFD",
+  "source": "AeroNav charts for Greater Rockford (aeronav.space), read from the charts' text. Fix names only; positions come from 24SPY via scripts/build-navdata.js. Fixes missing from 24SPY are listed in the plan response as unplaced.",
+  "note": "Runway keys can be lists (\"25C,25R\"). A leg {fix, min/max/at} is an altitude restriction in feet. 'vectors' means the chart ends the procedure with radar vectors rather than a fix.",
+  "derivedFixes": [
+    {
+      "ident": "ZABKI",
+      "from": "TRN",
+      "radialDeg": 147,
+      "distNm": 4.6,
+      "source": "VOR/GPS 7L/C chart: ZABKI is D4.6 TRN on final approach course 327 inbound"
+    },
+    {
+      "ident": "CNRSE",
+      "from": "TRN",
+      "radialDeg": 147,
+      "distNm": 2.8,
+      "source": "VOR/GPS 7L/C chart: CNRSE is D2.8 TRN on final approach course 327 inbound"
+    }
+  ],
+  "sids": [
+    {
+      "name": "DARRK3",
+      "title": "DARRK 3 RNAV DEPARTURE",
+      "chart": "10-3",
+      "exit": "DARRK",
+      "runways": {
+        "25L": [
+          {
+            "fix": "DOCKR",
+            "min": 1000
+          },
+          {
+            "fix": "QURAN",
+            "min": 2000
+          },
+          {
+            "fix": "EXMOR"
+          },
+          {
+            "fix": "DARRK",
+            "min": 3000
+          }
+        ],
+        "25C,25R": [
+          {
+            "fix": "DLREY",
+            "min": 1000
+          },
+          {
+            "fix": "ALOHA",
+            "min": 2500
+          },
+          {
+            "fix": "DARRK",
+            "min": 3000
+          }
+        ],
+        "7L,7C,7R": [
+          {
+            "fix": "DARRK",
+            "min": 3000
+          }
+        ]
+      },
+      "initial": {
+        "7L,7C,7R": "Climb on assigned heading; expect radar vectors to a waypoint on the SID."
+      }
+    },
+    {
+      "name": "KENED2",
+      "title": "KENED 2 RNAV DEPARTURE",
+      "chart": "10-3A",
+      "exit": "KENED",
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "KUNAV"
+          },
+          {
+            "fix": "KENED",
+            "min": 3000
+          }
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "KUNAV"
+          },
+          {
+            "fix": "KENED",
+            "min": 3000
+          }
+        ]
+      },
+      "initial": {
+        "7L,7C,7R": "Climb on assigned heading; expect radar vectors to KUNAV.",
+        "25L,25C,25R": "Climbing left turn heading 195; expect radar vectors to KUNAV."
+      }
+    },
+    {
+      "name": "LOGAN4",
+      "title": "LOGAN 4 RNAV DEPARTURE",
+      "chart": "10-3B",
+      "exit": "LOGAN",
+      "runways": {
+        "25L": [
+          {
+            "fix": "DOCKR",
+            "min": 1000
+          },
+          {
+            "fix": "QURAN",
+            "min": 2000
+          },
+          {
+            "fix": "EXMOR"
+          },
+          {
+            "fix": "LOGAN",
+            "min": 3000
+          }
+        ],
+        "25C,25R": [
+          {
+            "fix": "DLREY",
+            "min": 1000
+          },
+          {
+            "fix": "DAALE"
+          },
+          {
+            "fix": "LOGAN",
+            "min": 3000
+          }
+        ]
+      }
+    },
+    {
+      "name": "OSHNN1",
+      "title": "OSHNN 1 RNAV DEPARTURE",
+      "chart": "10-3C",
+      "exit": "OSHNN",
+      "runways": {
+        "25L": [
+          {
+            "fix": "HIIPR",
+            "min": 1700
+          },
+          {
+            "fix": "SHAEF"
+          },
+          {
+            "fix": "OSHNN",
+            "min": 3000
+          }
+        ],
+        "25C,25R": [
+          {
+            "fix": "FABRA",
+            "min": 1700
+          },
+          {
+            "fix": "SHAEF"
+          },
+          {
+            "fix": "OSHNN",
+            "min": 3000
+          }
+        ]
+      },
+      "notes": "The chart's 'depicted route' between SHAEF and OSHNN is flown here as a direct leg."
+    },
+    {
+      "name": "RFD6",
+      "title": "ROCKFORD 6 DEPARTURE",
+      "chart": "10-3D",
+      "exit": "RFD",
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "RFD"
+          }
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "RFD"
+          }
+        ]
+      },
+      "initial": {
+        "7L,7C,7R": "Climb on heading 247 until D1.0 RFD.",
+        "25L,25C,25R": "Farms climb: left turn heading 167 inbound on TRN R347; or Western climb: left turn to intercept RFD R215."
+      }
+    },
+    {
+      "name": "TRN1",
+      "title": "TRAINING 1 RNAV DEPARTURE",
+      "chart": "10-3E",
+      "exit": "TRN",
+      "runways": {
+        "25L": [
+          {
+            "fix": "DOCKR",
+            "min": 1000
+          },
+          {
+            "fix": "WEILR"
+          },
+          {
+            "fix": "TRN"
+          }
+        ],
+        "25C,25R": [
+          {
+            "fix": "DLREY",
+            "min": 1000
+          },
+          {
+            "fix": "PEPUL"
+          },
+          {
+            "fix": "HAYNK"
+          },
+          {
+            "fix": "TRN"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WNNDY3",
+      "title": "WNNDY 3 RNAV DEPARTURE",
+      "chart": "10-3F",
+      "exit": "WNNDY",
+      "runways": {
+        "25L,25C,25R": [
+          {
+            "fix": "MJSTY",
+            "min": 1000
+          },
+          {
+            "fix": "WNNDY"
+          }
+        ]
+      }
+    }
+  ],
+  "stars": [
+    {
+      "name": "BEANS1",
+      "title": "BEANS 1 RNAV ARRIVAL",
+      "chart": "10-2",
+      "entries": [
+        "SPACE",
+        "SEEKS"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "BEANS"
+          },
+          {
+            "fix": "LOGAN"
+          }
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "BEANS"
+          },
+          {
+            "fix": "BRDGE"
+          },
+          {
+            "fix": "ICTAM"
+          },
+          {
+            "fix": "HAWFA",
+            "min": 2000
+          },
+          "vectors"
+        ]
+      }
+    },
+    {
+      "name": "GORDO1",
+      "title": "GORDO 1 ARRIVAL",
+      "chart": "10-2A",
+      "entries": [
+        "MOSSY"
+      ],
+      "runways": {
+        "7L,7C": [
+          {
+            "fix": "MOSSY"
+          },
+          {
+            "fix": "GORDO"
+          },
+          {
+            "fix": "TRN"
+          }
+        ]
+      },
+      "notes": "Only for Rwy 7L/C (VOR or GPS approach). Use only if unable to use KUNAV or POPPY."
+    },
+    {
+      "name": "JAMSI1",
+      "title": "JAMSI 1 RNAV ARRIVAL",
+      "chart": "10-2B",
+      "entries": [
+        "ANYMS",
+        "GRASS"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "JAMSI"
+          },
+          {
+            "fix": "GODLU"
+          },
+          {
+            "fix": "PEPUL",
+            "at": 1300
+          }
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "JAMSI"
+          },
+          "vectors"
+        ]
+      }
+    },
+    {
+      "name": "KUNAV2",
+      "title": "KUNAV 2 RNAV ARRIVAL",
+      "chart": "10-2C",
+      "entries": [
+        "KENED"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "KUNAV"
+          },
+          {
+            "fix": "BRDGE"
+          },
+          {
+            "fix": "ALISO"
+          },
+          "vectors"
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "KUNAV"
+          },
+          {
+            "fix": "HAWFA"
+          },
+          {
+            "fix": "SWEET"
+          },
+          "vectors"
+        ]
+      }
+    },
+    {
+      "name": "MATRX1",
+      "title": "MATRX 1 ARRIVAL",
+      "chart": "10-2D",
+      "entries": [
+        "MATRX"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "MATRX"
+          },
+          {
+            "fix": "FISHH"
+          },
+          "vectors"
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "MATRX"
+          },
+          "vectors"
+        ]
+      },
+      "notes": "Use only if unable to use KUNAV or POPPY."
+    },
+    {
+      "name": "MLR1",
+      "title": "MELLOR 1 ARRIVAL",
+      "chart": "10-2E",
+      "entries": [
+        "MLR"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "MLR"
+          },
+          {
+            "fix": "LOGAN"
+          },
+          "vectors"
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "MLR"
+          },
+          {
+            "fix": "ICTAM"
+          },
+          "vectors"
+        ]
+      },
+      "notes": "Use only if unable to use BEANS or SUNST."
+    },
+    {
+      "name": "POPPY3",
+      "title": "POPPY 3 RNAV ARRIVAL",
+      "chart": "10-2F",
+      "entries": [
+        "SETHR"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "SETHR"
+          },
+          {
+            "fix": "POPPY",
+            "min": 1200
+          },
+          "vectors"
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "SETHR"
+          },
+          {
+            "fix": "POPPY",
+            "min": 1200
+          },
+          "vectors"
+        ]
+      },
+      "notes": "The chart also shows CYRIL and CAWZE transitions; only the main SETHR route is encoded."
+    },
+    {
+      "name": "SUNST3",
+      "title": "SUNST 3 RNAV ARRIVAL",
+      "chart": "10-2G",
+      "entries": [
+        "SUNST"
+      ],
+      "runways": {
+        "7L,7C,7R": [
+          {
+            "fix": "SUNST"
+          },
+          {
+            "fix": "LAAMP"
+          },
+          {
+            "fix": "LOGAN"
+          }
+        ],
+        "25L,25C,25R": [
+          {
+            "fix": "SUNST"
+          },
+          {
+            "fix": "BUCFA",
+            "at": 2000
+          },
+          {
+            "fix": "HAWFA"
+          },
+          {
+            "fix": "SWEET",
+            "max": 1500
+          },
+          "vectors"
+        ]
+      }
+    },
+    {
+      "name": "WILEK1",
+      "title": "WILEK 1 ARRIVAL",
+      "chart": "10-2H",
+      "entries": [
+        "LCK"
+      ],
+      "runways": {
+        "7L,7C,25L,25C,25R": [
+          {
+            "fix": "LCK"
+          },
+          {
+            "fix": "WILEK"
+          },
+          "vectors"
+        ]
+      }
+    }
+  ],
+  "approaches": [
+    {
+      "name": "ILS OR LOC RWY 25L",
+      "chart": "11-1",
+      "type": "ILS",
+      "runway": "25L",
+      "finalCourseDeg": 247,
+      "iaf": [
+        "SWEET",
+        "POPPY",
+        "BRBIE",
+        "JAMSI"
+      ],
+      "legs": [
+        {
+          "fix": "FISSK"
+        },
+        {
+          "fix": "COTAF"
+        },
+        {
+          "fix": "BACHE"
+        }
+      ],
+      "missed": "Climb runway heading to 500, left turn to 2500, intercept RFD R206 outbound to the 3.6 DME arc, direct KRANG and hold."
+    },
+    {
+      "name": "ILS OR LOC RWY 25C",
+      "chart": "11-2",
+      "type": "ILS",
+      "runway": "25C",
+      "finalCourseDeg": 247,
+      "iaf": [
+        "SWEET",
+        "POPPY",
+        "GULLS",
+        "JAMSI"
+      ],
+      "legs": [
+        {
+          "fix": "PAYNZ"
+        },
+        {
+          "fix": "DUNES"
+        },
+        {
+          "fix": "ATPEV"
+        }
+      ],
+      "missed": "Climb runway heading to 1000, intercept RFD R253 outbound, climb to 2500, direct SAGES and hold."
+    },
+    {
+      "name": "ILS OR LOC RWY 25R",
+      "chart": "11-3",
+      "type": "ILS",
+      "runway": "25R",
+      "finalCourseDeg": 247,
+      "iaf": [
+        "SWEET",
+        "POPPY",
+        "KIPPR",
+        "JAMSI"
+      ],
+      "legs": [
+        {
+          "fix": "ROCKY"
+        },
+        {
+          "fix": "TORUS"
+        },
+        {
+          "fix": "BRISK"
+        }
+      ],
+      "missed": "Climb on RFD R274 outbound to 2000, at VALLY continue on BLA R197 outbound to EAGLE and hold."
+    },
+    {
+      "name": "RNAV (RNP) RWY 7R",
+      "chart": "12-1",
+      "type": "RNP",
+      "runway": "7R",
+      "finalCourseDeg": 67,
+      "iaf": [
+        "LOGAN",
+        "ICTAM",
+        "PEPUL"
+      ],
+      "legs": [
+        {
+          "fix": "TIMSE"
+        },
+        {
+          "fix": "JACKI"
+        },
+        {
+          "fix": "FUMBL"
+        }
+      ],
+      "missed": "Climb to 2500 on track 067 to WIPOK, then track 114 to NIXON and hold.",
+      "notes": "RNP AR - authorization required. How each IAF joins the final fixes is not captured; the FMS flies IAF direct to the first final fix."
+    },
+    {
+      "name": "RNAV (RNP) RWY 7C",
+      "chart": "12-2",
+      "type": "RNP",
+      "runway": "7C",
+      "finalCourseDeg": 67,
+      "iaf": [
+        "LOGAN",
+        "ICTAM",
+        "PEPUL"
+      ],
+      "legs": [
+        {
+          "fix": "MOGTA",
+          "at": 1500
+        },
+        {
+          "fix": "DIGGY",
+          "at": 1200
+        },
+        {
+          "fix": "TURKA",
+          "at": 900
+        }
+      ],
+      "missed": "Climb to 1500 on track 067 to GIDDY, then track 090 to NIFTY and hold.",
+      "notes": "RNP AR - authorization required. Altitudes are from the chart's labels."
+    },
+    {
+      "name": "RNAV (RNP) RWY 7L",
+      "chart": "12-3",
+      "type": "RNP",
+      "runway": "7L",
+      "finalCourseDeg": 67,
+      "iaf": [
+        "LOGAN",
+        "ICTAM",
+        "PEPUL"
+      ],
+      "legs": [
+        {
+          "fix": "OTTES",
+          "at": 1500
+        },
+        {
+          "fix": "GUPPI",
+          "at": 1200
+        },
+        {
+          "fix": "REEBO",
+          "at": 900
+        }
+      ],
+      "missed": "Climb to 2000 on track 067 to ZIMLO, then track 077 to ATPEV and hold.",
+      "notes": "RNP AR - authorization required. Altitudes are from the chart's labels."
+    },
+    {
+      "name": "VOR OR GPS RWY 7L/C",
+      "chart": "13-1",
+      "type": "VOR",
+      "runway": "7L,7C",
+      "finalCourseDeg": 327,
+      "iaf": [
+        "TRN"
+      ],
+      "legs": [
+        {
+          "fix": "CNRSE",
+          "at": 1500
+        },
+        {
+          "fix": "ZABKI"
+        }
+      ],
+      "missed": "Climbing right turn heading 067 until 1500, then right turn direct TRN VOR and hold.",
+      "notes": "Circling-style visual finish to 7L or 7C. Final approach course 327 toward TRN; the arrangement of TRN, CNRSE and ZABKI is simplified."
+    }
+  ]
+}

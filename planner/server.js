@@ -12,6 +12,7 @@ const { PlanStore } = require('./lib/store');
 const { navdata, airports, fixes } = require('./lib/navdata');
 const { AIRCRAFT } = require('./lib/aircraft');
 const { createRelayRouter } = require('./lib/relay');
+const { listProcedures } = require('./lib/procedures');
 
 const PORT = process.env.PORT || 3100;
 const store = new PlanStore(process.env.PLANS_FILE || path.join(__dirname, 'data', 'plans.json'));
@@ -44,6 +45,12 @@ app.get('/health', (req, res) => res.send('ok'));
 app.get('/api/navdata', (req, res) => {
   res.set('Cache-Control', 'public, max-age=3600');
   res.json({ airports, fixes, fit: navdata.fit });
+});
+
+// SIDs / STARs / approaches the planner can add to a plan, for one airport.
+app.get('/api/procedures/:icao', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json(listProcedures(req.params.icao));
 });
 
 app.get('/api/aircraft', (req, res) => {

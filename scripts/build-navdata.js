@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 // Builds planner/data/navdata.json - every airport and every named
-// waypoint/VOR, all in the same lat/lon the companion app tracks pilots in
+// waypoint/VOR, in the same lat/lon the companion app tracks pilots in
 // (data/charts/*.json "coordinates", see companion/lib/coords.js), so the
 // flight planner's routes and the companion's FMS/autopilot agree on where
 // everything is.
 //
-// Airports come straight from data/charts. Waypoints/VORs only exist in
-// 365Radar's fixes.js (upstream 24radar), in 24radar's own map coordinates
-// - the same system as GroundOffsets.js's airport x/y. So this fits a
-// least-squares affine transform from GroundOffsets' upstream airports
-// (the ones 24radar itself measured, not AutoATC's estimated additions) to
-// those same airports' chart lat/lon, and pushes every fix through it. The
-// fit's per-airport error is written into the output (fit.residualsNm) so
-// how far off a waypoint may be stays visible, not hidden.
+// Airports come straight from data/charts. Waypoints/VORs come from 24SPY
+// (Tiago Murteira / tiaguinho_2009, non-commercial licence - see
+// monitor/public/365radar/src/data/24SPY-NOTICE.md), whose map is north-up
+// at 24 px per nautical mile in the radar's world-map space. A fix is placed
+// relative to the airports around it: each airport that both 24SPY and the
+// charts know gives "chart position + (fix - airport) in 24SPY's map", and
+// the nearby airports' answers are blended (inverse-distance weighted), so a
+// fix lands right next to the airport it is near and nothing jumps between
+// islands. That keeps fixes consistent with how pilots are tracked - as a
+// distance and bearing from an airport. (The charts and 24SPY disagree about
+// where some airports sit by 2-9 nm; this follows the charts for airports and
+// 24SPY for everything relative to them.)
 //
-// Re-run after changing charts or fixes:  node scripts/build-navdata.js
+// Re-run after changing charts or 24SPY data:  node scripts/build-navdata.js
 
 const fs = require('fs');
 const path = require('path');
@@ -49,87 +53,60 @@ function loadChartAirports() {
   return airports.sort((a, b) => a.icao.localeCompare(b.icao));
 }
 
-// GroundOffsets.js marks where 24radar's own measured airports end and
-// AutoATC's estimated additions begin - only the former are fit against.
-function loadUpstreamAirportOffsets() {
-  const source = fs.readFileSync(path.join(RADAR_DATA, 'GroundOffsets.js'), 'utf8');
-  const upstream = source.split('AutoATC additions')[0];
-  const offsets = {};
-  for (const m of upstream.matchAll(/"(\w+)":\s*\{[^}]*x:\s*(-?[\d.]+),\s*y:\s*(-?[\d.]+)/g)) {
-    offsets[m[1]] = { x: Number(m[2]), y: Number(m[3]) };
-  }
-  return offsets;
-}
+const PX_PER_NM = 24; // the radar world map (and so 24SPY data as imported) is 24 px per nm
 
-function loadFixes() {
-  const source = fs.readFileSync(path.join(RADAR_DATA, 'fixes.js'), 'utf8');
-  const fixes = [];
-  for (const m of source.matchAll(/"?x"?:\s*(-?[\d.]+),\s*"?y"?:\s*(-?[\d.]+),\s*type:\s*'(\w+)',\s*identifier:\s*'(\w+)'/g)) {
-    fixes.push({ x: Number(m[1]), y: Number(m[2]), type: m[3], ident: m[4] });
-  }
-  return fixes;
-}
-
-// Least squares for A·p = b via the normal equations (3 unknowns here).
-function leastSquares(rows, targets) {
-  const n = rows[0].length;
-  const m = [...Array(n)].map((_, i) => [
-    ...[...Array(n)].map((_, j) => rows.reduce((s, r) => s + r[i] * r[j], 0)),
-    rows.reduce((s, r, k) => s + r[i] * targets[k], 0),
-  ]);
-  for (let i = 0; i < n; i++) {
-    let pivot = i;
-    for (let k = i + 1; k < n; k++) if (Math.abs(m[k][i]) > Math.abs(m[pivot][i])) pivot = k;
-    [m[i], m[pivot]] = [m[pivot], m[i]];
-    for (let k = 0; k < n; k++) {
-      if (k === i) continue;
-      const f = m[k][i] / m[i][i];
-      for (let j = i; j <= n; j++) m[k][j] -= f * m[i][j];
-    }
-  }
-  return m.map((row, i) => row[n] / row[i]);
+/** 24SPY airports, waypoints and VORs as imported by scripts/import-24spy.js (world-map pixel space). */
+function loadSpyData() {
+  const text = fs.readFileSync(path.join(RADAR_DATA, 'spy24Data.js'), 'utf8');
+  return JSON.parse(text.slice(text.indexOf('export default') + 'export default'.length).trim().replace(/;$/, ''));
 }
 
 function main() {
   const airports = loadChartAirports();
   const byIcao = new Map(airports.map((a) => [a.icao, a]));
-  const offsets = loadUpstreamAirportOffsets();
-  const fitIcaos = Object.keys(offsets).filter((icao) => byIcao.has(icao));
-  if (fitIcaos.length < 3) throw new Error(`need at least 3 airports to fit against, found ${fitIcaos.length}`);
+  const spy = loadSpyData();
+  const anchors = spy.airports.filter((a) => byIcao.has(a.icao)).map((a) => ({ ...a, chart: byIcao.get(a.icao) }));
+  if (anchors.length < 3) throw new Error(`need at least 3 airports known to both the charts and 24SPY, found ${anchors.length}`);
 
-  // GroundOffsets x/y are 24radar SVG units; fixes.js x/y become those same
-  // units via fix / 33.4 + (20, 12) - see 365radar/src/main.js drawFixes().
-  const rows = fitIcaos.map((icao) => [offsets[icao].x, offsets[icao].y, 1]);
-  const latCoef = leastSquares(rows, fitIcaos.map((icao) => byIcao.get(icao).lat));
-  const lonCoef = leastSquares(rows, fitIcaos.map((icao) => byIcao.get(icao).lon));
-  const toLatLon = (x, y) => ({
-    lat: latCoef[0] * x + latCoef[1] * y + latCoef[2],
-    lon: lonCoef[0] * x + lonCoef[1] * y + lonCoef[2],
+  const placeFix = (fx, fy) => {
+    let wSum = 0, lat = 0, lon = 0;
+    for (const a of anchors) {
+      const dist = Math.max(0.5, Math.hypot(fx - a.x, fy - a.y) / PX_PER_NM); // nm, floored so an exact hit doesn't divide by zero
+      const w = 1 / dist ** 3;
+      const northNm = -(fy - a.y) / PX_PER_NM;
+      const eastNm = (fx - a.x) / PX_PER_NM;
+      lat += w * (a.chart.lat + northNm / 60);
+      lon += w * (a.chart.lon + eastNm / (60 * Math.cos((a.chart.lat * Math.PI) / 180)));
+      wSum += w;
+    }
+    return { lat: lat / wSum, lon: lon / wSum };
+  };
+
+  const fixes = spy.waypoints.map((w) => {
+    const { lat, lon } = placeFix(w.x, w.y);
+    return { ident: w.id, type: w.type === 'vor' ? 'VOR' : 'WPT', lat: round(lat, 5), lon: round(lon, 5) };
   });
 
-  const residualsNm = {};
-  for (const icao of fitIcaos) {
-    const fitted = toLatLon(offsets[icao].x, offsets[icao].y);
-    const real = byIcao.get(icao);
-    const north = (fitted.lat - real.lat) * 60;
-    const east = (fitted.lon - real.lon) * 60 * Math.cos((real.lat * Math.PI) / 180);
-    residualsNm[icao] = round(Math.hypot(north, east), 2);
+  // How far apart the charts and 24SPY put each shared airport, relative to the
+  // other shared airports (removing the overall shift): the size of the warp.
+  const meanDelta = anchors.reduce((s, a) => [s[0] + (a.chart.lon * 60 * Math.cos((a.chart.lat * Math.PI) / 180) - a.x / PX_PER_NM) / anchors.length, s[1] + (a.chart.lat * 60 + a.y / PX_PER_NM) / anchors.length], [0, 0]);
+  const disagreementNm = {};
+  for (const a of anchors) {
+    const east = a.chart.lon * 60 * Math.cos((a.chart.lat * Math.PI) / 180) - a.x / PX_PER_NM - meanDelta[0];
+    const north = a.chart.lat * 60 + a.y / PX_PER_NM - meanDelta[1];
+    disagreementNm[a.icao] = round(Math.hypot(east, north), 2);
   }
-  const errors = Object.values(residualsNm).sort((a, b) => a - b);
-
-  const fixes = loadFixes().map((f) => {
-    const { lat, lon } = toLatLon(f.x / 33.4 + 20, f.y / 33.4 + 12);
-    return { ident: f.ident, type: f.type === 'waypoint' ? 'WPT' : 'VOR', lat: round(lat, 5), lon: round(lon, 5) };
-  });
+  const errors = Object.values(disagreementNm).sort((x, y) => x - y);
 
   const navdata = {
     generatedBy: 'scripts/build-navdata.js',
-    note: 'Airports are chart positions. Waypoints/VORs are converted from 24radar map coordinates with a fitted transform - see fit.residualsNm for how far each fitting airport landed from its chart position.',
+    note: 'Airports are chart positions. Waypoints/VORs are 24SPY positions placed relative to the airports around them (blended) - see fit.disagreementNm for where the charts and 24SPY disagree about airport positions.',
+    source: { fixes: 'https://github.com/tiaguinho2009/24SPY by Tiago Murteira (tiaguinho_2009); modified; non-commercial use only' },
     fit: {
-      airports: fitIcaos.length,
-      medianErrorNm: errors[Math.floor(errors.length / 2)],
-      maxErrorNm: errors[errors.length - 1],
-      residualsNm,
+      anchorAirports: anchors.length,
+      medianDisagreementNm: errors[Math.floor(errors.length / 2)],
+      maxDisagreementNm: errors[errors.length - 1],
+      disagreementNm,
     },
     airports,
     fixes,
@@ -139,7 +116,7 @@ function main() {
   fs.writeFileSync(OUT, `${JSON.stringify(navdata, null, 1)}\n`);
   console.log(
     `Wrote ${path.relative(ROOT, OUT)}: ${airports.length} airports, ${fixes.length} fixes ` +
-      `(fit on ${fitIcaos.length} airports, median error ${navdata.fit.medianErrorNm} nm, max ${navdata.fit.maxErrorNm} nm)`
+      `(placed from ${anchors.length} anchor airports; charts vs 24SPY disagree by a median ${navdata.fit.medianDisagreementNm} nm, max ${navdata.fit.maxDisagreementNm} nm)`
   );
 }
 

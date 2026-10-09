@@ -168,11 +168,50 @@ async function openPlan(id) {
   renderPlan(body);
 }
 
+// ---- procedures: SID / STAR / approach pickers for airports we have charts for
+const procData = {}; // icao -> procedures summary
+async function procsFor(icao) {
+  if (!(icao in procData)) procData[icao] = await fetch(`/api/procedures/${icao}`).then((r) => r.json()).catch(() => null);
+  return procData[icao];
+}
+const fill = (select, items, blank) => {
+  const keep = select.value;
+  select.replaceChildren(option('', blank));
+  for (const it of items) select.append(option(it.value, it.label));
+  if ([...select.options].some((o) => o.value === keep)) select.value = keep;
+};
+async function refreshProcedures() {
+  const form = $('plan-form');
+  const [dep, arr] = await Promise.all([procsFor(form.origin.value), procsFor(form.destination.value)]);
+  const hasDep = dep && dep.sids.length;
+  const hasArr = arr && (arr.stars.length || arr.approaches.length);
+  $('procs').hidden = !(hasDep || hasArr);
+  if (!$('procs').hidden && !$('procs').dataset.seen) { $('procs').open = true; $('procs').dataset.seen = '1'; } // open the first time it appears
+  if ($('procs').hidden) { for (const n of ['sid', 'depRunway', 'star', 'arrRunway', 'starEntry', 'approach', 'approachIaf']) form[n].value = ''; return; }
+  const runways = (list) => [...new Set(list.flatMap((p) => p.runways))].sort().map((r) => ({ value: r, label: r }));
+  const unplaced = (p) => (p.unplaced.length ? ` (no position: ${p.unplaced.join(', ')})` : '');
+  fill(form.depRunway, hasDep ? runways(dep.sids) : [], 'No runway');
+  fill(form.sid, hasDep ? dep.sids.filter((p) => !form.depRunway.value || p.runways.includes(form.depRunway.value)).map((p) => ({ value: p.name, label: `${p.title}${unplaced(p)}` })) : [], 'No SID (direct)');
+  fill(form.arrRunway, hasArr ? runways([...arr.stars, ...arr.approaches]) : [], 'No runway');
+  const rw = form.arrRunway.value;
+  const stars = hasArr ? arr.stars.filter((p) => !rw || p.runways.includes(rw)) : [];
+  fill(form.star, stars.map((p) => ({ value: p.name, label: `${p.title}${unplaced(p)}` })), 'No STAR (direct)');
+  const star = stars.find((p) => p.name === form.star.value);
+  fill(form.starEntry, (star?.entries || []).map((e) => ({ value: e, label: e })), 'First entry');
+  const apps = hasArr ? arr.approaches.filter((p) => !rw || p.runways.includes(rw)) : [];
+  fill(form.approach, apps.map((p) => ({ value: p.name, label: `${p.name}${unplaced(p)}` })), 'No approach');
+  const app = apps.find((p) => p.name === form.approach.value);
+  fill(form.approachIaf, (app?.iaf || []).map((e) => ({ value: e, label: e })), 'Join at first fix');
+  $('procs-hint').textContent = [hasDep && `${form.origin.value} SIDs`, hasArr && `${form.destination.value} STARs/approaches`].filter(Boolean).join(' · ');
+}
+for (const n of ['origin', 'destination', 'depRunway', 'arrRunway', 'star', 'approach']) $('plan-form')[n].addEventListener('change', refreshProcedures);
+
 $('plan-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('form-error').textContent = '';
   const data = Object.fromEntries(new FormData(e.target));
   if (!data.cruiseAltFt) delete data.cruiseAltFt;
+  for (const k of ['sid', 'depRunway', 'star', 'arrRunway', 'starEntry', 'approach', 'approachIaf']) if (!data[k]) delete data[k];
   const button = e.target.querySelector('button[type="submit"]');
   button.disabled = true;
   try {
@@ -194,6 +233,7 @@ $('lookup').addEventListener('submit', (e) => {
 });
 
 loadReferenceData().then(() => {
+  refreshProcedures();
   const id = new URLSearchParams(location.search).get('id');
   if (id) openPlan(id).catch(() => {});
 });

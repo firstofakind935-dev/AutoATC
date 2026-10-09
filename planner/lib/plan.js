@@ -8,6 +8,7 @@ const { distanceBearing, project } = require('./geo');
 const { findAirport } = require('./navdata');
 const { findAircraft } = require('./aircraft');
 const { findRoute, parseRoute } = require('./route');
+const { expandSid, expandStar, expandApproach } = require('./procedures');
 
 const MIN_CRUISE_AGL_FT = 1500;
 const CRUISE_SEARCH_STEP_FT = 500;
@@ -39,7 +40,7 @@ function semicircularCap(altFt, trackDeg) {
   return thousands * 1000;
 }
 
-function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, route }) {
+function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, route, sid, depRunway, star, arrRunway, starEntry, approach, approachIaf }) {
   const flightCallsign = String(callsign || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!flightCallsign) throw planError('Callsign is required');
   const aircraft = findAircraft(aircraftType);
@@ -50,8 +51,44 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
   if (!to) throw planError(`Unknown arrival airport "${destination}"`);
   if (from.icao === to.icao) throw planError('Departure and arrival must be different airports');
 
-  const routeFixes = route && String(route).trim() ? parseRoute(route) : findRoute(from, to);
-  const points = [from, ...routeFixes, to].map((p) => ({ ident: p.ident, type: p.type, lat: p.lat, lon: p.lon }));
+  // Departure and arrival procedures (SID / STAR / approach) from the charts. The
+  // en-route part runs from the end of the SID to the start of the STAR; fixes a
+  // chart uses that we have no position for are reported, not guessed.
+  const procedures = {};
+  let sidFixes = [];
+  let arrivalFixes = [];
+  if (sid) {
+    if (!depRunway) throw planError('Pick the departure runway for the SID');
+    procedures.sid = expandSid(from.icao, sid, depRunway);
+    sidFixes = procedures.sid.fixes;
+  }
+  if (star) {
+    if (!arrRunway) throw planError('Pick the arrival runway for the STAR');
+    procedures.star = expandStar(to.icao, star, arrRunway, starEntry);
+    arrivalFixes = procedures.star.fixes;
+  }
+  if (approach) {
+    procedures.approach = expandApproach(to.icao, approach, approachIaf);
+    // an approach follows the STAR; its first fix is where the pilot joins it
+    arrivalFixes = [...arrivalFixes, ...procedures.approach.fixes];
+  }
+  const anyProcedure = Boolean(sid || star || approach);
+
+  const routeStart = sidFixes.length ? sidFixes[sidFixes.length - 1] : from;
+  const routeEnd = arrivalFixes.length ? arrivalFixes[0] : to;
+  const enrouteFixes = route && String(route).trim() ? parseRoute(route) : anyProcedure && distanceBearing(routeStart, routeEnd).distanceNm < 2 ? [] : findRoute(routeStart, routeEnd);
+  // Join the pieces; a fix that repeats (the SID's last fix is also the first en-route one) appears once.
+  const routeFixes = [];
+  for (const f of [...sidFixes, ...enrouteFixes, ...arrivalFixes]) {
+    const prev = routeFixes[routeFixes.length - 1];
+    if (prev && prev.ident === f.ident) { Object.assign(prev, f); continue; }
+    routeFixes.push({ ...f });
+  }
+  const points = [from, ...routeFixes, to].map((p) => {
+    const point = { ident: p.ident, type: p.type, lat: p.lat, lon: p.lon };
+    for (const k of ['altMinFt', 'altMaxFt', 'altAtFt']) if (p[k] != null) point[k] = p[k];
+    return point;
+  });
 
   let cumNm = 0;
   const waypoints = points.map((p, i) => {
@@ -149,7 +186,18 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
     fuelRemKg: round(takeoffFuel - burnAt(e.d), 10),
   }));
 
-  const routeText = routeFixes.length ? `DCT ${routeFixes.map((f) => f.ident).join(' DCT ')} DCT` : 'DCT';
+  const routeText = anyProcedure
+    ? [
+        procedures.sid && `SID ${procedures.sid.name}/${procedures.sid.runway}`,
+        enrouteFixes.length ? `DCT ${enrouteFixes.map((f) => f.ident).join(' DCT ')} DCT` : 'DCT',
+        procedures.star && `STAR ${procedures.star.name}/${procedures.star.runway}`,
+        procedures.approach && `APP ${procedures.approach.name}`,
+      ].filter(Boolean).join(' ')
+    : routeFixes.length ? `DCT ${routeFixes.map((f) => f.ident).join(' DCT ')} DCT` : 'DCT';
+  for (const [kind, proc] of Object.entries(procedures)) {
+    if (proc.unplaced.length) warnings.push(`${kind.toUpperCase()} ${proc.name}: no position for ${proc.unplaced.join(', ')} - skipped, so that part is flown direct.`);
+    if (proc.vectors) warnings.push(`${kind.toUpperCase()} ${proc.name} ends with radar vectors - expect ATC to direct you after its last fix.`);
+  }
 
   return {
     callsign: flightCallsign,
@@ -157,6 +205,7 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
     origin: { icao: from.icao, name: from.name, lat: from.lat, lon: from.lon, elevationFt: from.elevationFt, runways: from.runways },
     destination: { icao: to.icao, name: to.name, lat: to.lat, lon: to.lon, elevationFt: to.elevationFt, runways: to.runways },
     route: routeText,
+    procedures: anyProcedure ? Object.fromEntries(Object.entries(procedures).map(([k, v]) => [k, { name: v.name, runway: v.runway, unplaced: v.unplaced, vectors: v.vectors, initial: v.initial || null, missed: v.missed || null }])) : undefined,
     distanceNm: round(totalNm, 0.1),
     waypoints,
     profile: {
