@@ -29,6 +29,22 @@
     if (typeof draw === 'function') draw();
   }
 
+  // Islands the 24SPY tiles lack (Grindavik), drawn under the airspace lines.
+  const islands = [];
+  fetch('islands/index.json').then((r) => (r.ok ? r.json() : [])).then((list) => {
+    for (const it of list) {
+      const img = new Image();
+      img.onload = () => { islands.push({ ...it, img }); if (typeof draw === 'function') draw(); };
+      img.src = `islands/${it.file}`;
+    }
+  }).catch(() => {});
+  window.autoatcDrawUnder = function (ctx, transform, scale) {
+    for (const it of islands) {
+      const [x, y] = transform(it.originUnits);
+      ctx.drawImage(it.img, x, y, it.unitsWide * scale, it.unitsHigh * scale);
+    }
+  };
+
   window.autoatcDraw = function (ctx, transform) {
     ctx.save();
     ctx.font = '11px monospace';

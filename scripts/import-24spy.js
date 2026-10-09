@@ -69,6 +69,26 @@ function fitSimilarity(pairs) {
   return (p) => [A * (p[0] - sx) - B * (p[1] - sy) + tx, B * (p[0] - sx) + A * (p[1] - sy) + ty];
 }
 
+/**
+ * Scale + shift only (no rotation), fitted to pairs. 24SPY's grid is aligned
+ * to north (checked against IRFD's runway heading), while the old world-map.png
+ * the anchors were measured on is rotated about 3.6 degrees, so the airport
+ * pairs are used only to find the scale and where the map sits, not a tilt.
+ */
+function fitScaleShift(pairs) {
+  const n = pairs.length;
+  let sx = 0, sy = 0, tx = 0, ty = 0;
+  for (const [[a, b], [c, d]] of pairs) { sx += a; sy += b; tx += c; ty += d; }
+  sx /= n; sy /= n; tx /= n; ty /= n;
+  let dot = 0, cross = 0, norm = 0;
+  for (const [[a, b], [c, d]] of pairs) {
+    const x = a - sx, y = b - sy, u = c - tx, v = d - ty;
+    dot += x * u + y * v; cross += x * v - y * u; norm += x * x + y * y;
+  }
+  const k = Math.hypot(dot, cross) / norm;
+  return (p) => [k * (p[0] - sx) + tx, k * (p[1] - sy) + ty];
+}
+
 function loadWorldMapAnchors() {
   const text = fs.readFileSync(path.join(RADAR_DATA, 'worldMapAnchors.js'), 'utf8');
   return JSON.parse(text.trim().replace(/^export default/, '').trim().replace(/;$/, '')).anchors;
@@ -97,7 +117,7 @@ function main() {
   const cutoff = Math.max(25, errs[Math.floor(errs.length / 2)] * 2.5);
   const dropped = shared.filter((icao) => dist(transform, icao) > cutoff);
   shared = shared.filter((icao) => !dropped.includes(icao));
-  transform = fitSimilarity(shared.map((icao) => [spyAirports[icao], [anchors[icao].x, anchors[icao].y]]));
+  transform = fitScaleShift(shared.map((icao) => [spyAirports[icao], [anchors[icao].x, anchors[icao].y]]));
   const residualsPx = Object.fromEntries(shared.map((icao) => [icao, round1(dist(transform, icao))]));
   const sorted = Object.values(residualsPx).sort((a, b) => a - b);
   const apply = (p) => transform(p).map(round1);
@@ -154,7 +174,7 @@ function main() {
     author: 'Tiago Murteira (tiaguinho_2009)',
     licence: 'See 24SPY-NOTICE.md - attribution required, non-commercial use only',
     sourceCommit: commit,
-    changes: 'Positions converted from 24SPY map units to world-map.png pixels by a fitted similarity transform; airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.',
+    changes: 'Positions converted from 24SPY map units to world-map.png pixels by a fitted scale-and-shift transform (north-up, no rotation); airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.',
     fit: {
       airports: shared.length,
       droppedAirports: dropped,

@@ -457,6 +457,7 @@ function draw() {
         ctx.drawImage(tile, tileX, tileY, 240 * scale, 240 * scale);
     });
 
+    if (window.autoatcDrawUnder) autoatcDrawUnder(ctx, transformCoordinates, scale);
     drawControlAreas();
     drawFlightPlan(flightRoute);
     resetChartsMenu();

@@ -571,6 +571,14 @@ shows a simple marker + label at each airport's verified anchor instead,
 and the detailed diagram is still available in the Ground View side
 panel.
 
+**Island alignment.** `scripts/align-islands.py` moves each island in
+`world-map.png` to where 24SPY draws it (the untouched original is kept as
+`world-map-original.png`), and Grindavik - missing from the 24SPY tiles in the
+repo - is traced from a 24SPY screenshot registered to its waypoints
+(`scripts/island-masks/`). 24SPY's grid is north-up (checked against IRFD's
+runway heading), so `import-24spy.js` now fits scale and shift only, no
+rotation. Needs `pip install opencv-python-headless numpy pillow`.
+
 **`/radar` is a fork of 24SPY.** `monitor/public/radar/` is a modified copy of
 [24SPY](https://github.com/tiaguinho2009/24SPY) by Tiago Murteira
 (tiaguinho_2009), used with his permission and under its licence

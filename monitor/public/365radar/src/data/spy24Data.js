@@ -5,7 +5,7 @@
 // Original work by Tiago Murteira (tiaguinho_2009). Used under the 24SPY licence (attribution
 // required, non-commercial use only) - see 24SPY-NOTICE.md in this folder.
 //
-// THIS IS A MODIFIED COPY: Positions converted from 24SPY map units to world-map.png pixels by a fitted similarity transform; airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.
+// THIS IS A MODIFIED COPY: Positions converted from 24SPY map units to world-map.png pixels by a fitted scale-and-shift transform (north-up, no rotation); airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.
 //
 // Kept in its own file, not merged into fixes.js/worldMapAnchors.js, because
 // those come from 24Radar (GPLv3) and 24SPY's licence is not GPL-compatible.
@@ -15,37 +15,37 @@ export default {
   "author": "Tiago Murteira (tiaguinho_2009)",
   "licence": "See 24SPY-NOTICE.md - attribution required, non-commercial use only",
   "sourceCommit": "30f851637b8e03b50715f64ce453cd28f03dc234 2026-06-16",
-  "changes": "Positions converted from 24SPY map units to world-map.png pixels by a fitted similarity transform; airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.",
+  "changes": "Positions converted from 24SPY map units to world-map.png pixels by a fitted scale-and-shift transform (north-up, no rotation); airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.",
   "fit": {
    "airports": 20,
    "droppedAirports": [
     "IZOL",
     "IBAR"
    ],
-   "medianErrorPx": 8.9,
-   "maxErrorPx": 28,
+   "medianErrorPx": 18.1,
+   "maxErrorPx": 41.2,
    "pxPerNm": 24,
    "residualsPx": {
-    "IRFD": 11.2,
-    "IPPH": 23.5,
-    "ITKO": 28,
-    "ILAR": 11.8,
-    "IGRV": 8.9,
-    "IBTH": 1.2,
-    "ISAU": 16.4,
-    "IPAP": 16.3,
-    "IMLR": 5,
-    "IDCS": 0.7,
-    "IGAR": 7.7,
-    "IIAB": 13.7,
-    "ISCM": 5.4,
-    "IBLT": 5.2,
-    "ILKL": 6.5,
-    "IJAF": 4.5,
-    "IHEN": 3.2,
-    "ISKP": 4,
-    "SHV": 11.4,
-    "TVO": 10.5
+    "IRFD": 4.8,
+    "IPPH": 37.1,
+    "ITKO": 12.1,
+    "ILAR": 3.2,
+    "IGRV": 18.1,
+    "IBTH": 5.4,
+    "ISAU": 41.2,
+    "IPAP": 2.1,
+    "IMLR": 16.5,
+    "IDCS": 24.3,
+    "IGAR": 8.5,
+    "IIAB": 25.7,
+    "ISCM": 10.4,
+    "IBLT": 10.2,
+    "ILKL": 19.7,
+    "IJAF": 23.8,
+    "IHEN": 19.3,
+    "ISKP": 8.2,
+    "SHV": 23.3,
+    "TVO": 30.4
    }
   }
  },
@@ -53,9 +53,9 @@ export default {
   {
    "icao": "IRFD",
    "name": "Rockford",
-   "x": 495.2,
-   "y": 505,
-   "offsetFromAnchorPx": 11.2,
+   "x": 502,
+   "y": 508.3,
+   "offsetFromAnchorPx": 4.8,
    "freq": {
     "tower": "124.850",
     "ground": "121.855"
@@ -64,9 +64,9 @@ export default {
   {
    "icao": "IPPH",
    "name": "Perth",
-   "x": 666.4,
-   "y": 212.4,
-   "offsetFromAnchorPx": 23.5,
+   "x": 654.5,
+   "y": 205.6,
+   "offsetFromAnchorPx": 37,
    "freq": {
     "tower": "135.250",
     "ground": "121.700"
@@ -75,9 +75,9 @@ export default {
   {
    "icao": "IZOL",
    "name": "Izolirani",
-   "x": 850.2,
-   "y": 399.1,
-   "offsetFromAnchorPx": 44.8,
+   "x": 849.6,
+   "y": 380.4,
+   "offsetFromAnchorPx": 30.7,
    "freq": {
     "tower": "125.640",
     "ground": "120.900"
@@ -86,9 +86,9 @@ export default {
   {
    "icao": "ITKO",
    "name": "Tokyo",
-   "x": 484,
-   "y": 116.5,
-   "offsetFromAnchorPx": 28,
+   "x": 466.4,
+   "y": 121.4,
+   "offsetFromAnchorPx": 12.2,
    "freq": {
     "tower": "132.300",
     "ground": "121.625"
@@ -97,9 +97,9 @@ export default {
   {
    "icao": "ILAR",
    "name": "Larnaca",
-   "x": 667.3,
-   "y": 600,
-   "offsetFromAnchorPx": 11.8,
+   "x": 679.7,
+   "y": 592.3,
+   "offsetFromAnchorPx": 3.2,
    "freq": {
     "tower": "126.300",
     "ground": "119.400"
@@ -108,9 +108,9 @@ export default {
   {
    "icao": "IGRV",
    "name": "Grindavik",
-   "x": 214.2,
-   "y": 313.3,
-   "offsetFromAnchorPx": 9,
+   "x": 209.5,
+   "y": 334.7,
+   "offsetFromAnchorPx": 18,
    "freq": {
     "tower": "126.750"
    }
@@ -118,9 +118,9 @@ export default {
   {
    "icao": "IBTH",
    "name": "Saint Barthélemy",
-   "x": 570.8,
-   "y": 323.8,
-   "offsetFromAnchorPx": 1.2,
+   "x": 566,
+   "y": 322.8,
+   "offsetFromAnchorPx": 5.5,
    "freq": {
     "tower": "128.600"
    }
@@ -128,9 +128,9 @@ export default {
   {
    "icao": "ISAU",
    "name": "Sauthemptona",
-   "x": 178.4,
-   "y": 534,
-   "offsetFromAnchorPx": 16.3,
+   "x": 187.7,
+   "y": 557.2,
+   "offsetFromAnchorPx": 41.2,
    "freq": {
     "tower": "127.820"
    }
@@ -138,9 +138,9 @@ export default {
   {
    "icao": "IPAP",
    "name": "Paphos",
-   "x": 742.5,
-   "y": 617.5,
-   "offsetFromAnchorPx": 16.3,
+   "x": 755.8,
+   "y": 605.1,
+   "offsetFromAnchorPx": 2,
    "freq": {
     "tower": "130.625"
    }
@@ -148,9 +148,9 @@ export default {
   {
    "icao": "IMLR",
    "name": "Mellor",
-   "x": 378.3,
-   "y": 452.8,
-   "offsetFromAnchorPx": 5,
+   "x": 382.1,
+   "y": 463.7,
+   "offsetFromAnchorPx": 16.5,
    "freq": {
     "tower": "125.650"
    }
@@ -158,9 +158,9 @@ export default {
   {
    "icao": "IDCS",
    "name": "Saba",
-   "x": 512.3,
-   "y": 25.2,
-   "offsetFromAnchorPx": 0.7,
+   "x": 488.9,
+   "y": 28.5,
+   "offsetFromAnchorPx": 24.4,
    "freq": {
     "tower": "118.250"
    }
@@ -168,9 +168,9 @@ export default {
   {
    "icao": "IGAR",
    "name": "Garry",
-   "x": 397.4,
-   "y": 519.3,
-   "offsetFromAnchorPx": 7.7,
+   "x": 405.3,
+   "y": 528.7,
+   "offsetFromAnchorPx": 8.5,
    "freq": {
     "tower": "124.275"
    }
@@ -178,9 +178,9 @@ export default {
   {
    "icao": "IIAB",
    "name": "McConnell",
-   "x": 675.6,
-   "y": 658.9,
-   "offsetFromAnchorPx": 13.8,
+   "x": 691.7,
+   "y": 650.6,
+   "offsetFromAnchorPx": 25.7,
    "freq": {
     "tower": "127.250"
    }
@@ -188,16 +188,16 @@ export default {
   {
    "icao": "ISCM",
    "name": "Scampton",
-   "x": 793.7,
-   "y": 335.1,
-   "offsetFromAnchorPx": 5.4
+   "x": 789.2,
+   "y": 320,
+   "offsetFromAnchorPx": 10.4
   },
   {
    "icao": "IBLT",
    "name": "Boltic",
-   "x": 437.3,
-   "y": 476,
-   "offsetFromAnchorPx": 5.2,
+   "x": 442.4,
+   "y": 483.1,
+   "offsetFromAnchorPx": 10.3,
    "freq": {
     "tower": "124.605"
    }
@@ -205,9 +205,9 @@ export default {
   {
    "icao": "ILKL",
    "name": "Lukla",
-   "x": 697.1,
-   "y": 244.2,
-   "offsetFromAnchorPx": 6.5,
+   "x": 687.1,
+   "y": 235.4,
+   "offsetFromAnchorPx": 19.7,
    "freq": {
     "tower": "120.150"
    }
@@ -215,15 +215,15 @@ export default {
   {
    "icao": "ITRN",
    "name": "Training Centre",
-   "x": 498.2,
-   "y": 574.6
+   "x": 509.4,
+   "y": 577.6
   },
   {
    "icao": "IJAF",
    "name": "Al Najaf",
-   "x": 861.3,
-   "y": 375.6,
-   "offsetFromAnchorPx": 4.6,
+   "x": 859.3,
+   "y": 356.2,
+   "offsetFromAnchorPx": 23.8,
    "freq": {
     "tower": "120.200"
    }
@@ -231,9 +231,9 @@ export default {
   {
    "icao": "IHEN",
    "name": "Henstridge",
-   "x": 632.9,
-   "y": 661.9,
-   "offsetFromAnchorPx": 3.2,
+   "x": 649.3,
+   "y": 656.3,
+   "offsetFromAnchorPx": 19.4,
    "freq": {
     "tower": "130.250"
    }
@@ -241,9 +241,9 @@ export default {
   {
    "icao": "IBAR",
    "name": "Barra",
-   "x": 710.2,
-   "y": 645.1,
-   "offsetFromAnchorPx": 71.2,
+   "x": 725.4,
+   "y": 634.7,
+   "offsetFromAnchorPx": 63.7,
    "freq": {
     "tower": "118.080"
    }
@@ -251,9 +251,9 @@ export default {
   {
    "icao": "ISKP",
    "name": "Skopelos",
-   "x": 706.3,
-   "y": 461.6,
-   "offsetFromAnchorPx": 4,
+   "x": 710,
+   "y": 451.8,
+   "offsetFromAnchorPx": 8.2,
    "freq": {
     "tower": "124.200"
    }
@@ -261,1200 +261,1200 @@ export default {
   {
    "icao": "SHV",
    "name": "Sea Haven",
-   "x": 709.7,
-   "y": 212.7,
-   "offsetFromAnchorPx": 11.4
+   "x": 697.6,
+   "y": 203.1,
+   "offsetFromAnchorPx": 23.3
   },
   {
    "icao": "OWO",
    "name": "Waterloo",
-   "x": 472.4,
-   "y": 446.5
+   "x": 475.5,
+   "y": 451.4
   },
   {
    "icao": "TVO",
    "name": "Tavaro Seabase",
-   "x": 219.3,
-   "y": 329.1,
-   "offsetFromAnchorPx": 10.5
+   "x": 215.6,
+   "y": 350.2,
+   "offsetFromAnchorPx": 30.4
   }
  ],
  "waypoints": [
   {
    "id": "ENDER",
    "type": "waypoint",
-   "x": 379.9,
-   "y": 357
+   "x": 377.7,
+   "y": 367.9
   },
   {
    "id": "KENED",
    "type": "waypoint",
-   "x": 442.5,
-   "y": 381.8
+   "x": 441.7,
+   "y": 388.8
   },
   {
    "id": "SETHR",
    "type": "waypoint",
-   "x": 552.2,
-   "y": 417.1
+   "x": 553.4,
+   "y": 417
   },
   {
    "id": "SUNST",
    "type": "waypoint",
-   "x": 338.3,
-   "y": 385.7
+   "x": 338,
+   "y": 399.2
   },
   {
    "id": "BUCFA",
    "type": "waypoint",
-   "x": 380.4,
-   "y": 413.2
+   "x": 381.6,
+   "y": 424
   },
   {
    "id": "KUNAV",
    "type": "waypoint",
-   "x": 440.4,
-   "y": 423
+   "x": 442.2,
+   "y": 430
   },
   {
    "id": "HAWFA",
    "type": "waypoint",
-   "x": 466.3,
-   "y": 438.5
+   "x": 469,
+   "y": 443.8
   },
   {
    "id": "QUEEN",
    "type": "waypoint",
-   "x": 504.1,
-   "y": 467.7
+   "x": 508.5,
+   "y": 470.6
   },
   {
    "id": "LAVNO",
    "type": "waypoint",
-   "x": 539.4,
-   "y": 486.4
+   "x": 544.9,
+   "y": 487
   },
   {
    "id": "ATPEV",
    "type": "waypoint",
-   "x": 563.2,
-   "y": 479
+   "x": 568.2,
+   "y": 478.1
   },
   {
    "id": "SAWPE",
    "type": "waypoint",
-   "x": 318.5,
-   "y": 424.3
+   "x": 320.6,
+   "y": 438.9
   },
   {
    "id": "ICTAM",
    "type": "waypoint",
-   "x": 424.8,
-   "y": 442.4
+   "x": 427.8,
+   "y": 450.3
   },
   {
    "id": "BEANS",
    "type": "waypoint",
-   "x": 318.9,
-   "y": 481.5
+   "x": 324.6,
+   "y": 496
   },
   {
    "id": "LOGAN",
    "type": "waypoint",
-   "x": 370.2,
-   "y": 495.6
+   "x": 376.7,
+   "y": 506.9
   },
   {
    "id": "MOGTA",
    "type": "waypoint",
-   "x": 435.3,
-   "y": 519.6
+   "x": 443.2,
+   "y": 526.7
   },
   {
    "id": "JAMSI",
    "type": "waypoint",
-   "x": 585.8,
-   "y": 522.7
+   "x": 593.6,
+   "y": 520.3
   },
   {
    "id": "EXMOR",
    "type": "waypoint",
-   "x": 376.9,
-   "y": 539.8
+   "x": 386.1,
+   "y": 550.6
   },
   {
    "id": "PEPUL",
    "type": "waypoint",
-   "x": 453.7,
-   "y": 559.1
+   "x": 464,
+   "y": 564.9
   },
   {
    "id": "GODLU",
    "type": "waypoint",
-   "x": 543.6,
-   "y": 554.3
+   "x": 553.4,
+   "y": 554.5
   },
   {
    "id": "LAZER",
    "type": "waypoint",
-   "x": 577.8,
-   "y": 570.9
+   "x": 588.6,
+   "y": 568.9
   },
   {
    "id": "EMJAY",
    "type": "waypoint",
-   "x": 403.5,
-   "y": 607.1
+   "x": 416.9,
+   "y": 616.1
   },
   {
    "id": "ODOKU",
    "type": "waypoint",
-   "x": 485.7,
-   "y": 612.3
+   "x": 499.3,
+   "y": 616.1
   },
   {
    "id": "DEATH",
    "type": "waypoint",
-   "x": 366.6,
-   "y": 686.8
+   "x": 385.1,
+   "y": 697.9
   },
   {
    "id": "TRELN",
    "type": "waypoint",
-   "x": 433.5,
-   "y": 675.7
+   "x": 451.1,
+   "y": 682.6
   },
   {
    "id": "REAPR",
    "type": "waypoint",
-   "x": 500.5,
-   "y": 669
+   "x": 517.6,
+   "y": 671.7
   },
   {
    "id": "MLR",
    "type": "vor",
-   "x": 379.2,
-   "y": 455.9
+   "x": 383.1,
+   "y": 466.7
   },
   {
    "id": "BLA",
    "type": "vor",
-   "x": 465.7,
-   "y": 463.4
+   "x": 470,
+   "y": 468.7
   },
   {
    "id": "RFD",
    "type": "vor",
-   "x": 492.4,
-   "y": 500.4
+   "x": 498.9,
+   "y": 503.9
   },
   {
    "id": "GRY",
    "type": "vor",
-   "x": 400.2,
-   "y": 517.4
+   "x": 407.9,
+   "y": 526.7
   },
   {
    "id": "TRN",
    "type": "vor",
-   "x": 499.7,
-   "y": 571.4
+   "x": 510.7,
+   "y": 574.4
   },
   {
    "id": "SHELL",
    "type": "waypoint",
-   "x": 356.5,
-   "y": 51.9
+   "x": 335.1,
+   "y": 64.8
   },
   {
    "id": "NIKON",
    "type": "waypoint",
-   "x": 464.5,
-   "y": 45.3
+   "x": 442.5,
+   "y": 51.5
   },
   {
    "id": "CHILY",
    "type": "waypoint",
-   "x": 581.1,
-   "y": 64.3
+   "x": 560.1,
+   "y": 63.1
   },
   {
    "id": "SHIBA",
    "type": "waypoint",
-   "x": 415.9,
-   "y": 74.3
+   "x": 395.8,
+   "y": 83.4
   },
   {
    "id": "LETSE",
    "type": "waypoint",
-   "x": 516.7,
-   "y": 98.9
+   "x": 497.9,
+   "y": 101.7
   },
   {
    "id": "HONDA",
    "type": "waypoint",
-   "x": 600.1,
-   "y": 104.1
+   "x": 581.5,
+   "y": 101.7
   },
   {
    "id": "ASTRO",
    "type": "waypoint",
-   "x": 433.2,
-   "y": 124.9
+   "x": 416.2,
+   "y": 132.9
   },
   {
    "id": "GULEG",
    "type": "waypoint",
-   "x": 382.3,
-   "y": 156.2
+   "x": 367.4,
+   "y": 167.3
   },
   {
    "id": "PIPER",
    "type": "waypoint",
-   "x": 446.4,
-   "y": 165.1
+   "x": 432,
+   "y": 172.2
   },
   {
    "id": "ONDER",
    "type": "waypoint",
-   "x": 503.3,
-   "y": 183.1
+   "x": 489.9,
+   "y": 186.6
   },
   {
    "id": "KNIFE",
    "type": "waypoint",
-   "x": 557,
-   "y": 174.2
+   "x": 542.9,
+   "y": 174.3
   },
   {
    "id": "TUDEP",
    "type": "waypoint",
-   "x": 422.8,
-   "y": 211.8
+   "x": 411.3,
+   "y": 220.3
   },
   {
    "id": "ALLRY",
    "type": "waypoint",
-   "x": 591.2,
-   "y": 222.8
+   "x": 580.1,
+   "y": 220.7
   },
   {
    "id": "HME",
    "type": "vor",
-   "x": 488,
-   "y": 119.9
+   "x": 470.6,
+   "y": 124.5
   },
   {
    "id": "CRAZY",
    "type": "waypoint",
-   "x": 684,
-   "y": 112.6
+   "x": 665.8,
+   "y": 104.9
   },
   {
    "id": "WOTAN",
    "type": "waypoint",
-   "x": 800.6,
-   "y": 132.9
+   "x": 783.4,
+   "y": 117.8
   },
   {
    "id": "WAGON",
    "type": "waypoint",
-   "x": 871.4,
-   "y": 160.2
+   "x": 855.8,
+   "y": 140.6
   },
   {
    "id": "WELLS",
    "type": "waypoint",
-   "x": 727.8,
-   "y": 178
+   "x": 713.6,
+   "y": 167.3
   },
   {
    "id": "SQUID",
    "type": "waypoint",
-   "x": 814.2,
-   "y": 184.7
+   "x": 800.2,
+   "y": 168.6
   },
   {
    "id": "ZESTA",
    "type": "waypoint",
-   "x": 888.7,
-   "y": 208
+   "x": 876,
+   "y": 187.2
   },
   {
    "id": "TINDR",
    "type": "waypoint",
-   "x": 618.2,
-   "y": 197.8
+   "x": 605.5,
+   "y": 194.1
   },
   {
    "id": "NOONU",
    "type": "waypoint",
-   "x": 757.8,
-   "y": 229.9
+   "x": 746.8,
+   "y": 217.3
   },
   {
    "id": "KELLA",
    "type": "waypoint",
-   "x": 795,
-   "y": 234.9
+   "x": 784.3,
+   "y": 219.9
   },
   {
    "id": "STRAX",
    "type": "waypoint",
-   "x": 628.9,
-   "y": 234.3
+   "x": 618.4,
+   "y": 229.8
   },
   {
    "id": "SISTA",
    "type": "waypoint",
-   "x": 777.8,
-   "y": 276.1
+   "x": 769.6,
+   "y": 262.1
   },
   {
    "id": "TALIS",
    "type": "waypoint",
-   "x": 728.7,
-   "y": 280.8
+   "x": 720.9,
+   "y": 269.9
   },
   {
    "id": "COC",
    "type": "vor",
-   "x": 656.9,
-   "y": 166.6
+   "x": 642.1,
+   "y": 160.5
   },
   {
    "id": "PER",
    "type": "vor",
-   "x": 660,
-   "y": 212.6
+   "x": 648.1,
+   "y": 206.1
   },
   {
    "id": "BTM",
    "type": "vor",
-   "x": 720.7,
-   "y": 222.9
+   "x": 709.3,
+   "y": 212.6
   },
   {
    "id": "ORG",
    "type": "vor",
-   "x": 677.8,
-   "y": 252.5
+   "x": 668.4,
+   "y": 244.9
   },
   {
    "id": "FORIA",
    "type": "waypoint",
-   "x": 558.8,
-   "y": 661.8
+   "x": 575.3,
+   "y": 660.9
   },
   {
    "id": "AQWRT",
    "type": "waypoint",
-   "x": 626.4,
-   "y": 625.6
+   "x": 640.5,
+   "y": 620.5
   },
   {
    "id": "FORCE",
    "type": "waypoint",
-   "x": 655.1,
-   "y": 715.5
+   "x": 674.8,
+   "y": 708.4
   },
   {
    "id": "GRASS",
    "type": "waypoint",
-   "x": 651.5,
-   "y": 553.5
+   "x": 661.1,
+   "y": 547
   },
   {
    "id": "RENTS",
    "type": "waypoint",
-   "x": 709.1,
-   "y": 533.2
+   "x": 717.3,
+   "y": 523
   },
   {
    "id": "MASEV",
    "type": "waypoint",
-   "x": 665,
-   "y": 689.5
+   "x": 683,
+   "y": 681.8
   },
   {
    "id": "JACKI",
    "type": "waypoint",
-   "x": 768.8,
-   "y": 587.5
+   "x": 780.2,
+   "y": 573.5
   },
   {
    "id": "ALTRS",
    "type": "waypoint",
-   "x": 770.6,
-   "y": 724.3
+   "x": 790.6,
+   "y": 709.9
   },
   {
    "id": "MUONE",
    "type": "waypoint",
-   "x": 796.4,
-   "y": 677.7
+   "x": 813.4,
+   "y": 661.7
   },
   {
    "id": "BOBUX",
    "type": "waypoint",
-   "x": 808.7,
-   "y": 631.7
+   "x": 822.9,
+   "y": 615.1
   },
   {
    "id": "DEBUG",
    "type": "waypoint",
-   "x": 865.3,
-   "y": 594.5
+   "x": 877,
+   "y": 574.4
   },
   {
    "id": "JAZZR",
    "type": "waypoint",
-   "x": 858.8,
-   "y": 681.6
+   "x": 876,
+   "y": 661.7
   },
   {
    "id": "NUBER",
    "type": "waypoint",
-   "x": 921.5,
-   "y": 648.7
+   "x": 936.5,
+   "y": 625
   },
   {
    "id": "DIR",
    "type": "vor",
-   "x": 602.4,
-   "y": 679.1
+   "x": 619.9,
+   "y": 675.3
   },
   {
    "id": "CAN",
    "type": "vor",
-   "x": 585.1,
-   "y": 643.9
+   "x": 600.4,
+   "y": 641.3
   },
   {
    "id": "LCK",
    "type": "vor",
-   "x": 672,
-   "y": 597.5
+   "x": 684.3,
+   "y": 589.5
   },
   {
    "id": "KIN",
    "type": "vor",
-   "x": 737.6,
-   "y": 573.1
+   "x": 748.2,
+   "y": 561.1
   },
   {
    "id": "PFO",
    "type": "vor",
-   "x": 739.5,
-   "y": 620.2
+   "x": 753.1,
+   "y": 608
   },
   {
    "id": "HUT",
    "type": "vor",
-   "x": 733.4,
-   "y": 655.3
+   "x": 749.2,
+   "y": 643.4
   },
   {
    "id": "CAMEL",
    "type": "waypoint",
-   "x": 684.7,
-   "y": 321.6
+   "x": 679.6,
+   "y": 313.4
   },
   {
    "id": "DUNKS",
    "type": "waypoint",
-   "x": 737.9,
-   "y": 327.1
+   "x": 733,
+   "y": 315.6
   },
   {
    "id": "ROSMO",
    "type": "waypoint",
-   "x": 826.3,
-   "y": 307.6
+   "x": 820,
+   "y": 290.6
   },
   {
    "id": "UDMUG",
    "type": "waypoint",
-   "x": 909.6,
-   "y": 280.5
+   "x": 901.5,
+   "y": 258.3
   },
   {
    "id": "CYRIL",
    "type": "waypoint",
-   "x": 722.1,
-   "y": 372.3
+   "x": 720.1,
+   "y": 361.7
   },
   {
    "id": "MORRD",
    "type": "waypoint",
-   "x": 904.2,
-   "y": 365.7
+   "x": 901.5,
+   "y": 343.6
   },
   {
    "id": "LLIME",
    "type": "waypoint",
-   "x": 930.7,
-   "y": 322.9
+   "x": 925.2,
+   "y": 299.2
   },
   {
    "id": "DOGGO",
    "type": "waypoint",
-   "x": 790,
-   "y": 424.5
+   "x": 791.1,
+   "y": 409.5
   },
   {
    "id": "ABSRS",
    "type": "waypoint",
-   "x": 935.2,
-   "y": 429.3
+   "x": 936.4,
+   "y": 405.2
   },
   {
    "id": "BILLO",
    "type": "waypoint",
-   "x": 872.1,
-   "y": 457.3
+   "x": 875.2,
+   "y": 437.1
   },
   {
    "id": "JUSTY",
    "type": "waypoint",
-   "x": 804.2,
-   "y": 487.6
+   "x": 809.2,
+   "y": 471.5
   },
   {
    "id": "CHAIN",
    "type": "waypoint",
-   "x": 929.3,
-   "y": 515.3
+   "x": 935.9,
+   "y": 491.4
   },
   {
    "id": "HOT",
    "type": "vor",
-   "x": 792.7,
-   "y": 341.4
+   "x": 788.6,
+   "y": 326.3
   },
   {
    "id": "NJF",
    "type": "vor",
-   "x": 866.2,
-   "y": 380.1
+   "x": 864.4,
+   "y": 360.4
   },
   {
    "id": "IZO",
    "type": "vor",
-   "x": 856.7,
-   "y": 406.7
+   "x": 856.6,
+   "y": 387.5
   },
   {
    "id": "DIZ",
    "type": "vor",
-   "x": 886.6,
-   "y": 412
+   "x": 886.8,
+   "y": 391
   },
   {
    "id": "TRE",
    "type": "vor",
-   "x": 786.4,
-   "y": 378.5
+   "x": 784.7,
+   "y": 363.8
   },
   {
    "id": "DET",
    "type": "vor",
-   "x": 867.4,
-   "y": 505.4
+   "x": 873.4,
+   "y": 485.3
   },
   {
    "id": "BULLY",
    "type": "waypoint",
-   "x": 304.2,
-   "y": 131.4
+   "x": 287.9,
+   "y": 147.5
   },
   {
    "id": "FROOT",
    "type": "waypoint",
-   "x": 253.6,
-   "y": 180.9
+   "x": 240.5,
+   "y": 200.1
   },
   {
    "id": "EURAD",
    "type": "waypoint",
-   "x": 346.9,
-   "y": 201.5
+   "x": 334.9,
+   "y": 214.7
   },
   {
    "id": "BOBOS",
    "type": "waypoint",
-   "x": 201.9,
-   "y": 220.8
+   "x": 191.4,
+   "y": 243.2
   },
   {
    "id": "BLANK",
    "type": "waypoint",
-   "x": 364.1,
-   "y": 243.6
+   "x": 354.7,
+   "y": 255.7
   },
   {
    "id": "THENR",
    "type": "waypoint",
-   "x": 248.1,
-   "y": 247.5
+   "x": 239.2,
+   "y": 266.9
   },
   {
    "id": "ACRES",
    "type": "waypoint",
-   "x": 164.7,
-   "y": 256.5
+   "x": 156.5,
+   "y": 281.1
   },
   {
    "id": "YOUTH",
    "type": "waypoint",
-   "x": 301.5,
-   "y": 278
+   "x": 294.4,
+   "y": 294
   },
   {
    "id": "UWAIS",
    "type": "waypoint",
-   "x": 124.7,
-   "y": 288
+   "x": 118.6,
+   "y": 315.1
   },
   {
    "id": "EZYDB",
    "type": "waypoint",
-   "x": 362.7,
-   "y": 313.8
+   "x": 357.7,
+   "y": 325.9
   },
   {
    "id": "FRANK",
    "type": "waypoint",
-   "x": 125.6,
-   "y": 342.9
+   "x": 122.9,
+   "y": 369.9
   },
   {
    "id": "CELAR",
    "type": "waypoint",
-   "x": 257.9,
-   "y": 374.1
+   "x": 256.9,
+   "y": 392.7
   },
   {
    "id": "THACC",
    "type": "waypoint",
-   "x": 121.4,
-   "y": 402.7
+   "x": 122.5,
+   "y": 429.7
   },
   {
    "id": "SHREK",
    "type": "waypoint",
-   "x": 188.1,
-   "y": 412.1
+   "x": 189.7,
+   "y": 434.9
   },
   {
    "id": "SPACE",
    "type": "waypoint",
-   "x": 257.8,
-   "y": 429.8
+   "x": 260.3,
+   "y": 448.3
   },
   {
    "id": "GOL",
    "type": "vor",
-   "x": 179.5,
-   "y": 316.5
+   "x": 175,
+   "y": 340.1
   },
   {
    "id": "GVK",
    "type": "vor",
-   "x": 213,
-   "y": 312.2
+   "x": 208.2,
+   "y": 333.7
   },
   {
    "id": "HAW",
    "type": "vor",
-   "x": 244.7,
-   "y": 295.2
+   "x": 238.8,
+   "y": 314.7
   },
   {
    "id": "HACKE",
    "type": "waypoint",
-   "x": 127,
-   "y": 480.1
+   "x": 132.9,
+   "y": 506.7
   },
   {
    "id": "GEORG",
    "type": "waypoint",
-   "x": 188.9,
-   "y": 502
+   "x": 196.1,
+   "y": 524.6
   },
   {
    "id": "SEEKS",
    "type": "waypoint",
-   "x": 253.4,
-   "y": 527.5
+   "x": 262.1,
+   "y": 546
   },
   {
    "id": "HECKS",
    "type": "waypoint",
-   "x": 107.2,
-   "y": 548.9
+   "x": 117.5,
+   "y": 576.5
   },
   {
    "id": "PACKT",
    "type": "waypoint",
-   "x": 159.5,
-   "y": 566.6
+   "x": 170.8,
+   "y": 590.9
   },
   {
    "id": "STACK",
    "type": "waypoint",
-   "x": 228.4,
-   "y": 595.5
+   "x": 241.4,
+   "y": 615.5
   },
   {
    "id": "ALDER",
    "type": "waypoint",
-   "x": 314.9,
-   "y": 584.5
+   "x": 327,
+   "y": 599
   },
   {
    "id": "WASTE",
    "type": "waypoint",
-   "x": 151.6,
-   "y": 625.5
+   "x": 166.6,
+   "y": 650.2
   },
   {
    "id": "HOGGS",
    "type": "waypoint",
-   "x": 301.6,
-   "y": 628.3
+   "x": 316.5,
+   "y": 643.6
   },
   {
    "id": "ROBUX",
    "type": "waypoint",
-   "x": 265.7,
-   "y": 683.3
+   "x": 284.2,
+   "y": 700.8
   },
   {
    "id": "KRT",
    "type": "vor",
-   "x": 145.8,
-   "y": 511.6
+   "x": 153.6,
+   "y": 536.9
   },
   {
    "id": "SAU",
    "type": "vor",
-   "x": 182.4,
-   "y": 532.5
+   "x": 191.6,
+   "y": 555.5
   },
   {
    "id": "BAR",
    "type": "vor",
-   "x": 241.3,
-   "y": 558
+   "x": 251.9,
+   "y": 577.2
   },
   {
    "id": "GERLD",
    "type": "waypoint",
-   "x": 416.8,
-   "y": 239.2
+   "x": 407,
+   "y": 248
   },
   {
    "id": "RENDR",
    "type": "waypoint",
-   "x": 446.9,
-   "y": 247.8
+   "x": 437.6,
+   "y": 254.7
   },
   {
    "id": "JOOPY",
    "type": "waypoint",
-   "x": 519.1,
-   "y": 245
+   "x": 509.5,
+   "y": 247.3
   },
   {
    "id": "PROBE",
    "type": "waypoint",
-   "x": 475.6,
-   "y": 277
+   "x": 468.1,
+   "y": 282.1
   },
   {
    "id": "DINER",
    "type": "waypoint",
-   "x": 561.9,
-   "y": 286.4
+   "x": 554.8,
+   "y": 286
   },
   {
    "id": "WELSH",
    "type": "waypoint",
-   "x": 442.1,
-   "y": 317.5
+   "x": 437.2,
+   "y": 324.6
   },
   {
    "id": "INDEX",
    "type": "waypoint",
-   "x": 481.8,
-   "y": 346.7
+   "x": 478.6,
+   "y": 351.2
   },
   {
    "id": "GAVIN",
    "type": "waypoint",
-   "x": 574.4,
-   "y": 367
+   "x": 572.3,
+   "y": 365.6
   },
   {
    "id": "SILVA",
    "type": "waypoint",
-   "x": 657.7,
-   "y": 373.6
+   "x": 655.9,
+   "y": 367
   },
   {
    "id": "OCEEN",
    "type": "waypoint",
-   "x": 611.9,
-   "y": 396.4
+   "x": 611.6,
+   "y": 392.6
   },
   {
    "id": "ROM",
    "type": "vor",
-   "x": 601.8,
-   "y": 283.2
+   "x": 594.5,
+   "y": 280.3
   },
   {
    "id": "RES",
    "type": "vor",
-   "x": 529.9,
-   "y": 325.8
+   "x": 525.3,
+   "y": 327.4
   },
   {
    "id": "VOX",
    "type": "vor",
-   "x": 617.9,
-   "y": 328.9
+   "x": 613.4,
+   "y": 324.9
   },
   {
    "id": "ANYMS",
    "type": "waypoint",
-   "x": 629,
-   "y": 493.1
+   "x": 634.8,
+   "y": 488.1
   },
   {
    "id": "CAWZE",
    "type": "waypoint",
-   "x": 667,
-   "y": 421.4
+   "x": 668.2,
+   "y": 414.1
   },
   {
    "id": "CLR",
    "type": "vor",
-   "x": 673.8,
-   "y": 472.9
+   "x": 678.2,
+   "y": 465.1
   },
   {
    "id": "DEL",
    "type": "vor",
-   "x": 733,
-   "y": 451.7
+   "x": 736,
+   "y": 440.2
   },
   {
    "id": "DLREY",
    "type": "waypoint",
-   "x": 465,
-   "y": 534.9
+   "x": 473.7,
+   "y": 540.1
   },
   {
    "id": "DOCKR",
    "type": "waypoint",
-   "x": 468.5,
-   "y": 542.3
+   "x": 477.7,
+   "y": 547.2
   },
   {
    "id": "ALOHA",
    "type": "waypoint",
-   "x": 396.2,
-   "y": 528
+   "x": 404.7,
+   "y": 537.5
   },
   {
    "id": "QURAN",
    "type": "waypoint",
-   "x": 406,
-   "y": 553.7
+   "x": 416,
+   "y": 562.6
   },
   {
    "id": "DARRK",
    "type": "waypoint",
-   "x": 358.5,
-   "y": 511
+   "x": 365.9,
+   "y": 522.9
   },
   {
    "id": "DINTY",
    "type": "waypoint",
-   "x": 298.1,
-   "y": 498.7
+   "x": 304.9,
+   "y": 514.5
   },
   {
    "id": "RIZIN",
    "type": "waypoint",
-   "x": 293.6,
-   "y": 463.3
+   "x": 298.2,
+   "y": 479.4
   },
   {
    "id": "NKITA",
    "type": "waypoint",
-   "x": 525.1,
-   "y": 316.3
+   "x": 520,
+   "y": 318.2
   },
   {
    "id": "DAALE",
    "type": "waypoint",
-   "x": 420,
-   "y": 536.9
+   "x": 429,
+   "y": 544.9
   },
   {
    "id": "SKYDV",
    "type": "waypoint",
-   "x": 418.1,
-   "y": 355.9
+   "x": 415.6,
+   "y": 364.5
   },
   {
    "id": "MDWAY",
    "type": "waypoint",
-   "x": 485.9,
-   "y": 307.3
+   "x": 480.3,
+   "y": 311.6
   },
   {
    "id": "FABRA",
    "type": "waypoint",
-   "x": 441.3,
-   "y": 518.7
+   "x": 449.1,
+   "y": 525.4
   },
   {
    "id": "HIIPR",
    "type": "waypoint",
-   "x": 446.5,
-   "y": 520.4
+   "x": 454.3,
+   "y": 526.8
   },
   {
    "id": "SHAEF",
    "type": "waypoint",
-   "x": 417.6,
-   "y": 561
+   "x": 428.1,
+   "y": 569.1
   },
   {
    "id": "PEVEE",
    "type": "waypoint",
-   "x": 444.1,
-   "y": 612.2
+   "x": 457.7,
+   "y": 618.5
   },
   {
    "id": "HOLTZ",
    "type": "waypoint",
-   "x": 468.4,
-   "y": 613.3
+   "x": 482,
+   "y": 618.2
   },
   {
    "id": "OSHNN",
    "type": "waypoint",
-   "x": 490.8,
-   "y": 614.6
+   "x": 504.5,
+   "y": 618
   },
   {
    "id": "CAHIL",
    "type": "waypoint",
-   "x": 514,
-   "y": 559.7
+   "x": 524.1,
+   "y": 561.8
   },
   {
    "id": "ZOOMM",
    "type": "waypoint",
-   "x": 522.2,
-   "y": 536.7
+   "x": 530.9,
+   "y": 538.3
   },
   {
    "id": "SEEBY",
    "type": "waypoint",
-   "x": 541.7,
-   "y": 510
+   "x": 548.7,
+   "y": 510.4
   },
   {
    "id": "ARCUS",
    "type": "waypoint",
-   "x": 588.9,
-   "y": 437.8
+   "x": 591.3,
+   "y": 435.4
   },
   {
    "id": "GOOSE",
    "type": "waypoint",
-   "x": 682,
-   "y": 379.8
+   "x": 680.5,
+   "y": 371.7
   },
   {
    "id": "WEILR",
    "type": "waypoint",
-   "x": 474.6,
-   "y": 560.6
+   "x": 484.9,
+   "y": 565.1
   },
   {
    "id": "HAYNK",
    "type": "waypoint",
-   "x": 468.1,
-   "y": 574.8
+   "x": 479.3,
+   "y": 579.7
   },
   {
    "id": "MDWST",
    "type": "waypoint",
-   "x": 534.6,
-   "y": 522.7
+   "x": 542.5,
+   "y": 523.6
   },
   {
    "id": "MJSTY",
    "type": "waypoint",
-   "x": 557.8,
-   "y": 448.4
+   "x": 560.9,
+   "y": 448
   },
   {
    "id": "WNNDY",
    "type": "waypoint",
-   "x": 570.2,
-   "y": 422.4
+   "x": 571.7,
+   "y": 421.3
   },
   {
    "id": "GREEK",
    "type": "waypoint",
-   "x": 585.2,
-   "y": 375.6
+   "x": 583.6,
+   "y": 373.5
   },
   {
    "id": "FISSK",
    "type": "waypoint",
-   "x": 595.5,
-   "y": 466.9
+   "x": 599.7,
+   "y": 464.1
   },
   {
    "id": "COTAF",
    "type": "waypoint",
-   "x": 584.8,
-   "y": 470.8
+   "x": 589.2,
+   "y": 468.6
   },
   {
    "id": "BACHE",
    "type": "waypoint",
-   "x": 572.2,
-   "y": 475
+   "x": 576.9,
+   "y": 473.6
   },
   {
    "id": "PAYNZ",
    "type": "waypoint",
-   "x": 588,
-   "y": 466.5
+   "x": 592.1,
+   "y": 464.1
   },
   {
    "id": "DUNES",
    "type": "waypoint",
-   "x": 577.8,
-   "y": 470
+   "x": 582.2,
+   "y": 468.2
   },
   {
    "id": "ROCKY",
    "type": "waypoint",
-   "x": 592.5,
-   "y": 462.6
+   "x": 596.4,
+   "y": 459.9
   },
   {
    "id": "TORUS",
    "type": "waypoint",
-   "x": 583.1,
-   "y": 466.1
+   "x": 587.3,
+   "y": 464
   },
   {
    "id": "BRISK",
    "type": "waypoint",
-   "x": 570.2,
-   "y": 470.7
+   "x": 574.7,
+   "y": 469.4
   },
   {
    "id": "TIMSE",
    "type": "waypoint",
-   "x": 432.7,
-   "y": 523.4
+   "x": 440.8,
+   "y": 530.6
   },
   {
    "id": "FUMBL",
    "type": "waypoint",
-   "x": 469.6,
-   "y": 510.4
+   "x": 476.7,
+   "y": 515.3
   },
   {
    "id": "TURKA",
    "type": "waypoint",
-   "x": 467,
-   "y": 509.1
+   "x": 474.1,
+   "y": 514.3
   },
   {
    "id": "DIGGY",
    "type": "waypoint",
-   "x": 472.6,
-   "y": 507.2
+   "x": 479.6,
+   "y": 512
   },
   {
    "id": "OTTES",
    "type": "waypoint",
-   "x": 438.1,
-   "y": 516.2
+   "x": 445.7,
+   "y": 523.1
   },
   {
    "id": "GUPPI",
    "type": "waypoint",
-   "x": 458.7,
-   "y": 509.8
+   "x": 465.8,
+   "y": 515.5
   },
   {
    "id": "REEBO",
    "type": "waypoint",
-   "x": 468.4,
-   "y": 506.7
+   "x": 475.3,
+   "y": 511.7
   },
   {
    "id": "LAAMP",
    "type": "waypoint",
-   "x": 364.1,
-   "y": 439.1
+   "x": 367,
+   "y": 450.8
   },
   {
    "id": "POPPY",
    "type": "waypoint",
-   "x": 536.7,
-   "y": 438.2
+   "x": 539.2,
+   "y": 439.1
   },
   {
    "id": "SWEET",
    "type": "waypoint",
-   "x": 500,
-   "y": 446.6
+   "x": 503.1,
+   "y": 449.7
   },
   {
    "id": "NARXX",
    "type": "waypoint",
-   "x": 603.7,
-   "y": 331.6
+   "x": 599.4,
+   "y": 328.4
   },
   {
    "id": "BRDGE",
    "type": "waypoint",
-   "x": 397.9,
-   "y": 451.6
+   "x": 401.6,
+   "y": 461.2
   },
   {
    "id": "ALISO",
    "type": "waypoint",
-   "x": 392.7,
-   "y": 501
+   "x": 399.4,
+   "y": 510.8
   },
   {
    "id": "SURGE",
    "type": "waypoint",
-   "x": 528.5,
-   "y": 325.8
+   "x": 523.9,
+   "y": 327.4
   },
   {
    "id": "PMPKN",
    "type": "waypoint",
-   "x": 619.5,
-   "y": 537.5
+   "x": 628.1,
+   "y": 533
   }
  ],
  "airways": [
@@ -1463,23 +1463,23 @@ export default {
    "points": [
     [
      "ENDER",
-     379.9,
-     357
+     377.7,
+     367.9
     ],
     [
      "32N13W",
-     386.8,
-     319.7
+     382.2,
+     330.3
     ],
     [
      "35N12W",
-     407.2,
-     269.4
+     399.3,
+     278.8
     ],
     [
      "TUDEP",
-     422.8,
-     211.8
+     411.3,
+     220.3
     ]
    ]
   },
@@ -1488,23 +1488,23 @@ export default {
    "points": [
     [
      "ATPEV",
-     563.2,
-     479
+     568.2,
+     478.1
     ],
     [
      "24N02E",
-     635.1,
-     472.9
+     639.6,
+     467.5
     ],
     [
      "25N05E",
-     687.6,
-     459
+     691.1,
+     450.4
     ],
     [
      "26N10E",
-     774.3,
-     447.3
+     776.9,
+     433.2
     ]
    ]
   }
@@ -1515,68 +1515,68 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     529.7,
-     600.1
+     542.4,
+     601.1
     ],
     [
-     621.2,
-     563.2
+     631.4,
+     558.5
     ],
     [
-     617,
-     527.1
+     625,
+     522.7
     ],
     [
-     614.9,
-     508
+     621.6,
+     503.8
     ],
     [
-     604.6,
-     463.1
+     608.6,
+     459.7
     ],
     [
-     590.7,
-     434.9
+     592.9,
+     432.4
     ],
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ],
     [
-     444,
-     359.4
+     441.7,
+     366.3
     ],
     [
-     439.4,
-     432.2
+     441.7,
+     439.3
     ],
     [
-     425.1,
-     463
+     429.4,
+     470.8
     ],
     [
-     419.1,
-     462.6
+     423.4,
+     470.8
     ],
     [
-     411.2,
-     477.3
+     416.4,
+     486
     ],
     [
-     427,
-     484.3
+     432.6,
+     492
     ],
     [
-     418.7,
-     615.3
+     432.6,
+     623.2
     ],
     [
-     528.3,
-     622.2
+     542.4,
+     623.2
     ],
     [
-     529.7,
-     600.1
+     542.4,
+     601.1
     ]
    ]
   },
@@ -1585,52 +1585,52 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     390.2,
-     24.8
+     367,
+     35.7
     ],
     [
-     452.2,
-     28.7
+     429.2,
+     35.7
     ],
     [
-     475.8,
-     44.3
+     453.6,
+     49.8
     ],
     [
-     500.4,
-     45.8
+     478.3,
+     49.8
     ],
     [
-     530.4,
-     72.3
-    ],
-    [
-     562.1,
+     509.9,
      74.3
     ],
     [
-     588,
-     103.4
+     541.7,
+     74.3
     ],
     [
-     584.7,
-     156.8
+     569.4,
+     101.7
     ],
     [
-     557.1,
-     174.2
+     569.4,
+     155.3
     ],
     [
-     503.2,
-     183.1
+     542.9,
+     174.3
     ],
     [
-     381.9,
-     155.7
+     489.7,
+     186.6
     ],
     [
-     390.2,
-     24.8
+     367,
+     166.9
+    ],
+    [
+     367,
+     35.7
     ]
    ]
   },
@@ -1639,44 +1639,44 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     452.2,
-     28.7
+     429.2,
+     35.7
     ],
     [
-     475.8,
-     44.3
+     453.6,
+     49.8
     ],
     [
-     500.4,
-     45.8
+     478.3,
+     49.8
     ],
     [
-     530.4,
-     72.3
-    ],
-    [
-     562.1,
+     509.9,
      74.3
     ],
     [
-     539.3,
-     48.3
+     541.7,
+     74.3
     ],
     [
-     571.3,
-     36.2
+     517.2,
+     49.8
     ],
     [
-     574.4,
-     -12.8
+     548.5,
+     35.7
     ],
     [
-     455.3,
-     -20.3
+     548.5,
+     -13.4
     ],
     [
-     452.2,
-     28.7
+     429.2,
+     -13.4
+    ],
+    [
+     429.2,
+     35.7
     ]
    ]
   },
@@ -1685,52 +1685,52 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     444,
-     359.4
+     441.7,
+     366.3
     ],
     [
-     439.4,
-     432.2
+     441.7,
+     439.3
     ],
     [
-     425.1,
-     463
+     429.4,
+     470.8
     ],
     [
-     419.1,
-     462.6
+     423.4,
+     470.8
     ],
     [
-     411.2,
-     477.3
+     416.4,
+     486
     ],
     [
-     353.3,
-     502.7
+     360.2,
+     515
     ],
     [
-     315,
-     536
+     324.1,
+     550.6
     ],
     [
-     291.5,
-     510.9
+     299.1,
+     527.1
     ],
     [
-     293.3,
-     482
+     299.1,
+     498.1
     ],
     [
-     300.2,
-     373.1
+     299.1,
+     389
     ],
     [
-     360.7,
-     331.4
+     356.9,
+     343.6
     ],
     [
-     444,
-     359.4
+     441.7,
+     366.3
     ]
    ]
   },
@@ -1739,36 +1739,36 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     411.2,
-     477.3
+     416.4,
+     486
     ],
     [
-     353.3,
-     502.7
+     360.2,
+     515
     ],
     [
-     315,
-     536
+     324.1,
+     550.6
     ],
     [
-     345.1,
-     568.6
+     356.2,
+     581.2
     ],
     [
-     343.4,
-     596.2
+     356.2,
+     608.9
     ],
     [
-     419.6,
-     601
+     432.6,
+     608.9
     ],
     [
-     427,
-     484.3
+     432.6,
+     492
     ],
     [
-     411.2,
-     477.3
+     416.4,
+     486
     ]
    ]
   },
@@ -1777,52 +1777,52 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     526.2,
-     656.1
+     542.4,
+     657.2
     ],
     [
-     558.1,
-     636.6
+     573,
+     635.8
     ],
     [
-     607.1,
-     639.7
+     622.2,
+     635.8
     ],
     [
-     678.8,
-     618.5
+     692.4,
+     610.1
     ],
     [
-     714.6,
-     607.8
+     727.5,
+     597.2
     ],
     [
-     716,
-     586.9
+     727.5,
+     576.2
     ],
     [
-     735.7,
-     553
+     745,
+     541.1
     ],
     [
-     738.9,
-     502.2
+     745,
+     490.3
     ],
     [
-     617,
-     527.1
+     625,
+     522.7
     ],
     [
-     621.2,
-     563.2
+     631.4,
+     558.5
     ],
     [
-     529.7,
-     600.1
+     542.4,
+     601.1
     ],
     [
-     526.2,
-     656.1
+     542.4,
+     657.2
     ]
    ]
   },
@@ -1831,72 +1831,72 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     678.8,
-     618.5
+     692.4,
+     610.1
     ],
     [
-     714.6,
-     607.8
+     727.5,
+     597.2
     ],
     [
-     716,
-     586.9
+     727.5,
+     576.2
     ],
     [
-     735.7,
-     553
+     745,
+     541.1
     ],
     [
-     770.6,
-     555.2
+     780,
+     541.1
     ],
     [
-     768.6,
-     587.4
+     780,
+     573.4
     ],
     [
-     811.1,
-     590.1
+     822.6,
+     573.4
     ],
     [
-     808.6,
-     630.7
+     822.6,
+     614.1
     ],
     [
-     796.4,
-     676.8
+     813.4,
+     660.8
     ],
     [
-     770.3,
-     722.9
+     790.3,
+     708.5
     ],
     [
-     718,
-     719.6
+     737.9,
+     708.5
     ],
     [
-     720.2,
-     685.6
+     737.9,
+     674.5
     ],
     [
-     732.1,
-     665.3
+     748.5,
+     653.4
     ],
     [
-     733.9,
-     637.2
+     748.5,
+     625.3
     ],
     [
-     712.9,
-     635.9
+     727.5,
+     625.3
     ],
     [
-     678.3,
-     626.7
+     692.4,
+     618.3
     ],
     [
-     678.8,
-     618.5
+     692.4,
+     610.1
     ]
    ]
   },
@@ -1905,60 +1905,60 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     526.1,
-     656.1
+     542.4,
+     657.2
     ],
     [
-     524.7,
-     678.3
+     542.4,
+     679.4
     ],
     [
-     602.7,
-     712.3
+     622.3,
+     708.5
     ],
     [
-     655.1,
-     715.6
+     674.8,
+     708.5
     ],
     [
-     718,
-     719.6
+     737.9,
+     708.5
     ],
     [
-     720.2,
-     685.6
+     737.9,
+     674.5
     ],
     [
-     732.1,
-     665.3
+     748.5,
+     653.4
     ],
     [
-     733.9,
-     637.2
+     748.5,
+     625.3
     ],
     [
-     712.9,
-     635.9
+     727.5,
+     625.3
     ],
     [
-     678.3,
-     626.7
+     692.4,
+     618.3
     ],
     [
-     678.8,
-     618.5
+     692.4,
+     610.1
     ],
     [
-     607.1,
-     639.7
+     622.2,
+     635.8
     ],
     [
-     558.1,
-     636.6
+     573,
+     635.8
     ],
     [
-     526.1,
-     656.1
+     542.4,
+     657.2
     ]
    ]
   },
@@ -1967,44 +1967,44 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     604.1,
-     161.8
+     589.1,
+     159
     ],
     [
-     656.8,
-     165.1
+     641.9,
+     159
     ],
     [
-     727.7,
-     177.2
+     713.4,
+     166.6
     ],
     [
-     758.8,
-     212
+     746.6,
+     199.4
     ],
     [
-     756.7,
-     245.2
+     746.6,
+     232.7
     ],
     [
-     702.4,
-     311.6
+     696.7,
+     302.3
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     641,
-     260.3
+     632.1,
+     254.9
     ],
     [
-     599.5,
-     235.2
+     589.1,
+     232.5
     ],
     [
-     604.1,
-     161.8
+     589.1,
+     159
     ]
    ]
   },
@@ -2013,80 +2013,80 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     718.8,
-     399.5
+     718.6,
+     389
     ],
     [
-     777,
-     409.1
+     777.2,
+     394.9
     ],
     [
-     773,
+     774.4,
+     413.8
+    ],
+    [
+     774.4,
      427.7
     ],
     [
-     772.1,
-     441.7
+     809,
+     471.5
     ],
     [
-     803.9,
-     487.6
+     868.1,
+     471.5
     ],
     [
-     862.9,
-     491.3
+     906,
+     449.6
     ],
     [
-     902.1,
-     471.8
+     938,
+     417.6
     ],
     [
-     936.1,
-     441.8
+     938,
+     351.5
     ],
     [
-     940.2,
-     375.9
+     925.1,
+     298.2
     ],
     [
-     930.7,
-     321.8
+     899.4,
+     293.9
     ],
     [
-     905.3,
-     315.9
+     844.4,
+     293.9
     ],
     [
-     850.4,
-     312.5
+     821.5,
+     260.3
     ],
     [
-     829.6,
-     277.5
+     795.3,
+     277.7
     ],
     [
-     802.5,
-     293.3
+     825.7,
+     323.5
     ],
     [
-     829.9,
-     340.9
+     801.2,
+     344.6
     ],
     [
-     804.1,
-     360.3
+     794.1,
+     362.1
     ],
     [
-     796,
-     377.4
+     732.6,
+     354.9
     ],
     [
-     735,
-     366.3
-    ],
-    [
-     718.8,
-     399.5
+     718.6,
+     389
     ]
    ]
   },
@@ -2095,36 +2095,36 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     802.5,
-     293.3
+     795.3,
+     277.7
     ],
     [
-     763.9,
-     315.6
+     758.3,
+     302.4
     ],
     [
-     759.9,
-     315.4
+     754.2,
+     302.4
     ],
     [
-     735,
-     366.3
+     732.6,
+     354.9
     ],
     [
-     795.9,
-     377.4
+     794.1,
+     362.1
     ],
     [
-     804.1,
-     360.3
+     801.2,
+     344.6
     ],
     [
-     829.9,
-     340.9
+     825.7,
+     323.5
     ],
     [
-     802.5,
-     293.3
+     795.3,
+     277.7
     ]
    ]
   },
@@ -2133,40 +2133,40 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     300.1,
-     373.1
+     299,
+     389
     ],
     [
-     257.8,
-     373.7
+     256.8,
+     392.2
     ],
     [
-     124,
-     365.2
+     122.7,
+     392.2
     ],
     [
-     125.4,
-     342.6
+     122.7,
+     369.6
     ],
     [
-     124.6,
-     288.5
+     118.5,
+     315.6
     ],
     [
-     164.8,
-     255.9
+     156.6,
+     280.5
     ],
     [
-     247.7,
-     247
+     238.8,
+     266.4
     ],
     [
-     301.1,
-     278.1
+     294,
+     294.1
     ],
     [
-     300.1,
-     373.1
+     299,
+     389
     ]
    ]
   },
@@ -2175,36 +2175,36 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     315,
-     536
+     324.1,
+     550.6
     ],
     [
-     246,
-     596
+     259,
+     614.9
     ],
     [
-     105,
-     587.1
+     117.7,
+     614.9
     ],
     [
-     114.2,
-     441.4
+     117.7,
+     468.8
     ],
     [
-     217.2,
-     447.8
+     221,
+     468.8
     ],
     [
-     293.3,
-     482
+     299.1,
+     498.1
     ],
     [
-     291.5,
-     510.9
+     299.1,
+     527.1
     ],
     [
-     315,
-     536
+     324.1,
+     550.6
     ]
    ]
   },
@@ -2213,36 +2213,36 @@ export default {
    "kind": "TMA",
    "points": [
     [
-     517.8,
-     252.5
+     508.7,
+     254.9
     ],
     [
-     641,
-     260.3
+     632.1,
+     254.9
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     606.3,
-     405.5
+     606.6,
+     402
     ],
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ],
     [
-     444,
-     359.4
+     441.7,
+     366.3
     ],
     [
-     449.4,
-     274
+     441.7,
+     280.7
     ],
     [
-     517.8,
-     252.5
+     508.7,
+     254.9
     ]
    ]
   },
@@ -2251,60 +2251,60 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     517.6,
-     792.4
+     542.4,
+     793.8
     ],
     [
-     529.7,
-     600.1
+     542.4,
+     601.1
     ],
     [
-     621.2,
-     563.2
+     631.4,
+     558.5
     ],
     [
-     617,
+     625,
+     522.7
+    ],
+    [
+     621.6,
+     503.8
+    ],
+    [
+     608.6,
+     459.7
+    ],
+    [
+     592.9,
+     432.4
+    ],
+    [
+     575.3,
+     402.1
+    ],
+    [
+     356.9,
+     343.6
+    ],
+    [
+     299.1,
+     389
+    ],
+    [
+     299.1,
      527.1
     ],
     [
-     614.9,
-     508
+     356.2,
+     581.2
     ],
     [
-     604.6,
-     463.1
+     356.2,
+     793.8
     ],
     [
-     590.7,
-     434.9
-    ],
-    [
-     575,
-     403.6
-    ],
-    [
-     360.7,
-     331.4
-    ],
-    [
-     300.2,
-     373.1
-    ],
-    [
-     291.5,
-     510.9
-    ],
-    [
-     345.1,
-     568.6
-    ],
-    [
-     331.8,
-     780.7
-    ],
-    [
-     517.6,
-     792.4
+     542.4,
+     793.8
     ]
    ]
   },
@@ -2313,52 +2313,52 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     617,
-     527.1
+     625,
+     522.7
     ],
     [
-     614.9,
-     508
+     621.6,
+     503.8
     ],
     [
-     604.6,
-     463.1
+     608.6,
+     459.7
     ],
     [
-     590.7,
-     434.9
+     592.9,
+     432.4
     ],
     [
-     684.4,
-     409.3
+     684.8,
+     401
     ],
     [
-     718.8,
-     399.5
+     718.6,
+     389
     ],
     [
-     777,
-     409.1
+     777.2,
+     394.9
     ],
     [
-     773,
-     427.7
+     774.4,
+     413.8
     ],
     [
-     756.5,
-     443
+     758.9,
+     430.1
     ],
     [
-     756.7,
-     488
+     761.9,
+     474.9
     ],
     [
-     765.9,
-     496.8
+     771.6,
+     483.2
     ],
     [
-     617,
-     527.1
+     625,
+     522.7
     ]
    ]
   },
@@ -2367,40 +2367,40 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     93.3,
-     422.7
+     95.7,
+     451.5
     ],
     [
-     199.8,
-     440.1
+     203.1,
+     462.1
     ],
     [
-     293.3,
-     482
+     299.1,
+     498.1
     ],
     [
-     300.2,
-     373.1
+     299.1,
+     389
     ],
     [
-     291.5,
-     510.9
+     299.1,
+     527.1
     ],
     [
-     345.1,
-     568.6
+     356.2,
+     581.2
     ],
     [
-     331.8,
-     780.7
+     356.2,
+     793.8
     ],
     [
-     71.8,
-     764.3
+     95.7,
+     793.8
     ],
     [
-     93.3,
-     422.7
+     95.7,
+     451.5
     ]
    ]
   },
@@ -2409,40 +2409,40 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     517.6,
-     792.4
+     542.4,
+     793.8
     ],
     [
-     529.7,
-     600.1
+     542.4,
+     601.1
     ],
     [
-     621.2,
-     563.2
+     631.4,
+     558.5
     ],
     [
-     617,
-     527.1
+     625,
+     522.7
     ],
     [
-     765.9,
-     496.8
+     771.6,
+     483.2
     ],
     [
-     794.4,
-     524.7
+     801.8,
+     509.2
     ],
     [
-     928.7,
-     559.4
+     938,
+     535.4
     ],
     [
-     912.4,
-     817.3
+     938,
+     793.8
     ],
     [
-     517.6,
-     792.4
+     542.4,
+     793.8
     ]
    ]
   },
@@ -2451,40 +2451,40 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     93.3,
-     422.7
+     95.7,
+     451.5
     ],
     [
-     199.8,
-     440.1
+     203.1,
+     462.1
     ],
     [
-     293.3,
-     482
+     299.1,
+     498.1
     ],
     [
-     300.2,
-     373.1
+     299.1,
+     389
     ],
     [
-     360.7,
-     331.4
+     356.9,
+     343.6
     ],
     [
-     394.8,
-     254
+     386.1,
+     264.2
     ],
     [
-     316.7,
-     -64.2
+     288.1,
+     -48.5
     ],
     [
-     124.8,
-     -76.3
+     95.7,
+     -48.5
     ],
     [
-     93.3,
-     422.7
+     95.7,
+     451.5
     ]
    ]
   },
@@ -2493,28 +2493,28 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     617.2,
-     -45.3
+     589.1,
+     -48.5
     ],
     [
-     599.5,
-     235.2
+     589.1,
+     232.5
     ],
     [
-     408.5,
-     223.2
+     397.7,
+     232.5
     ],
     [
-     394.8,
-     254
+     386.1,
+     264.2
     ],
     [
-     316.7,
-     -64.2
+     288.1,
+     -48.5
     ],
     [
-     617.2,
-     -45.3
+     589.1,
+     -48.5
     ]
    ]
   },
@@ -2523,48 +2523,48 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     947.6,
-     259
+     938,
+     234.4
     ],
     [
-     891.1,
-     254.7
+     881.4,
+     233.7
     ],
     [
-     829.7,
-     277.6
-    ],
-    [
-     763.9,
-     315.6
-    ],
-    [
-     702.5,
-     311.6
-    ],
-    [
-     660.2,
-     329.4
-    ],
-    [
-     641,
+     821.5,
      260.3
     ],
     [
-     599.5,
-     235.2
+     758.3,
+     302.4
     ],
     [
-     617.2,
-     -45.3
+     696.7,
+     302.3
     ],
     [
-     965.4,
-     -23.3
+     655.6,
+     322.7
     ],
     [
-     947.6,
-     259
+     632.1,
+     254.9
+    ],
+    [
+     589.1,
+     232.5
+    ],
+    [
+     589.1,
+     -48.5
+    ],
+    [
+     938,
+     -48.5
+    ],
+    [
+     938,
+     234.4
     ]
    ]
   },
@@ -2573,72 +2573,72 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     947.6,
-     259
+     938,
+     234.4
     ],
     [
-     891.1,
-     254.7
+     881.4,
+     233.7
     ],
     [
-     829.7,
-     277.6
+     821.5,
+     260.3
     ],
     [
-     763.9,
-     315.6
+     758.3,
+     302.4
     ],
     [
-     702.5,
-     311.6
+     696.7,
+     302.3
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     699,
-     366.5
+     696.7,
+     357.3
     ],
     [
-     684.4,
-     409.3
+     684.8,
+     401
     ],
     [
-     718.8,
-     399.5
+     718.6,
+     389
     ],
     [
-     777,
-     409.1
+     777.2,
+     394.9
     ],
     [
-     773,
-     427.7
+     774.4,
+     413.8
     ],
     [
-     756.5,
-     443
+     758.9,
+     430.1
     ],
     [
-     756.7,
-     488
+     761.9,
+     474.9
     ],
     [
-     765.9,
-     496.8
+     771.6,
+     483.2
     ],
     [
-     794.4,
-     524.7
+     801.8,
+     509.2
     ],
     [
-     928.7,
-     559.4
+     938,
+     535.4
     ],
     [
-     947.6,
-     259
+     938,
+     234.4
     ]
    ]
   },
@@ -2647,48 +2647,48 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     590.7,
-     434.9
+     592.9,
+     432.4
     ],
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ],
     [
-     360.7,
-     331.4
+     356.9,
+     343.6
     ],
     [
-     394.8,
-     254
+     386.1,
+     264.2
     ],
     [
-     408.5,
-     223.2
+     397.7,
+     232.5
     ],
     [
-     599.5,
-     235.2
+     589.1,
+     232.5
     ],
     [
-     641,
-     260.3
+     632.1,
+     254.9
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     699,
-     366.5
+     696.7,
+     357.3
     ],
     [
-     684.4,
-     409.3
+     684.8,
+     401
     ],
     [
-     590.7,
-     434.9
+     592.9,
+     432.4
     ]
    ]
   },
@@ -2697,40 +2697,40 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ],
     [
-     360.7,
-     331.4
+     356.9,
+     343.6
     ],
     [
-     394.8,
-     254
+     386.1,
+     264.2
     ],
     [
-     408.5,
-     223.2
+     397.7,
+     232.5
     ],
     [
-     599.5,
-     235.2
+     589.1,
+     232.5
     ],
     [
-     641,
-     260.3
+     632.1,
+     254.9
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     606.3,
-     405.5
+     606.6,
+     402
     ],
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ]
    ]
   },
@@ -2739,68 +2739,68 @@ export default {
    "kind": "FIR",
    "points": [
     [
-     617,
-     527.1
+     625,
+     522.7
     ],
     [
-     614.9,
-     508
+     621.6,
+     503.8
     ],
     [
-     604.6,
-     463.1
+     608.6,
+     459.7
     ],
     [
-     590.7,
-     434.9
+     592.9,
+     432.4
     ],
     [
-     575,
-     403.6
+     575.3,
+     402.1
     ],
     [
-     606.3,
-     405.5
+     606.6,
+     402
     ],
     [
-     660.2,
-     329.4
+     655.6,
+     322.7
     ],
     [
-     699,
-     366.5
+     696.7,
+     357.3
     ],
     [
-     684.4,
-     409.3
+     684.8,
+     401
     ],
     [
-     718.8,
-     399.5
+     718.6,
+     389
     ],
     [
-     777,
-     409.1
+     777.2,
+     394.9
     ],
     [
-     773,
-     427.7
+     774.4,
+     413.8
     ],
     [
-     756.5,
-     443
+     758.9,
+     430.1
     ],
     [
-     756.7,
-     488
+     761.9,
+     474.9
     ],
     [
-     765.9,
-     496.8
+     771.6,
+     483.2
     ],
     [
-     617,
-     527.1
+     625,
+     522.7
     ]
    ]
   }
