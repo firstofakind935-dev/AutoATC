@@ -33,5 +33,4 @@ button, select, input { font-family: inherit; }
 /* scope readout strip under the header */
 #aa-status { position: fixed; top: 62px; right: 12px; z-index: 3500; display: flex; gap: 14px; padding: 4px 10px; background: var(--scope-panel); border: 1px solid var(--scope-line); border-radius: 6px; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--scope-green); letter-spacing: .04em; pointer-events: none; }
 #aa-status span b { color: var(--scope-dim); font-weight: 400; margin-right: 4px; }
-#aa-sweep { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 5; }
 header button, header a { white-space: nowrap; }
