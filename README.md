@@ -571,6 +571,23 @@ shows a simple marker + label at each airport's verified anchor instead,
 and the detailed diagram is still available in the Ground View side
 panel.
 
+**Waypoints, airways and airspace come from 24SPY.** The radar's
+waypoints (196, including every one 24Radar had), the NATA/NATJ oceanic
+airways and the FIR/TMA outlines come from
+[24SPY](https://github.com/tiaguinho2009/24SPY) by **Tiago Murteira
+(tiaguinho_2009)**, used under its licence: attribution required and
+**non-commercial use only** - so this radar must not be sold or used to
+earn money. They're in `365radar/src/data/spy24Data.js`, a modified copy
+(converted to this map's pixel space by a fitted transform - median error
+about 0.4 nm - see the file's header and `24SPY-NOTICE.md`, which holds the
+full licence). It's kept apart from `fixes.js`/`worldMapAnchors.js`
+because those derive from 24Radar (GPLv3) and the 24SPY licence isn't
+GPL-compatible. The credit also shows in the radar's footer. Regenerate
+it from a clone of the 24SPY repo with
+`node scripts/import-24spy.js [path-to-clone]` (24SPY's repo is being
+archived, so the file in this repo is the copy to keep). The toolbar has
+**Draw Fixes**, **FIR / TMA Outlines** and **Airways** toggles for them.
+
 Reachable two ways:
 
 ```

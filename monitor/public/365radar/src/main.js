@@ -8,6 +8,10 @@ import GroundOffsets from "../src/data/GroundOffsets.js";
 import WorldMapAnchorsData from "../src/data/worldMapAnchors.js";
 import WorldMapIslands from "../src/data/worldMapIslands.js";
 import fixes from '../src/data/fixes.js';
+// Waypoints, airways and FIR/TMA outlines from 24SPY (Tiago Murteira, non-
+// commercial licence - see src/data/24SPY-NOTICE.md), already converted into
+// this radar's world-map.png pixel space by scripts/import-24spy.js.
+import spyData from '../src/data/spy24Data.js';
 import airportInfo from '../src/data/AirportInfo.js';
 
 // --- AutoATC data adapter -------------------------------------------------
@@ -383,6 +387,21 @@ function updateOverlay(id, info) {
 
 
 
+// AutoATC fix: this site's global CSS rule `svg { width: 100%; height: 100% }`
+// (public/style.css) beats a nested <svg>'s width/height attributes, so each
+// fix icon filled the whole map instead of being fixSize wide. Setting the
+// size as an inline style as well (CSS px are user units inside an <svg>)
+// is what actually takes effect.
+function setFixIconSize(icon, size) {
+    icon.setAttribute('width', size);
+    icon.setAttribute('height', size);
+    icon.style.width = `${size}px`;
+    icon.style.height = `${size}px`;
+}
+
+// Icon type per identifier from the old fixes.js list (VORTAC / VOR-DME).
+const fixTypeById = new Map(fixes.map(f => [f.identifier, f.type]));
+
 function drawFixes() {
     //delete existing
     document.querySelectorAll('.fix-svg').forEach(el => el.remove());
@@ -390,25 +409,25 @@ function drawFixes() {
     const svg = document.getElementById('fix-container');
     let svgContent = '';
 
-    fixes.forEach(fix => {
-        // Translate coordinates
-        const x = fix.x / 33.4 + 20;
-        const y = fix.y / 33.4 + 12;
+    // Waypoints come from 24SPY, in world-map pixel space - the same space
+    // as the aircraft and airport markers, so they line up with them. (The
+    // old fixes.js list is in 24Radar's coast.svg coordinates, which no
+    // longer match the map; it's only used now for each fix's icon type.)
+    spyData.waypoints.forEach(wpt => {
+        const x = wpt.x;
+        const y = wpt.y;
 
-        let icon;
-
-        if (fix.type == 'waypoint') {
-            icon = fixSVG;
-        } else if (fix.type == 'vortac') {
+        const oldType = fixTypeById.get(wpt.id);
+        let icon = fixSVG;
+        if (oldType === 'vortac' || (!oldType && wpt.type === 'vor')) {
             icon = vortacSVG;
-        } else if (fix.type == 'vordme') {
+        } else if (oldType === 'vordme') {
             icon = vordmeSVG;
         }
-        // Your custom SVG for a fix (as a string), using a <g> with transform
         const customSVG = `
             <g transform="translate(${x - fixSize}, ${y - fixSize})" class="fix-svg">
                 ${icon}
-                <text x="${2 * currentZoom}" y="${-2 * currentZoom}" fill="white" font-size="${fixFontSize * currentZoom}">${fix.identifier}</text>
+                <text x="${2 * currentZoom}" y="${-2 * currentZoom}" fill="white" font-size="${fixFontSize * currentZoom}">${wpt.id}</text>
             </g>
         `;
 
@@ -420,8 +439,7 @@ function drawFixes() {
 
     fixSize = parseFloat(fixSizeInput.value) / 10;
     document.querySelectorAll('.fix-svg').forEach(el => {
-        el.querySelector('svg').setAttribute('width', fixSize * currentZoom);
-        el.querySelector('svg').setAttribute('height', fixSize * currentZoom);
+        setFixIconSize(el.querySelector('svg'), fixSize * currentZoom);
     });
 }
 
@@ -766,8 +784,7 @@ fixFontSizeInput.addEventListener('change', () => {
 fixSizeInput.addEventListener('change', () => {
     fixSize = parseFloat(fixSizeInput.value) / 10;
     document.querySelectorAll('.fix-svg').forEach(el => {
-        el.querySelector('svg').setAttribute('width', fixSize * currentZoom);
-        el.querySelector('svg').setAttribute('height', fixSize * currentZoom);
+        setFixIconSize(el.querySelector('svg'), fixSize * currentZoom);
     });
 });
 
@@ -878,6 +895,73 @@ document.getElementById('min-tool').addEventListener('click', () => {
     } else if (backButton) {
         backButton.style.top = '10px';
     }
+});
+
+// ---- 24SPY airspace outlines (FIR / TMA) and airways -------------------------
+// Lines use non-scaling strokes, so they stay the same thickness at any zoom.
+
+function svgEl(name, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+}
+
+function drawSpyAreas() {
+    const layer = document.getElementById('spy-areas');
+    if (!layer) return;
+    layer.replaceChildren();
+    for (const area of spyData.areas) {
+        const isFir = area.kind === 'FIR';
+        layer.appendChild(svgEl('polyline', {
+            points: area.points.map(p => p.join(',')).join(' '),
+            fill: 'none',
+            stroke: isFir ? '#6b7680' : '#3f9d6d',
+            'stroke-width': isFir ? 1.2 : 1.6,
+            'stroke-dasharray': isFir ? '6 4' : 'none',
+            'vector-effect': 'non-scaling-stroke',
+        }));
+        const xs = area.points.map(p => p[0]);
+        const ys = area.points.map(p => p[1]);
+        const label = svgEl('text', {
+            x: (Math.min(...xs) + Math.max(...xs)) / 2,
+            y: (Math.min(...ys) + Math.max(...ys)) / 2,
+            fill: isFir ? '#8a949c' : '#58c08b',
+            'font-size': 9,
+            'font-family': 'monospace',
+            'text-anchor': 'middle',
+        });
+        label.textContent = area.name;
+        layer.appendChild(label);
+    }
+}
+
+function drawSpyAirways() {
+    const layer = document.getElementById('spy-airways');
+    if (!layer) return;
+    layer.replaceChildren();
+    for (const airway of spyData.airways) {
+        layer.appendChild(svgEl('polyline', {
+            points: airway.points.map(p => `${p[1]},${p[2]}`).join(' '),
+            fill: 'none',
+            stroke: '#8fb4d9',
+            'stroke-width': 1.4,
+            'stroke-dasharray': '2 3',
+            'vector-effect': 'non-scaling-stroke',
+        }));
+        const mid = airway.points[Math.floor(airway.points.length / 2)];
+        const label = svgEl('text', { x: mid[1] + 4, y: mid[2] - 4, fill: '#8fb4d9', 'font-size': 9, 'font-family': 'monospace' });
+        label.textContent = airway.name;
+        layer.appendChild(label);
+    }
+}
+
+document.getElementById('spy-areas-check').addEventListener('change', (e) => {
+    if (e.target.checked) drawSpyAreas();
+    else document.getElementById('spy-areas')?.replaceChildren();
+});
+document.getElementById('spy-airways-check').addEventListener('change', (e) => {
+    if (e.target.checked) drawSpyAirways();
+    else document.getElementById('spy-airways')?.replaceChildren();
 });
 
 document.getElementById('fix-button').addEventListener('click', () => {
@@ -3129,8 +3213,7 @@ function fetchMapLayer(container) {
                 currentZoom *= delta;
 
                 document.querySelectorAll('.fix-svg').forEach(el => {
-                    el.querySelector('svg').setAttribute('width', fixSize * currentZoom);
-                    el.querySelector('svg').setAttribute('height', fixSize * currentZoom);
+                    setFixIconSize(el.querySelector('svg'), fixSize * currentZoom);
                     el.querySelector('text').setAttribute('font-size', fixFontSize * currentZoom);
                 });
                 //console.log(currentZoom);
@@ -3155,6 +3238,15 @@ function fetchMapLayer(container) {
                     svg.appendChild(boundaries);
 
                     runOnMapLoad();
+
+                    // 24SPY airspace outlines and airways: two layers under
+                    // everything else, filled in by the toolbar toggles.
+                    for (const id of ['spy-areas', 'spy-airways']) {
+                        const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        layer.setAttribute('id', id);
+                        layer.style.pointerEvents = 'none';
+                        svg.appendChild(layer);
+                    }
 
                     //add vector layer
                     const vectorLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
