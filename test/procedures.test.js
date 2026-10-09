@@ -60,3 +60,22 @@ test('a plan without procedures is unchanged', () => {
   const plan = buildPlan({ ...base, origin: 'IRFD', destination: 'ITKO' });
   assert.equal(plan.procedures, undefined);
 });
+
+test('Perth and Tokyo procedures load, match runways, and stay near their airport', () => {
+  for (const [icao, sids] of [['IPPH', [['CAMEL2', '11'], ['NARXX1', '33'], ['DINER2', '29']]], ['ITKO', [['HONDA1', '02'], ['ONDER1', '13'], ['LETSE1', '2']]]]) {
+    const airport = findAirport(icao);
+    for (const [name, rwy] of sids) {
+      const sid = expandSid(icao, name, rwy);
+      assert.ok(sid.fixes.length >= 1, `${icao} ${name}`);
+      for (const f of sid.fixes) assert.ok(distanceNm(airport, f) < 25, `${icao} ${name} ${f.ident} ${distanceNm(airport, f).toFixed(1)} nm`);
+    }
+  }
+  assert.equal(expandSid('ITKO', 'HONDA1', '02').runway, '2', '02 and 2 are the same runway');
+});
+
+test('a Tokyo arrival with an approach builds a plan, flagging fixes with no position', () => {
+  const plan = buildPlan({ ...base, origin: 'IPPH', destination: 'ITKO', star: 'PIPER1', arrRunway: '13', approach: 'ILS OR LOC RWY 13', approachIaf: 'SHIBA' });
+  const ids = plan.waypoints.map((w) => w.ident);
+  assert.ok(ids.includes('PIPER') && ids.includes('ASTRO') && ids.includes('SHIBA'));
+  assert.ok(plan.warnings.some((w) => /APPROACH.*LORRY, LYCOS/.test(w)));
+});

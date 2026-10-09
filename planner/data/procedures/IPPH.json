@@ -1,0 +1,66 @@
+{
+  "icao": "IPPH",
+  "source": "AeroNav charts for Perth Intl (aeronav.space), read from the charts' text. Fix names only; positions come from 24SPY via scripts/build-navdata.js. Fixes missing from 24SPY are listed in the plan response as unplaced.",
+  "note": "Runway keys can be lists (\"11,15\"). A leg {fix, min/max/at} is an altitude restriction in feet. 'vectors' means the chart ends the procedure with radar vectors rather than a fix.",
+  "sids": [
+    { "name": "CAMEL2", "title": "CAMEL 2 RNAV DEPARTURE", "chart": "10-3", "exit": "CAMEL",
+      "runways": {
+        "11": [{ "fix": "NOONU" }, { "fix": "TALIS", "at": 1500 }, { "fix": "CAMEL", "min": 3000 }],
+        "29": [{ "fix": "STRAX" }, { "fix": "CAMEL", "min": 3000 }],
+        "33": [{ "fix": "TINDR" }, { "fix": "STRAX" }, { "fix": "CAMEL", "min": 3000 }]
+      },
+      "initial": { "11": "Climb on heading 111 to intercept course 090 to NOONU.", "29": "Climb on heading 291 to 600, then climbing left turn direct STRAX.", "33": "Climb on heading 331 to intercept course 241 to TINDR." } },
+    { "name": "DINER2", "title": "DINER 2 RNAV DEPARTURE", "chart": "10-3A", "exit": "DINER",
+      "runways": {
+        "11": [{ "fix": "NOONU" }, { "fix": "TALIS", "at": 1500 }, { "fix": "ANTNY" }, { "fix": "ROMNS" }, { "fix": "DINER", "min": 3000 }],
+        "29": [{ "fix": "STRAX" }, { "fix": "ROMNS" }, { "fix": "DINER", "min": 3000 }],
+        "33": [{ "fix": "TINDR" }, { "fix": "STRAX" }, { "fix": "ROMNS" }, { "fix": "DINER", "min": 3000 }]
+      } },
+    { "name": "NARXX1", "title": "NARXX 1 RNAV DEPARTURE", "chart": "10-3B", "exit": "NARXX",
+      "runways": {
+        "11": [{ "fix": "NOONU" }, { "fix": "TALIS", "at": 1500 }, { "fix": "ANTNY" }, { "fix": "NARXX", "min": 3000 }],
+        "29": [{ "fix": "STRAX" }, { "fix": "NARXX", "min": 3000 }],
+        "33": [{ "fix": "TINDR" }, { "fix": "STRAX" }, { "fix": "NARXX", "min": 3000 }]
+      } },
+    { "name": "PER2", "title": "PERTH 2 DEPARTURE", "chart": "10-3C", "exit": "PER",
+      "runways": { "11,15,29,33": [{ "fix": "PER" }] },
+      "initial": { "11,15,29,33": "Climb on the runway's published climb (island / orange / haven climbs) then radar vectors to the assigned route; maintain 3000." } }
+  ],
+  "stars": [
+    { "name": "HONDA2", "title": "HONDA 2 RNAV ARRIVAL", "chart": "10-2", "entries": ["HONDA"],
+      "runways": {
+        "11": [{ "fix": "HONDA" }, { "fix": "HAIGH" }],
+        "15": [{ "fix": "HONDA" }, { "fix": "KOORI" }],
+        "29": [{ "fix": "HONDA" }, { "fix": "KOORI" }, "vectors"],
+        "33": [{ "fix": "HONDA" }, { "fix": "HAIGH" }, { "fix": "STRAX" }, "vectors"]
+      } },
+    { "name": "SISTA2", "title": "SISTA 2 RNAV ARRIVAL", "chart": "10-2A", "entries": ["TALIS", "DINER", "SILVA"],
+      "runways": { "29,33": [{ "fix": "SISTA" }, "vectors"] },
+      "notes": "Expect radar vectors to NOONU for the VOR approach, or an earlier RNAV approach at TALIS if traffic allows." },
+    { "name": "TALIS2", "title": "TALIS 2 RNAV ARRIVAL", "chart": "10-2B", "entries": ["TALIS", "SILVA"],
+      "runways": {
+        "11": [{ "fix": "TALIS" }, { "fix": "ORG", "at": 2500 }, { "fix": "STRAX" }, "vectors"],
+        "15": [{ "fix": "TALIS" }, { "fix": "ORG", "at": 2500 }, { "fix": "STRAX" }, { "fix": "TINDR", "min": 2500 }, "vectors"]
+      } }
+  ],
+  "approaches": [
+    { "name": "ILS OR LOC RWY 11", "chart": "11-1", "type": "ILS", "runway": "11", "finalCourseDeg": 111,
+      "iaf": ["STRAX", "TINDR"], "legs": [{ "fix": "HAVEN" }],
+      "missed": "Climb runway heading to 500, climbing left turn to 1500 direct PER VOR and hold." },
+    { "name": "LDA Z RWY 29", "chart": "11-3", "type": "LDA", "runway": "29", "finalCourseDeg": 290,
+      "iaf": ["NOONU"], "legs": [{ "fix": "PH008" }, { "fix": "PH007" }, { "fix": "PH006" }],
+      "missed": "Turn direct PER VOR and climb to 1000, then PER R240 outbound to 1500, at 8.8 DME turn direct ORG VOR and hold.",
+      "notes": "The PHxxx fixes are IPTH DME fixes on the chart and have no 24SPY position." },
+    { "name": "LDA Y RWY 29", "chart": "11-4", "type": "LDA", "runway": "29", "finalCourseDeg": 290,
+      "iaf": ["ORG", "BTM"], "legs": [{ "fix": "PH009" }, { "fix": "PH008" }, { "fix": "PH007" }, { "fix": "PH006" }],
+      "missed": "Turn direct PER VOR and climb to 1000, then PER R240 outbound to 1500, at 8.8 DME turn direct ORG VOR and hold." },
+    { "name": "RNAV (RNP) Z RWY 29", "chart": "12-20", "type": "RNP", "runway": "29", "finalCourseDeg": 290,
+      "iaf": ["TALIS"], "legs": [{ "fix": "PH535" }, { "fix": "PH560" }, { "fix": "PH555" }],
+      "missed": "Climb on heading 290 to 500, then climbing left turn to 2000 direct PER VOR and hold.",
+      "notes": "RNP AR - authorization required. RF legs." },
+    { "name": "GLS RWY 33", "chart": "12-40", "type": "GLS", "runway": "33", "finalCourseDeg": 331,
+      "iaf": ["BONZA", "JAKER"], "legs": [{ "fix": "QUAKE" }, { "fix": "STOPR" }],
+      "missed": "Climb runway heading until 500, then continue climb to 2000 direct BTM and hold.",
+      "notes": "How the initial fixes join QUAKE/STOPR is not captured." }
+  ]
+}

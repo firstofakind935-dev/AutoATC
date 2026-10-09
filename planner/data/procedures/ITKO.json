@@ -1,0 +1,66 @@
+{
+  "icao": "ITKO",
+  "source": "AeroNav charts for Tokyo Intl (aeronav.space), read from the charts' text. Fix names only; positions come from 24SPY via scripts/build-navdata.js. Fixes missing from 24SPY are listed in the plan response as unplaced.",
+  "note": "Runway keys can be lists (\"20,31\"); runway 02 is written 2 in the navdata and is matched either way. 'vectors' means the chart ends the procedure with radar vectors rather than a fix.",
+  "sids": [
+    { "name": "ASTRO1", "title": "ASTRO 1 RNAV DEPARTURE", "chart": "10-3", "exit": "ASTRO",
+      "runways": { "2": [{ "fix": "ASTRO" }], "31": [{ "fix": "ASTRO" }] },
+      "initial": { "2": "Climb to above 2000 on heading 020, then expect radar vectors to ASTRO.", "31": "Climb to above 1000 on heading 310, then climbing left heading 180 direct ASTRO." },
+      "notes": "Maintain 2000 until the filed altitude is assigned. The BLANK transition is for Grindavik arrivals only." },
+    { "name": "HONDA1", "title": "HONDA 1 RNAV DEPARTURE", "chart": "10-3A", "exit": "HONDA",
+      "runways": {
+        "2": [{ "fix": "LETSE" }, { "fix": "HONDA", "at": 2000 }],
+        "20": [{ "fix": "HONDA", "at": 2000 }]
+      },
+      "initial": { "2": "Climb on heading 020 to intercept course 060 to LETSE below 200 kt, then track 110 to HONDA.", "20": "Climb to 500 on heading 200, then climbing left turn heading 065 direct HONDA." },
+      "notes": "Contains sharp turns." },
+    { "name": "LETSE1", "title": "LETSE 1 RNAV DEPARTURE", "chart": "10-3B", "exit": "KNIFE",
+      "runways": { "2": [{ "fix": "LETSE" }, { "fix": "HONDA" }, { "fix": "KNIFE", "at": 2000 }] },
+      "initial": { "2": "Climb on heading 020 to intercept course 060 to LETSE below 200 kt." },
+      "notes": "Caution for runway 13 departures if that runway is in use." },
+    { "name": "ONDER1", "title": "ONDER 1 RNAV DEPARTURE", "chart": "10-3C", "exit": "ONDER",
+      "runways": { "13": [{ "fix": "ONDER" }], "20": [{ "fix": "ONDER" }] },
+      "initial": { "13": "Climb on heading 130 to intercept course 175 to ONDER.", "20": "Climb on heading 200 to intercept course 145 to ONDER." } },
+    { "name": "TOKYO1", "title": "TOKYO 1 DEPARTURE", "chart": "10-3D", "exit": "HME",
+      "runways": { "2,13,20,31": ["vectors"] },
+      "initial": { "2": "Climb on heading 020.", "13": "Climb on heading 130.", "20": "Climb on heading 200.", "31": "Climb on heading 310." },
+      "notes": "Expect radar vectors to the filed route." }
+  ],
+  "stars": [
+    { "name": "GULEG1", "title": "GULEG 1 RNAV ARRIVAL", "chart": "10-2", "entries": ["GULEG", "BLANK", "EURAD"],
+      "runways": {
+        "13": [{ "fix": "GULEG" }, { "fix": "SHIBA" }],
+        "20,31": [{ "fix": "GULEG" }, { "fix": "PIPER" }, { "fix": "ONDER" }, "vectors"]
+      } },
+    { "name": "ISLAND2", "title": "ISLAND 2 RNAV ARRIVAL", "chart": "10-2A", "entries": ["KNIFE"],
+      "runways": {
+        "13": [{ "fix": "KNIFE" }, { "fix": "ONDER" }, { "fix": "PIPER" }, { "fix": "ASTRO" }, "vectors"],
+        "20": [{ "fix": "KNIFE" }, "vectors"]
+      } },
+    { "name": "KNIFE2", "title": "KNIFE 2 RNAV ARRIVAL", "chart": "10-2B", "entries": ["ONDER"],
+      "runways": { "20": [{ "fix": "ONDER" }, { "fix": "KNIFE" }, "vectors"] },
+      "notes": "The chart also shows PROBE and DINER transitions; only the ONDER route is encoded." },
+    { "name": "PIPER1", "title": "PIPER 1 RNAV ARRIVAL", "chart": "10-2C", "entries": ["PIPER", "DINER", "RENDR"],
+      "runways": { "13": [{ "fix": "PIPER" }, { "fix": "ASTRO" }, "vectors"] } }
+  ],
+  "approaches": [
+    { "name": "ILS OR LOC RWY 13", "chart": "11-1", "type": "ILS", "runway": "13", "finalCourseDeg": 127,
+      "iaf": ["SHIBA"], "legs": [{ "fix": "LORRY" }, { "fix": "LYCOS" }],
+      "missed": "Climb to 700 on heading 127, then climbing right turn to 2000 and outbound on HME R210 to PIPER and hold." },
+    { "name": "ILS OR LOC RWY 20", "chart": "11-2", "type": "ILS", "runway": "20", "finalCourseDeg": 200,
+      "iaf": ["KAIHO"], "legs": [{ "fix": "LUBBY" }, { "fix": "OPARL" }],
+      "missed": "Climb to 1500 and outbound on HME R165 to URAGA, then hold." },
+    { "name": "ILS OR LOC RWY 31", "chart": "11-3", "type": "ILS", "runway": "31", "finalCourseDeg": 307,
+      "iaf": ["KNIFE", "TINDR"], "legs": [{ "fix": "CECIL" }, { "fix": "CREST" }],
+      "missed": "Climb to 700 on heading 307, then climbing left turn to 2000 and outbound on HME R215 to PIPER and hold." },
+    { "name": "RNAV (RNP) RWY 13", "chart": "12-1", "type": "RNP", "runway": "13", "finalCourseDeg": 127,
+      "iaf": ["SHIBA"], "legs": [{ "fix": "LYCEE" }, { "fix": "LAUDA" }],
+      "missed": "Climb to 700, then climbing right turn to 2000 direct ONDER and hold.", "notes": "RNP 0.20 - authorization required." },
+    { "name": "RNAV (RNP) RWY 20", "chart": "12-2", "type": "RNP", "runway": "20", "finalCourseDeg": 200,
+      "iaf": ["KAIHO"], "legs": [{ "fix": "MOCHA" }, { "fix": "LATTE" }],
+      "missed": "Climb to 700, then climbing left turn to 2000 direct KAIHO and hold.", "notes": "RNP 0.20 - authorization required. Which of MOCHA / LATTE is the IF and which the FAP is inferred from the RWY 13 chart." },
+    { "name": "GLS RWY 31", "chart": "12-40", "type": "GLS", "runway": "31", "finalCourseDeg": 307,
+      "iaf": ["KNIFE", "TINDR"], "legs": [{ "fix": "CECIL" }, { "fix": "CREST" }],
+      "missed": "Climb runway heading to 2000 until 2 DME HME, then the 2 DME arc counter-clockwise to HME R215 outbound to PIPER and hold." }
+  ]
+}

@@ -871,13 +871,13 @@ in `planner/lib/aircraft.js` - game estimates, not real dispatch figures.
 
 ### Procedures (SIDs, STARs, approaches)
 
-`planner/data/procedures/IRFD.json` holds Greater Rockford's 7 SIDs, 9 STARs
-and 7 approaches, read from the AeroNav charts (fix names, runways, altitude
+`planner/data/procedures/` holds Greater Rockford's (IRFD) 7 SIDs, 9 STARs
+and 7 approaches, Perth's (IPPH) 4 / 3 / 5 and Tokyo's (ITKO) 5 / 4 / 6, read from the AeroNav charts (fix names, runways, altitude
 restrictions). Waypoint positions come from 24SPY (Tiago Murteira,
 non-commercial, see `monitor/public/365radar/src/data/24SPY-NOTICE.md`) -
 `scripts/build-navdata.js` places each fix relative to the airports around it
 so it matches how pilots are tracked. The plan form has runway / SID / STAR /
-approach pickers for IRFD; the chosen procedures are spliced into the route
+approach pickers for those airports; the chosen procedures are spliced into the route
 (altitude restrictions ride along as `altMinFt` / `altMaxFt` / `altAtFt` on
 the waypoints) and the plan lists any fix the charts use that 24SPY lacks as
 skipped. `GET /api/procedures/:icao` lists what's available. Other airports

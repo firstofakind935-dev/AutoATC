@@ -28,14 +28,16 @@ for (const data of files.values()) {
 }
 const lookup = (ident) => findFix(ident) || derived.get(ident) || null;
 
-const splitKey = (key) => key.split(',').map((s) => s.trim().toUpperCase());
+// Runway designators are compared without a leading zero (02 = 2) and in capitals.
+const normRunway = (r) => String(r || '').trim().toUpperCase().replace(/^0+(?=\d)/, '');
+const splitKey = (key) => key.split(',').map(normRunway);
 
 function runwaysOf(map) {
   return [...new Set(Object.keys(map || {}).flatMap(splitKey))].sort();
 }
 
 function legsFor(map, runway) {
-  const want = String(runway || '').toUpperCase();
+  const want = normRunway(runway);
   for (const [key, legs] of Object.entries(map || {})) if (splitKey(key).includes(want)) return legs;
   return null;
 }
@@ -77,8 +79,8 @@ function expandSid(icao, name, runway) {
   if (!sid) throw procedureError(`No SID "${name}" for ${icao}`);
   const legs = legsFor(sid.runways, runway);
   if (!legs) throw procedureError(`SID ${sid.name} is not published for runway ${runway || '(none given)'} - it has ${runwaysOf(sid.runways).join(', ')}`);
-  const initial = Object.entries(sid.initial || {}).find(([k]) => splitKey(k).includes(String(runway).toUpperCase()));
-  return { name: sid.name, runway: String(runway).toUpperCase(), ...resolveLegs(legs), initial: initial ? initial[1] : null };
+  const initial = Object.entries(sid.initial || {}).find(([k]) => splitKey(k).includes(normRunway(runway)));
+  return { name: sid.name, runway: normRunway(runway), ...resolveLegs(legs), initial: initial ? initial[1] : null };
 }
 
 /** Arrival fixes for runway `runway`, joined from `entry` (one of the chart's entry fixes) if given. */
@@ -95,7 +97,7 @@ function expandStar(icao, name, runway, entry) {
   const entryFix = first && !resolved.fixes.some((f) => f.ident === first) ? lookup(first) : null;
   if (entryFix) resolved.fixes.unshift({ ident: entryFix.ident, type: entryFix.type, lat: entryFix.lat, lon: entryFix.lon });
   else if (first && !resolved.fixes.some((f) => f.ident === first) && !resolved.unplaced.includes(first)) resolved.unplaced.unshift(first);
-  return { name: star.name, runway: String(runway).toUpperCase(), entry: first || null, ...resolved };
+  return { name: star.name, runway: normRunway(runway), entry: first || null, ...resolved };
 }
 
 /** Approach fixes: the chosen initial approach fix, then the final fixes. */
