@@ -4,8 +4,15 @@ const fs = require('fs');
 const { fork } = require('child_process');
 
 const { loadAirports } = require('./lib/airports');
+const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
+const { createMouseSteer } = require('./lib/mouseSteer');
+const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
+const { createRelayClient, newRelayCredentials } = require('./lib/relayClient');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
+// The FMS window keeps its own settings file, so it and the control window
+// never overwrite each other's settings with a stale copy.
+const FMS_SETTINGS_PATH = path.join(app.getPath('userData'), 'fms-settings.json');
 
 function loadSettings() {
   try {
@@ -15,9 +22,17 @@ function loadSettings() {
   }
 }
 
-function saveSettings(settings) {
-  fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true });
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
+function saveSettings(settings, file = SETTINGS_PATH) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2));
+}
+
+function loadFmsSettings() {
+  try {
+    return JSON.parse(fs.readFileSync(FMS_SETTINGS_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
 }
 
 const PRELOAD_WEB_PREFS = {
@@ -34,6 +49,67 @@ const PRELOAD_WEB_PREFS = {
 
 let controlWindow = null;
 let overlayWindow = null;
+let fmsWindow = null;
+let inputSender = null; // created on the first autopilot input
+let mouseSteer = null;
+let remoteServer = null; // phone/tablet control on this Wi-Fi - see lib/remoteServer.js
+let relayClient = null; // phone/tablet control from anywhere - see lib/relayClient.js
+
+function sendToFms(channel, payload) {
+  if (fmsWindow) fmsWindow.webContents.send(channel, payload);
+}
+
+function getRelayClient() {
+  if (!relayClient) {
+    relayClient = createRelayClient({
+      onInput: (message) => sendToFms('remote-input', message),
+      onClients: (count) => sendToFms('remote-clients', count),
+      onStatus: (state, detail) => sendToFms('relay-status', { state, detail }),
+    });
+  }
+  return relayClient;
+}
+
+function getRemoteServer() {
+  if (!remoteServer) {
+    remoteServer = createRemoteServer({
+      // Inputs from a phone go to the FMS window, exactly like its own clicks.
+      onInput: (message) => {
+        if (fmsWindow) fmsWindow.webContents.send('remote-input', message);
+      },
+      onClients: (count) => {
+        if (fmsWindow) fmsWindow.webContents.send('remote-clients', count);
+      },
+    });
+  }
+  return remoteServer;
+}
+
+function getInputSender() {
+  if (!inputSender) inputSender = createInputSender();
+  return inputSender;
+}
+
+// Electron works in DIPs; the OS input APIs on Windows want physical pixels.
+function toPhysical(point) {
+  return process.platform === 'win32' ? screen.dipToScreenPoint(point) : point;
+}
+
+function getMouseSteer() {
+  if (!mouseSteer) {
+    mouseSteer = createMouseSteer({
+      moveMouse: (x, y) => {
+        const p = toPhysical({ x: Math.round(x), y: Math.round(y) });
+        getInputSender().moveMouse(p.x, p.y);
+      },
+      getCursor: () => screen.getCursorScreenPoint(),
+      now: () => Date.now(),
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (t) => clearTimeout(t),
+    });
+  }
+  return mouseSteer;
+}
 
 function createControlWindow() {
   controlWindow = new BrowserWindow({
@@ -47,6 +123,37 @@ function createControlWindow() {
   controlWindow.on('closed', () => {
     controlWindow = null;
     if (overlayWindow) overlayWindow.close();
+    if (fmsWindow) fmsWindow.close();
+  });
+}
+
+// The MCDU/FMS + autopilot panel (renderer/fms.html). Opened from the
+// control window; receives each tracking update relayed below.
+function openFmsWindow() {
+  if (fmsWindow) {
+    fmsWindow.show();
+    fmsWindow.focus();
+    return;
+  }
+  fmsWindow = new BrowserWindow({
+    width: 900,
+    height: 820,
+    minWidth: 760,
+    minHeight: 640,
+    alwaysOnTop: true,
+    title: 'FMS / Autopilot',
+    backgroundColor: '#15181d',
+    webPreferences: PRELOAD_WEB_PREFS,
+  });
+  fmsWindow.loadFile(path.join(__dirname, 'renderer', 'fms.html'));
+  if (process.env.COMPANION_DEVTOOLS) fmsWindow.webContents.openDevTools({ mode: 'detach' });
+  fmsWindow.on('closed', () => {
+    fmsWindow = null;
+    // Never leave a key held down with nothing left to release it.
+    if (inputSender) inputSender.releaseAll();
+    // Remote control drives the FMS window - nothing to control without it.
+    if (remoteServer) remoteServer.stop();
+    if (relayClient) relayClient.stop();
   });
 }
 
@@ -129,6 +236,53 @@ ipcMain.handle('get-screen-sources', async () => {
 });
 
 ipcMain.handle('load-settings', () => loadSettings());
+ipcMain.handle('load-fms-settings', () => loadFmsSettings());
+ipcMain.handle('save-fms-settings', (event, settings) => {
+  saveSettings(settings, FMS_SETTINGS_PATH);
+  return true;
+});
+
+ipcMain.handle('open-fms', () => openFmsWindow());
+// Each tracking update from the control window, for the FMS/autopilot.
+ipcMain.on('telemetry', (event, sample) => {
+  if (fmsWindow) fmsWindow.webContents.send('telemetry', sample);
+});
+
+ipcMain.handle('autopilot-key-names', () => KEY_NAMES);
+ipcMain.handle('autopilot-press', (event, { key, ms }) => {
+  getInputSender().press(key, ms);
+});
+// Pitch/bank nudges via the mouse cursor - see lib/mouseSteer.js.
+// Resolves {override: true} if the pilot has moved the mouse.
+ipcMain.handle('autopilot-steer', (event, command) => getMouseSteer().steer(command));
+ipcMain.handle('autopilot-recenter', (event, center) => {
+  if (mouseSteer) mouseSteer.recenter(center);
+});
+// Where the cursor is now - the FMS settings capture the straight-and-level
+// center point with this.
+ipcMain.handle('autopilot-cursor', () => screen.getCursorScreenPoint());
+// Phone / tablet remote control.
+ipcMain.on('fms-view', (event, view) => {
+  if (remoteServer && remoteServer.running) remoteServer.publish(view);
+  if (relayClient) relayClient.publish(view);
+});
+ipcMain.handle('relay-start', (event, options) => getRelayClient().start(options));
+ipcMain.handle('relay-stop', () => relayClient && relayClient.stop());
+ipcMain.handle('relay-new-credentials', () => newRelayCredentials());
+ipcMain.handle('remote-start', (event, { port, code }) => getRemoteServer().start({ port, pairingCode: code }));
+ipcMain.handle('remote-stop', () => remoteServer && remoteServer.stop());
+ipcMain.handle('remote-set-code', (event, code) => remoteServer && remoteServer.setCode(code));
+ipcMain.handle('remote-new-code', () => newPairingCode());
+
+ipcMain.handle('autopilot-release-all', () => {
+  if (inputSender) inputSender.releaseAll();
+});
+// While the autopilot is flying, the FMS window stops taking keyboard focus
+// (mouse clicks still work), so clicking its buttons doesn't pull focus
+// away from the game the autopilot is pressing keys in.
+ipcMain.handle('fms-set-passthrough', (event, on) => {
+  if (fmsWindow) fmsWindow.setFocusable(!on);
+});
 ipcMain.handle('save-settings', (event, settings) => {
   saveSettings(settings);
   return true;
@@ -180,6 +334,16 @@ ipcMain.handle('recognize-text', (event, image) => {
   return new Promise((resolve, reject) => {
     ocrPending.set(id, { resolve, reject });
     proc.send({ id, image });
+  });
+});
+
+// Digit-only variant for the heading tape - see lib/ocr.js's getHeadingWorker().
+ipcMain.handle('recognize-heading-text', (event, image) => {
+  const proc = getOcrProcess();
+  const id = ocrRequestId++;
+  return new Promise((resolve, reject) => {
+    ocrPending.set(id, { resolve, reject });
+    proc.send({ id, image, kind: 'heading' });
   });
 });
 

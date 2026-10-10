@@ -8,6 +8,7 @@
     "start": "electron ."
   },
   "dependencies": {
+    "koffi": "3.2.1",
     "tesseract.js": "^5.1.1"
   },
   "devDependencies": {

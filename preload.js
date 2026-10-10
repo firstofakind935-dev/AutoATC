@@ -24,7 +24,7 @@ const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
 // actual tesseract.js call has to run in the main process instead, since
 // preload's V8 context can't create the worker_threads Worker it needs.
 const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
-const { uploadPosition } = tryRequire('uploader', './lib/uploader');
+const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
@@ -51,6 +51,33 @@ contextBridge.exposeInMainWorld('companion', {
   getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
   focusControlWindow: () => ipcRenderer.invoke('focus-control'),
 
+  // FMS / autopilot window (renderer/fms.html)
+  openFms: () => ipcRenderer.invoke('open-fms'),
+  sendTelemetry: (sample) => ipcRenderer.send('telemetry', sample),
+  onTelemetry: (callback) => ipcRenderer.on('telemetry', (event, sample) => callback(sample)),
+  loadFmsSettings: () => ipcRenderer.invoke('load-fms-settings'),
+  saveFmsSettings: (settings) => ipcRenderer.invoke('save-fms-settings', settings),
+  autopilotKeyNames: () => ipcRenderer.invoke('autopilot-key-names'),
+  autopilotPress: (key, ms) => ipcRenderer.invoke('autopilot-press', { key, ms }),
+  autopilotReleaseAll: () => ipcRenderer.invoke('autopilot-release-all'),
+  autopilotSteer: (command) => ipcRenderer.invoke('autopilot-steer', command),
+  autopilotRecenter: (center) => ipcRenderer.invoke('autopilot-recenter', center),
+  autopilotCursor: () => ipcRenderer.invoke('autopilot-cursor'),
+  // Phone / tablet remote control (lib/remoteServer.js)
+  publishFmsView: (view) => ipcRenderer.send('fms-view', view),
+  onRemoteInput: (callback) => ipcRenderer.on('remote-input', (event, message) => callback(message)),
+  onRemoteClients: (callback) => ipcRenderer.on('remote-clients', (event, count) => callback(count)),
+  remoteStart: (options) => ipcRenderer.invoke('remote-start', options),
+  remoteStop: () => ipcRenderer.invoke('remote-stop'),
+  remoteSetCode: (code) => ipcRenderer.invoke('remote-set-code', code),
+  remoteNewCode: () => ipcRenderer.invoke('remote-new-code'),
+  // ...and from anywhere, through the flight planner's relay (lib/relayClient.js)
+  relayStart: (options) => ipcRenderer.invoke('relay-start', options),
+  relayStop: () => ipcRenderer.invoke('relay-stop'),
+  relayNewCredentials: () => ipcRenderer.invoke('relay-new-credentials'),
+  onRelayStatus: (callback) => ipcRenderer.on('relay-status', (event, status) => callback(status)),
+  setFmsPassthrough: (on) => ipcRenderer.invoke('fms-set-passthrough', on),
+
   // Control window <-> overlay window messaging, relayed through main
   // (they're separate renderer processes and can't reach each other
   // directly).
@@ -68,8 +95,11 @@ contextBridge.exposeInMainWorld('companion', {
   // Runs in the main process (see main.js's 'recognize-text' handler) -
   // not called directly here, unlike the other lib/*.js functions above.
   recognizeText: (image) => ipcRenderer.invoke('recognize-text', image),
+  // Digit-only OCR pass for the heading tape - see lib/ocr.js's getHeadingWorker().
+  recognizeHeadingText: (image) => ipcRenderer.invoke('recognize-heading-text', image),
   parseFlightInfo,
   parseHeadingTape,
   uploadPosition,
+  tuneFrequency,
   pollCpdlc,
 });

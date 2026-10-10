@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#15181d"/>
+  <rect x="96" y="80" width="320" height="230" rx="18" fill="#050607" stroke="#3b4048" stroke-width="12"/>
+  <text x="256" y="168" font-family="Consolas, monospace" font-size="72" font-weight="700" fill="#3cf06e" text-anchor="middle">FMS</text>
+  <rect x="140" y="210" width="232" height="16" rx="8" fill="#3fd2ff"/>
+  <rect x="140" y="246" width="160" height="16" rx="8" fill="#ff5cf2"/>
+  <g fill="#3b4048">
+    <rect x="96" y="340" width="90" height="40" rx="8"/><rect x="211" y="340" width="90" height="40" rx="8"/><rect x="326" y="340" width="90" height="40" rx="8"/>
+    <rect x="96" y="400" width="90" height="40" rx="8"/><rect x="211" y="400" width="90" height="40" rx="8"/><rect x="326" y="400" width="90" height="40" rx="8"/>
+  </g>
+</svg>

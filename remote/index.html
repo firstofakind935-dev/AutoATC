@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15181d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AutoATC FMS">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>AutoATC FMS</title>
+<link rel="stylesheet" href="fms.css">
+<link rel="stylesheet" href="remote.css">
+</head>
+<body data-skin="boeing">
+
+<section id="pairing" class="pairing">
+  <h1>AutoATC FMS</h1>
+  <p class="dim">Enter the code shown in the companion app<br>(FMS window → Settings → Phone / tablet control).</p>
+  <form id="pair-form">
+    <input id="pair-code" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" maxlength="16" placeholder="CODE" aria-label="Connection code">
+    <button class="btn" type="submit">Connect</button>
+  </form>
+  <p id="pair-error" class="error" role="alert"></p>
+</section>
+
+<div id="cockpit" hidden>
+  <header class="topbar">
+    <span id="trk-status" class="pill">NO TRACKING DATA</span>
+    <span id="conn" class="pill">CONNECTING</span>
+    <button id="live-toggle" class="pill-btn dry" title="Tap to switch the autopilot to DRY RUN">DRY RUN</button>
+  </header>
+  <div id="fma" class="fma"></div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="mcdu">MCDU</button>
+    <button class="tab" data-tab="ap">Autopilot</button>
+    <button class="tab" data-tab="status">Status</button>
+  </nav>
+
+  <div class="panes">
+    <section class="pane" data-pane="ap">
+      <div id="ap-panel" class="ap-panel"></div>
+    </section>
+
+    <section class="pane active" data-pane="mcdu">
+      <div id="mcdu" class="mcdu">
+        <div class="annun" id="annun" hidden></div>
+        <div class="mcdu-screen-row">
+          <div class="lsk-col" id="lsk-left"></div>
+          <div class="screen" id="screen"></div>
+          <div class="lsk-col" id="lsk-right"></div>
+        </div>
+        <div class="fkeys" id="fkeys"></div>
+        <div class="keypad">
+          <div class="keypad-left">
+            <div class="navkeys" id="navkeys" hidden></div>
+            <div class="numeric" id="numeric"></div>
+          </div>
+          <div class="alpha" id="alpha"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" data-pane="status">
+      <div class="side-card">
+        <h3>Aircraft</h3>
+        <dl class="readout" id="readout"></dl>
+        <h3>Autopilot inputs <span class="dim" id="input-mode"></span></h3>
+        <ol class="log" id="ap-log"></ol>
+        <p class="dim small">Going LIVE is only possible on the PC. From here you can always switch back to DRY RUN.</p>
+        <button id="unpair" class="btn secondary small">Disconnect this device</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="fmsView.js"></script>
+<script src="remote.js"></script>
+</body>
+</html>

@@ -73,6 +73,7 @@ async function saveSettingsFromForm() {
 }
 
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
+document.getElementById('openFmsBtn').addEventListener('click', () => window.companion.openFms());
 
 // ---------- Display picker + overlay ----------
 
@@ -120,6 +121,7 @@ async function showOverlay() {
 
   sendRegionsToOverlay();
   syncBar();
+  pushRadioStateToOverlay();
 }
 
 async function hideOverlay() {
@@ -240,6 +242,19 @@ window.companion.onOverlayResult(async (result) => {
   if (result.tag === 'bar-toggle-tracking') {
     if (trackingTimer) stopTracking();
     else startTracking();
+    return;
+  }
+
+  if (result.tag === 'radio-action') {
+    const { action, radio, value } = result;
+    if (action === 'step') stepRadio(radio, value);
+    else if (action === 'setStandby') setRadioStandby(radio, value);
+    else if (action === 'swap') swapRadio(radio);
+    else if (action === 'power') toggleRadioPower(radio);
+    else if (action === 'call') selectPrimaryRadio(radio);
+    else if (action === 'squawkStep') stepSquawk(value);
+    else if (action === 'squawkSet') setSquawk(value);
+    else if (action === 'ident') pressIdent();
   }
 });
 
@@ -297,15 +312,64 @@ function log(message) {
   el.textContent = `${line}\n${el.textContent}`.slice(0, 8000);
 }
 
-async function ocrRegion(sourceCanvas, region) {
+// UPSCALE: a tightly-drawn region (e.g. just the heading tape's boxed
+// number) can be a tiny handful of pixels tall, and Tesseract confuses
+// similarly-shaped digits (9/7 confirmed via a real capture: a correct
+// "194" read at one tick, then "174" moments later at the same real
+// heading) more often the fewer pixels there are to define each glyph's
+// shape. Drawing into a larger canvas lets the browser's own image
+// smoothing do the upscaling before OCR sees it.
+const UPSCALE = 3;
+
+// Forces the crop to pure black/white before handing it to Tesseract, which
+// is tuned for dark text on a light background - the heading tape is the
+// opposite (a light boxed number on a dark pill), and leaving that
+// anti-aliased gradient in place was still producing a misread (194 read as
+// 174, consistently, even with a digit-only whitelist, upscaling, and a
+// single-line page-segmentation mode) so it's the glyph edges themselves,
+// not just resolution or character-class ambiguity, that needed cleaning
+// up. Auto-detects polarity from the crop's own average brightness rather
+// than assuming light-on-dark, so it isn't a guess.
+function binarize(canvas) {
+  const ctx = canvas.getContext('2d');
+  const { width, height } = canvas;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const { data } = imageData;
+
+  const pixelCount = width * height;
+  const gray = new Float32Array(pixelCount);
+  let sum = 0;
+  for (let i = 0; i < pixelCount; i++) {
+    const o = i * 4;
+    const luminance = 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
+    gray[i] = luminance;
+    sum += luminance;
+  }
+  const mean = sum / pixelCount;
+  const backgroundIsDark = mean < 128;
+
+  for (let i = 0; i < pixelCount; i++) {
+    const isForeground = backgroundIsDark ? gray[i] > mean : gray[i] < mean;
+    const v = isForeground ? 0 : 255;
+    const o = i * 4;
+    data[o] = v;
+    data[o + 1] = v;
+    data[o + 2] = v;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+async function ocrRegion(sourceCanvas, region, { heading = false } = {}) {
   if (!region) return '';
   const cropped = document.createElement('canvas');
-  cropped.width = Math.max(1, Math.round(region.w));
-  cropped.height = Math.max(1, Math.round(region.h));
+  cropped.width = Math.max(1, Math.round(region.w * UPSCALE));
+  cropped.height = Math.max(1, Math.round(region.h * UPSCALE));
   cropped
     .getContext('2d')
     .drawImage(sourceCanvas, region.x, region.y, region.w, region.h, 0, 0, cropped.width, cropped.height);
-  return window.companion.recognizeText(cropped.toDataURL('image/png'));
+  if (heading) binarize(cropped);
+  const dataUrl = cropped.toDataURL('image/png');
+  return heading ? window.companion.recognizeHeadingText(dataUrl) : window.companion.recognizeText(dataUrl);
 }
 
 // The overlay's boxes are in the display's logical (CSS) pixel space; the
@@ -344,7 +408,7 @@ async function trackTick() {
   frame.getContext('2d').drawImage(captureVideo, 0, 0);
 
   const [headingText, infoText] = await Promise.all([
-    ocrRegion(frame, toVideoRect(settings.regions.heading)),
+    ocrRegion(frame, toVideoRect(settings.regions.heading), { heading: true }),
     ocrRegion(frame, toVideoRect(settings.regions.info)),
   ]);
 
@@ -358,6 +422,17 @@ async function trackTick() {
 
   const now = Date.now();
   currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts, atMs: now });
+
+  // For the FMS/autopilot window, if it's open (relayed by main.js).
+  window.companion.sendTelemetry({
+    lat: currentFix.world.lat,
+    lon: currentFix.world.lon,
+    headingDeg: heading,
+    speedKt: info.speedKts,
+    altFt: info.altitudeFt,
+    aircraftType: info.aircraftType,
+    atMs: now,
+  });
 
   const nearest = await window.companion.nearestAirport(airports, currentFix.world);
   const fixAgeSec = (now - lastCorrectionAtMs) / 1000;
@@ -375,10 +450,18 @@ async function trackTick() {
       altitudeFt: info.altitudeFt,
       headingDeg: heading,
       fixAgeSec,
+      squawk,
+      identing: identUntilMs > Date.now(),
     });
     log(
       `Uploaded: ${nearest.distanceNm.toFixed(1)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}, ` +
-        `${info.altitudeFt}ft, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)`
+        `${info.altitudeFt != null ? `${info.altitudeFt}ft` : 'alt ?'}, hdg ${heading}°, ${info.speedKts}kts, ${info.aircraftType || '?'} (fix age ${Math.round(fixAgeSec)}s)` +
+        // Temporary diagnostic (see companion/lib/ocr.js's parseHeadingTape) -
+        // a "successful" parse can still read the wrong number if the raw OCR
+        // text isn't what's expected, and that raw text was previously only
+        // logged on an outright failed parse. Remove once heading-reading
+        // accuracy is confirmed solid.
+        ` [heading OCR: "${headingText.replace(/\n/g, ' ')}"]`
     );
   } catch (err) {
     log(`Upload failed: ${err.message}`);
@@ -408,6 +491,159 @@ function stopTracking() {
 
 document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
 document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
+
+// ---------- Radio panel (VHF1/2/3 + squawk) ----------
+// The actual panel UI now lives on the overlay window (its "Radios" bar
+// button - see overlay.js), since that's what stays up while flying; this
+// window just owns the state and the logic, same as it always has -
+// pushRadioStateToOverlay() below sends a fresh snapshot for the overlay to
+// render, and the onOverlayResult 'radio-action' case (see further down)
+// receives back whatever the pilot did to a knob/swap/power/ident control.
+
+// Fresh defaults every launch, matching a real aircraft's radios coming up
+// on standby rather than remembering last session's frequencies:
+//  - VHF1: the default primary radio, both active/standby default to
+//    122.800, starts switched on.
+//  - VHF2: same defaults, but starts inop until the pilot switches it on.
+//  - VHF3: dedicated to DATA, defaults to guard 121.500 on both sides.
+// All three are switchable (VHF1/VHF3 just default to on, VHF2 to off). A
+// switchable radio's knob stays turnable even while inop (same as a real
+// radio lets you dial in a standby frequency before powering it on) - only
+// its swap button is gated by inop, since that's what actually puts a
+// frequency into use. Each radio has its own Call button (a real
+// transmit-select action, not derived from power state) - only the
+// currently-selected one's active frequency actually moves you on swap;
+// see selectPrimaryRadio() below.
+const FREQ_MIN = 118.0;
+const FREQ_MAX = 136.975;
+const FREQ_STEP = 0.025;
+
+const radios = {
+  vhf1: { label: 'VHF1', active: 122.8, standby: 122.8, inop: false, switchable: true },
+  vhf2: { label: 'VHF2', active: 122.8, standby: 122.8, inop: true, switchable: true },
+  vhf3: { label: 'VHF3 (DATA)', active: 121.5, standby: 121.5, inop: false, switchable: true },
+};
+
+// Real transponder codes are 4 octal digits (0-7 only, no 8/9) - 2000
+// matches this fleet's VFR conspicuity default (see IZOL/Rockford's own
+// real-world-style ICAO conventions elsewhere in this repo).
+let squawk = '2000';
+
+// Real-world "squawk ident" (a transponder button that makes an aircraft's
+// blip flash on radar for positive identification, held for ~18s) - see
+// systemPrompt.js for when ATC is expected to ask for it. There's no radar
+// here to actually flash, so this just rides along on the next upload(s) as
+// position.identing (see positions.js's formatRow) for the LLM to see.
+const IDENT_DURATION_MS = 18_000;
+let identUntilMs = 0;
+
+function formatFreq(value) {
+  return value.toFixed(3);
+}
+
+function clampFreq(value) {
+  return Math.min(FREQ_MAX, Math.max(FREQ_MIN, Math.round(value / FREQ_STEP) * FREQ_STEP));
+}
+
+// Which radio is "what you're currently talking on" - explicitly chosen by
+// the pilot via each radio's Call button (see selectPrimaryRadio() below),
+// not derived from power state. Starts on VHF1, same as the radios
+// themselves default to it being the only one switched on.
+let primaryRadio = 'vhf1';
+
+function pushRadioStateToOverlay() {
+  window.companion.sendToOverlay({
+    type: 'radio-state',
+    radios,
+    squawk,
+    identing: identUntilMs > Date.now(),
+    primaryRadio,
+  });
+}
+
+function stepRadio(key, direction) {
+  const radio = radios[key];
+  radio.standby = clampFreq(radio.standby + direction * FREQ_STEP);
+  pushRadioStateToOverlay();
+}
+
+function setRadioStandby(key, value) {
+  if (!Number.isFinite(value)) return;
+  radios[key].standby = clampFreq(value);
+  pushRadioStateToOverlay();
+}
+
+function toggleRadioPower(key) {
+  radios[key].inop = !radios[key].inop;
+  pushRadioStateToOverlay();
+}
+
+/**
+ * Explicitly makes `key` the radio "you're currently talking on" - a real
+ * radio-select action, same as a pilot pressing a transmit-select button,
+ * not something inferred from power state. Refuses to select an inop
+ * radio (nothing to talk on if it's off), same as its swap button already
+ * being disabled in that state.
+ */
+function selectPrimaryRadio(key) {
+  if (radios[key].inop) return;
+  primaryRadio = key;
+  pushRadioStateToOverlay();
+}
+
+/**
+ * Flips standby into active - the classic flip-flop swap. Only the current
+ * primary radio (see selectPrimaryRadio() above) also fires an actual tune
+ * request to Bot Manager.
+ */
+async function swapRadio(key) {
+  const radio = radios[key];
+  [radio.active, radio.standby] = [radio.standby, radio.active];
+  pushRadioStateToOverlay();
+
+  if (key !== primaryRadio) return;
+
+  if (!settings.monitorUrl || !settings.callsign) {
+    log('Cannot tune - set your callsign and Monitor URL first.');
+    return;
+  }
+
+  const frequency = formatFreq(radio.active);
+  try {
+    await window.companion.tuneFrequency({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      frequency,
+    });
+    log(`Tuned ${frequency}.`);
+  } catch (err) {
+    log(`Tune to ${frequency} failed: ${err.message}`);
+  }
+}
+
+function stepSquawk(direction) {
+  // Treated as a plain base-8 number for stepping (0000 <-> 7777 wraps),
+  // simpler than modeling the two physical dual-concentric knobs a real
+  // transponder has for the digit pairs.
+  const asOctal = parseInt(squawk, 8);
+  const next = (asOctal + direction + 0o10000) % 0o10000;
+  squawk = next.toString(8).padStart(4, '0');
+  pushRadioStateToOverlay();
+}
+
+function setSquawk(value) {
+  if (!/^[0-7]{4}$/.test(value)) return;
+  squawk = value;
+  pushRadioStateToOverlay();
+}
+
+function pressIdent() {
+  identUntilMs = Date.now() + IDENT_DURATION_MS;
+  log('Squawked ident.');
+  pushRadioStateToOverlay();
+  setTimeout(pushRadioStateToOverlay, IDENT_DURATION_MS + 100);
+}
 
 // ---------- Init ----------
 

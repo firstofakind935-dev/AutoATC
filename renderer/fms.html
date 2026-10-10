@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src *; style-src 'self' 'unsafe-inline'">
+<title>FMS / Autopilot</title>
+<link rel="stylesheet" href="fms.css">
+</head>
+<body>
+<header class="topbar">
+  <label class="field">FMS
+    <select id="skin-select">
+      <option value="auto">Auto (from aircraft)</option>
+      <option value="airbus">Airbus MCDU</option>
+      <option value="a350">A350/A380 MFD</option>
+      <option value="boeing">Boeing CDU</option>
+      <option value="boeing787">Boeing 787 CDU</option>
+      <option value="a220">A220 FMS</option>
+      <option value="embraer">Embraer MCDU</option>
+      <option value="generic">Default FMS</option>
+    </select>
+  </label>
+  <label class="field">Panel
+    <select id="panel-select">
+      <option value="auto">Boeing MCP / Airbus FCU (jets)</option>
+      <option value="native">Simple (per FMS style)</option>
+    </select>
+  </label>
+  <span id="trk-status" class="pill">NO TRACKING DATA</span>
+  <button id="live-toggle" class="pill-btn dry">DRY RUN</button>
+  <button id="settings-toggle" class="pill-btn">Settings</button>
+</header>
+
+<div id="fma" class="fma" aria-label="Flight mode annunciator"></div>
+<div id="ap-panel" class="ap-panel" aria-label="Autopilot panel"></div>
+
+<main class="lower">
+  <div id="mcdu" class="mcdu">
+    <div class="annun" id="annun" hidden></div>
+    <div class="mcdu-screen-row">
+      <div class="lsk-col" id="lsk-left"></div>
+      <div class="screen" id="screen" aria-live="polite"></div>
+      <div class="lsk-col" id="lsk-right"></div>
+    </div>
+    <div class="fkeys" id="fkeys"></div>
+    <div class="keypad">
+      <div class="keypad-left">
+        <div class="navkeys" id="navkeys" hidden></div>
+        <div class="numeric" id="numeric"></div>
+      </div>
+      <div class="alpha" id="alpha"></div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <section id="status-panel" class="side-card">
+      <h3>Aircraft</h3>
+      <dl class="readout" id="readout"></dl>
+      <h3>Autopilot inputs <span class="dim" id="input-mode"></span></h3>
+      <ol class="log" id="ap-log"></ol>
+    </section>
+
+    <section id="settings-panel" class="side-card" hidden>
+      <h3>Settings</h3>
+      <label class="field">Flight planner URL
+        <input id="planner-url" placeholder="https://your-planner.up.railway.app">
+      </label>
+      <h3>Game controls</h3>
+      <label class="field">Pitch &amp; bank control
+        <select id="steering">
+          <option value="mouse">Mouse (PTFS)</option>
+          <option value="keys">Keys</option>
+        </select>
+      </label>
+      <div id="mouse-settings">
+        <p class="dim small">PTFS steers toward your mouse cursor. The autopilot nudges the cursor off center and back. Moving the mouse yourself disconnects the autopilot.</p>
+        <div class="row tight">
+          <button id="capture-center" class="btn secondary small">Capture center</button>
+          <span class="dim small">Center: <span id="mouse-center">not set</span></span>
+        </div>
+        <p class="dim small">Click Capture, then within 3 s hold your mouse over PTFS where the aircraft flies straight and level (usually the middle of the game).</p>
+        <label class="field">Nudge distance (px) <input id="deflection" type="number" min="10" max="1000" step="10"></label>
+        <label class="check"><input id="invert-pitch" type="checkbox"> Invert pitch (mouse up = nose down)</label>
+        <div class="row tight">
+          <button id="test-bank-right" class="btn secondary small">Test bank right</button>
+          <button id="test-nose-up" class="btn secondary small">Test nose up</button>
+        </div>
+      </div>
+      <p class="dim small">Keys the autopilot presses. Test presses the key 3 s later, so click into PTFS and watch the aircraft.</p>
+      <div id="keymap"></div>
+      <h3>Autopilot tuning</h3>
+      <p class="dim small">How hard the autopilot corrects. Fly straight and level in LIVE mode with the autopilot off, then Calibrate: it taps one control, watches what the aircraft does and works out the gain. Or edit the numbers by hand.</p>
+      <div id="tuning"></div>
+      <div class="row tight">
+        <button id="cal-roll" class="btn secondary small">Calibrate bank</button>
+        <button id="cal-pitch" class="btn secondary small">Calibrate pitch</button>
+        <button id="cal-throttle" class="btn secondary small">Calibrate throttle</button>
+      </div>
+      <p class="dim small" id="cal-msg"></p>
+      <div class="row tight">
+        <button id="tune-reset" class="btn secondary small">Reset to defaults</button>
+        <button id="log-download" class="btn secondary small">Download flight log</button>
+        <button id="log-clear" class="btn secondary small">Clear log</button>
+      </div>
+      <p class="dim small">The flight log (CSV) records heading, altitude and speed against their targets and every input while the autopilot flies - send it over to tune from real data.</p>
+      <h3>Phone / tablet control</h3>
+      <label class="field">Allow control from
+        <select id="remote-mode">
+          <option value="off">Off</option>
+          <option value="lan">This Wi-Fi only</option>
+          <option value="relay">Anywhere (through the flight planner)</option>
+        </select>
+      </label>
+      <div id="remote-info" hidden>
+        <p class="small">On your phone, open <strong id="remote-urls"></strong></p>
+        <div class="row tight">
+          <span class="small">Code</span>
+          <strong id="remote-code" class="pair-code"></strong>
+          <button id="remote-new-code" class="btn secondary small">New code</button>
+        </div>
+        <p class="dim small" id="remote-clients">No devices connected</p>
+      </div>
+      <p class="dim small" id="remote-error"></p>
+      <div class="row">
+        <button id="save-settings" class="btn">Save</button>
+        <span id="settings-msg" class="dim small"></span>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<dialog id="live-dialog">
+  <h3>Let the autopilot press keys?</h3>
+  <p>In LIVE mode the autopilot presses your configured keys in whatever window has keyboard focus. Keep PTFS focused while it flies.</p>
+  <p><strong>Roblox's rules can treat outside software that automates gameplay as a violation. You use this at your own risk to your account.</strong></p>
+  <p class="dim small">You can switch back to DRY RUN at any time. In DRY RUN the autopilot only shows what it would press.</p>
+  <form method="dialog" class="row">
+    <button value="cancel" class="btn secondary">Stay in DRY RUN</button>
+    <button value="ok" class="btn danger">Go LIVE</button>
+  </form>
+</dialog>
+
+<script src="../lib/fms.js"></script>
+<script src="../lib/autopilot.js"></script>
+<script src="fmsView.js"></script>
+<script src="fms.js"></script>
+</body>
+</html>

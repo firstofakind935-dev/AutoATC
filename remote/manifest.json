@@ -1,0 +1,11 @@
+{
+  "name": "AutoATC FMS",
+  "short_name": "FMS",
+  "description": "Remote MCDU and autopilot panel for the AutoATC companion app.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#15181d",
+  "theme_color": "#15181d",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -148,6 +148,214 @@ document.getElementById('barSetupBtn').addEventListener('click', () => {
   window.companion.focusControlWindow();
 });
 
+// ---------- Radio panel (VHF1/2/3 + squawk) ----------
+// State lives in the control window (see control.js) - this just renders
+// whatever snapshot it last pushed via 'radio-state' and relays user
+// interaction back via sendToControl({tag: 'radio-action', ...}), same
+// round-trip shape as region/calibration clicks use.
+
+const radioPanel = document.getElementById('radioPanel');
+const radiosBtn = document.getElementById('barRadiosBtn');
+let radioState = null; // last snapshot from control.js, or null before one's arrived
+
+function toggleRadioPanel(forceOpen) {
+  const open = forceOpen !== undefined ? forceOpen : radioPanel.hidden;
+  radioPanel.hidden = !open;
+  if (open) renderRadioPanel();
+}
+
+radiosBtn.addEventListener('click', () => toggleRadioPanel());
+
+/**
+ * A small draggable/scrollable dial. Turning it (mouse-wheel, or drag up/
+ * down) calls onStep(+1) / onStep(-1) per notch - the rotation itself is
+ * just a tactile cue that accumulates per step, not a literal mapping of
+ * the underlying frequency/squawk range (that range is far too
+ * fine-grained for one knob turn to cover 1:1). Deliberately left
+ * unwrapped (no "% 360") rather than wrapping the angle back to 0 - CSS's
+ * rotate() handles values past 360° fine, and wrapping it would make the
+ * animated transition spin the long way around at the wrap point instead
+ * of continuing to turn the same direction the knob was actually turned.
+ *
+ * Built ONCE per radio and never recreated (see buildRadioRows() below) -
+ * every step round-trips through control.js and back as a fresh
+ * 'radio-state' push, and rebuilding this element on that echo used to
+ * reset "rotation" to 0 before the turn was ever visible, which is why the
+ * knob looked like it didn't turn at all.
+ *
+ * Always turnable, even while a switchable radio (VHF2) is inop - same as
+ * a real radio, you can dial in a standby frequency before switching it
+ * on. Only the swap button (see updateRadioDisplay()) is gated by inop,
+ * since that's what actually puts a frequency into use.
+ */
+function makeKnob(onStep) {
+  const knob = document.createElement('div');
+  knob.className = 'knob';
+  const indicator = document.createElement('div');
+  indicator.className = 'knob-indicator';
+  knob.appendChild(indicator);
+
+  let rotation = 0;
+  const STEP_DEG = 20;
+  function applyStep(direction) {
+    rotation += direction * STEP_DEG;
+    indicator.style.transform = `rotate(${rotation}deg)`;
+    onStep(direction);
+  }
+
+  knob.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    applyStep(e.deltaY < 0 ? 1 : -1);
+  });
+
+  let dragging = false;
+  let lastY = 0;
+  const DRAG_PX_PER_STEP = 6;
+  knob.addEventListener('mousedown', (e) => {
+    dragging = true;
+    lastY = e.clientY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dy = lastY - e.clientY; // dragging up (dy > 0) increases, matching a real radio knob
+    if (Math.abs(dy) < DRAG_PX_PER_STEP) return;
+    lastY = e.clientY;
+    applyStep(dy > 0 ? 1 : -1);
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
+
+  return { el: knob };
+}
+
+// Filled in once by buildRadioRows() - { vhf1: {knob, activeEl, standbyEl,
+// swapBtn, labelEl, powerBtn}, ..., squawk: {knob, activeEl, labelEl} }.
+let radioRowRefs = null;
+
+function buildRadioRows() {
+  const list = document.getElementById('radioList');
+  list.innerHTML = '';
+  radioRowRefs = {};
+
+  for (const key of Object.keys(radioState.radios)) {
+    const row = document.createElement('div');
+    row.className = 'radio-row';
+
+    const knob = makeKnob((direction) => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'step', radio: key, value: direction });
+    });
+
+    const info = document.createElement('div');
+    info.className = 'radio-info';
+    info.innerHTML = `
+      <div class="radio-label"></div>
+      <div class="radio-freqs">
+        <span class="radio-active"></span>
+        <button class="radio-swap">⇄</button>
+        <span class="radio-standby"></span>
+      </div>
+      <div class="radio-buttons">
+        <button class="radio-call">Call</button>
+        <button class="radio-power" hidden></button>
+      </div>
+    `;
+    const swapBtn = info.querySelector('.radio-swap');
+    swapBtn.addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'swap', radio: key });
+    });
+    const callBtn = info.querySelector('.radio-call');
+    callBtn.addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'call', radio: key });
+    });
+    const powerBtn = info.querySelector('.radio-power');
+    powerBtn.addEventListener('click', () => {
+      window.companion.sendToControl({ tag: 'radio-action', action: 'power', radio: key });
+    });
+
+    row.appendChild(knob.el);
+    row.appendChild(info);
+    list.appendChild(row);
+
+    radioRowRefs[key] = {
+      knob,
+      labelEl: info.querySelector('.radio-label'),
+      activeEl: info.querySelector('.radio-active'),
+      standbyEl: info.querySelector('.radio-standby'),
+      swapBtn,
+      callBtn,
+      powerBtn,
+    };
+  }
+
+  const squawkRow = document.createElement('div');
+  squawkRow.className = 'radio-row';
+  const squawkKnob = makeKnob((direction) => {
+    window.companion.sendToControl({ tag: 'radio-action', action: 'squawkStep', value: direction });
+  });
+  const squawkInfo = document.createElement('div');
+  squawkInfo.className = 'radio-info';
+  squawkInfo.innerHTML = `
+    <div class="radio-label"></div>
+    <div class="radio-freqs">
+      <span class="radio-active"></span>
+      <button class="radio-power">Ident</button>
+    </div>
+  `;
+  squawkInfo.querySelector('.radio-power').addEventListener('click', () => {
+    window.companion.sendToControl({ tag: 'radio-action', action: 'ident' });
+  });
+  squawkRow.appendChild(squawkKnob.el);
+  squawkRow.appendChild(squawkInfo);
+  list.appendChild(squawkRow);
+
+  radioRowRefs.squawk = {
+    knob: squawkKnob,
+    labelEl: squawkInfo.querySelector('.radio-label'),
+    activeEl: squawkInfo.querySelector('.radio-active'),
+  };
+}
+
+/** Updates the already-built rows' text/enabled-state from radioState - never touches the knob DOM itself. */
+function updateRadioDisplay() {
+  for (const [key, radio] of Object.entries(radioState.radios)) {
+    const refs = radioRowRefs[key];
+    const isPrimary = key === radioState.primaryRadio;
+    refs.labelEl.textContent = radio.label + (radio.inop ? ' (inop)' : '') + (isPrimary ? ' - CALLING' : '');
+    refs.activeEl.textContent = radio.active.toFixed(3);
+    refs.standbyEl.textContent = radio.standby.toFixed(3);
+    refs.swapBtn.disabled = radio.inop;
+    // Can't select an inop radio to talk on (nothing to call with), and no
+    // point re-selecting whichever one's already selected.
+    refs.callBtn.disabled = radio.inop || isPrimary;
+    refs.callBtn.classList.toggle('active', isPrimary);
+    // The knob stays usable even while inop - a real radio lets you dial
+    // in a standby frequency before switching it on, you just can't swap
+    // it into active (or have it actually used for comms) until it is.
+    if (radio.switchable) {
+      refs.powerBtn.hidden = false;
+      refs.powerBtn.textContent = radio.inop ? 'Switch on' : 'Switch off';
+    } else {
+      refs.powerBtn.hidden = true;
+    }
+  }
+
+  const squawkRefs = radioRowRefs.squawk;
+  squawkRefs.labelEl.textContent = 'Squawk' + (radioState.identing ? ' - IDENT' : '');
+  squawkRefs.activeEl.textContent = radioState.squawk;
+}
+
+function renderRadioPanel() {
+  const list = document.getElementById('radioList');
+  if (!radioState) {
+    list.innerHTML = '<div class="message-empty">Waiting for the control window...</div>';
+    return;
+  }
+  if (!radioRowRefs) buildRadioRows();
+  updateRadioDisplay();
+}
+
 // ---------- Datalink (CPDLC/PDC) messages ----------
 
 function describeMessage(m) {
@@ -225,5 +433,8 @@ window.companion.onOverlayCommand((command) => {
     unreadCount += incoming.length;
     renderMessagePanel();
     for (const m of incoming) showToast(m);
+  } else if (command.type === 'radio-state') {
+    radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing, primaryRadio: command.primaryRadio };
+    if (!radioPanel.hidden) renderRadioPanel();
   }
 });
