@@ -937,7 +937,7 @@ power, only the speed it reads from the screen.
 The FMS window and the phone remote draw the real panels: the **Boeing MCP**
 (course, IAS/MACH, heading, altitude and vertical-speed windows, A/T ARM,
 N1 / SPEED / LVL CHG, V NAV / L NAV / HDG SEL / ALT HLD / V/S, CMD A/B,
-DISENGAGE) for Boeing and every other jet; the **Airbus A320/330/340 FCU**
+DISENGAGE) for Boeing and every other jet except those below; the **Airbus A320/330/340 FCU**
 (SPD / HDG / ALT / V/S windows, push-pull knobs, AP1, AP2, A/THR); and the
 dark, orange-outlined **A350/A380 FCU**. Click the left or right half of a knob
 (or use the mouse wheel; Shift for bigger steps). Props, light aircraft and

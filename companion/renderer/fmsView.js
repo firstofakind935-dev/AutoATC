@@ -248,7 +248,19 @@
       + `</div></div>`;
   }
 
+  function fcpHtml(k) {
+    return `<div class="cockpit fcp">`
+      + `<div class="cp-mod"><div class="cp-col">${cpBtn(k.ap)}${cpBtn(k.yd)}${cpBtn(k.at)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.ias.label, k.ias.value)}<div class="cp-row">${cpKnob(k.ias)}${cpBtn(k.spd)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.hdg.label, k.hdg.value)}<div class="cp-row">${cpKnob(k.hdg)}<div class="cp-col">${cpBtn(k.hdgBtn)}${cpBtn(k.nav)}${cpBtn(k.appr)}</div></div></div>`
+      + `<div class="cp-mod">${cpWin(k.alt.label, k.alt.value)}<div class="cp-row">${cpKnob(k.alt)}<div class="cp-col">${cpBtn(k.vnav)}${cpBtn(k.flc)}${cpBtn(k.altBtn)}</div></div></div>`
+      + `<div class="cp-mod">${cpWin(k.vs.label, k.vs.value)}<div class="cp-row">${cpWheel(k.vs)}${cpBtn(k.vsBtn)}</div></div>`
+      + `<div class="cp-mod">${cpBtn(k.disc)}</div>`
+      + `</div>`;
+  }
+
   function panelItemHtml(item, skin) {
+    if (item.type === 'cockpit' && item.style === 'fcp') return fcpHtml(item.controls);
     if (item.type === 'cockpit') return item.style === 'mcp' ? mcpHtml(item.controls) : fcuHtml(item.controls, item.style);
     if (item.type === 'group') return `<div class="group">${item.items.map((i) => panelItemHtml(i, skin)).join('')}</div>`;
     if (item.type === 'button') {

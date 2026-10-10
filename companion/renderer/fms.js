@@ -731,14 +731,15 @@ function knob({ label, value, managed, step, bigStep, set, push, pull, pushLabel
 const button = (label, lit, onClick, cls = '') => ({ type: 'button', label, lit, onClick, cls });
 
 // Which autopilot panel to draw: Airbus A320/330/340 get the FCU, A350/A380 their
-// own FCU, every other jet the Boeing MCP, and turboprops, light aircraft and helicopters keep the
+// own FCU, the A220 its flight control panel, every other jet the Boeing MCP, and turboprops, light aircraft and helicopters keep the
 // simple panel of their FMS style. Settings can switch back to the simple one.
 const JET_CATEGORIES = new Set(['narrowbody', 'widebody', 'regionaljet', 'bizjet', 'supersonic']);
 function panelStyle(skinId) {
   if (settings.panel === 'native') return 'native';
   if (skinId === 'airbus') return 'fcu';
   if (skinId === 'a350') return 'fcu350';
-  if (['boeing', 'boeing787', 'a220', 'embraer'].includes(skinId)) return 'mcp';
+  if (skinId === 'a220') return 'fcp';
+  if (['boeing', 'boeing787', 'embraer'].includes(skinId)) return 'mcp';
   if (skinId === 'generic' && JET_CATEGORIES.has(ui.plan?.aircraft?.category)) return 'mcp';
   return 'native';
 }
@@ -792,6 +793,30 @@ function mcpControls() {
   };
 }
 
+/** A220 flight control panel (the centre of the glareshield). */
+function fcpControls() {
+  const s = ap.selected;
+  const managedSpeed = ap.speedMode === 'MANAGED' && ui.guidance?.speedKt;
+  return {
+    ias: knob({ label: 'IAS', value: managedSpeed || s.speedKt, raw: () => s.speedKt, step: 1, bigStep: 10, set: (v) => (s.speedKt = Math.max(40, Math.min(600, v))) }),
+    hdg: knob({ label: 'HDG', value: pad3(s.headingDeg % 360 || 360), step: 1, bigStep: 10, set: (v) => (s.headingDeg = wrapHdg(v)), raw: () => s.headingDeg }),
+    alt: knob({ label: 'ALT FT', value: s.altFt, step: 100, bigStep: 1000, set: (v) => (s.altFt = clampAlt(v)) }),
+    vs: knob({ label: 'VS', value: ap.vertical === 'VS' ? s.vsFpm : 0, step: 100, bigStep: 500, set: (v) => (s.vsFpm = Math.max(-6000, Math.min(6000, v))), raw: () => s.vsFpm }),
+    ap: button('AP', ap.engaged, toggleAp),
+    yd: button('YD', ap.engaged, () => {}),
+    at: button('A/T', ap.autothrottle, toggleAt),
+    spd: button('SPD', ap.autothrottle && ap.speedMode === 'SEL', () => { ap.speedMode = 'SEL'; if (!ap.autothrottle) toggleAt(); else render(); }),
+    hdgBtn: button('HDG', ap.lateral === 'HDG', () => setLateral('HDG')),
+    nav: button('NAV', ap.lateral === 'LNAV', () => setLateral('LNAV')),
+    appr: button('APPR', false, na),
+    vnav: button('VNAV', ap.vertical === 'VNAV', () => setVertical('VNAV')),
+    flc: button('FLC', ap.vertical === 'ALT' && altDiff() > 300, lvlChg),
+    altBtn: button('ALT', ap.vertical === 'ALT' && altDiff() <= 300, altHold),
+    vsBtn: button('VS', ap.vertical === 'VS', () => setVertical('VS')),
+    disc: button('AP DISC', false, () => { if (ap.engaged) toggleAp(); }, 'disc'),
+  };
+}
+
 /** Airbus A320/330/340 flight control unit (the centre section). */
 function fcuControls() {
   const s = ap.selected;
@@ -823,6 +848,7 @@ function fcuControls() {
 function panelFor(skinId) {
   const style = panelStyle(skinId);
   if (style === 'mcp') return [{ type: 'cockpit', style, controls: mcpControls() }];
+  if (style === 'fcp') return [{ type: 'cockpit', style, controls: fcpControls() }];
   if (style === 'fcu' || style === 'fcu350') return [{ type: 'cockpit', style, controls: fcuControls() }];
   const s = ap.selected;
   // While managed, non-Airbus speed windows show the FMS target speed.

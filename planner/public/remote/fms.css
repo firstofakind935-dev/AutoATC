@@ -591,3 +591,12 @@ body[data-skin="a220"] .numeric { display: none; }
 .cockpit.mcp .cp-win { min-width: 60px; }
 .cockpit.mcp .cp-win b { font-size: 20px; letter-spacing: 1px; }
 .cockpit.mcp .cp-btn.disengage { min-width: 104px; }
+
+/* Airbus A220 flight control panel: dark blue-grey, black windows, green annunciators, red AP DISC */
+.cockpit.fcp { background: linear-gradient(#444c59, #373e49); gap: 8px 12px; }
+.cockpit.fcp .cp-win b { color: #46f06a; font-size: 24px; }
+.cockpit.fcp .cp-win .cp-wlabel { color: #d6dbe3; }
+.cockpit.fcp .cp-btn { min-width: 46px; background: #1d2128; border-color: #0a0c10; padding: 5px 4px 13px; font-size: 10px; }
+.cockpit.fcp .cp-knob { background: radial-gradient(circle at 35% 30%, #6e7581, #272b33 70%); }
+.cockpit.fcp .cp-btn.disc { background: #7d1111; color: #fff; min-width: 74px; padding-bottom: 8px; }
+.cockpit.fcp .cp-btn.disc .cp-lamp { display: none; }
