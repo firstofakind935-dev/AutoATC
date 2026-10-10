@@ -53,7 +53,10 @@ const AIRPORTS = ['IRFD', 'ITKO', 'IPPH'];
       for (const t of svg.querySelectorAll('text')) {
         const name = t.textContent.trim();
         if (!/^\d{1,3}$/.test(name) || result[name]) continue;
-        const x = +t.getAttribute('x'), y = +t.getAttribute('y');
+        // The label's own x/y are in its local frame; some charts (ITKO, IPPH) nest their labels in transformed groups,
+        // so bring the point into the Ground View's own frame, like the lines above.
+        const p = new DOMPoint(+t.getAttribute('x'), +t.getAttribute('y')).matrixTransform(toRoot(t));
+        const x = p.x, y = p.y;
         let best = null;
         for (const l of lines) {
           const d = Math.hypot(l.cx - x, l.cy - y);
