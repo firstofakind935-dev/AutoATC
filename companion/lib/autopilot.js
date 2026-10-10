@@ -161,5 +161,80 @@
     return result;
   }
 
-  return { create, update, targets, DEFAULT_TUNING };
+  // ---- tuning aids -----------------------------------------------------------
+
+  // The gains the settings page lets you edit, with sane limits.
+  const TUNABLE = {
+    turnRatePerDegErr: [0.02, 0.6],
+    maxTurnRateDegS: [0.5, 6],
+    rollMsPerDegS: [20, 600],
+    vsPerFtErr: [0.3, 5],
+    pitchMsPerFpm: [0.02, 0.6],
+    throttleMsPerKt: [3, 80],
+    decelBoost: [1, 4],
+  };
+
+  /** Applies edited gains, ignoring anything unknown or out of range. Returns the keys changed. */
+  function setTuning(ap, values) {
+    const changed = [];
+    for (const [key, value] of Object.entries(values || {})) {
+      const range = TUNABLE[key];
+      const n = Number(value);
+      if (!range || !Number.isFinite(n) || n < range[0] || n > range[1]) continue;
+      ap.tuning[key] = n;
+      changed.push(key);
+    }
+    return changed;
+  }
+
+  const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  function ratesOf(samples, field) {
+    const out = [];
+    for (let i = 1; i < samples.length; i++) {
+      const dt = (samples[i].atMs - samples[i - 1].atMs) / 1000;
+      if (dt <= 0) continue;
+      const delta = field === 'headingDeg' ? angleDiff(samples[i].headingDeg, samples[i - 1].headingDeg) : samples[i][field] - samples[i - 1][field];
+      out.push(field === 'altFt' ? (delta / dt) * 60 : delta / dt); // altitude as fpm, heading as deg/s, speed as kt/s
+    }
+    return out;
+  }
+
+  /**
+   * Works out one gain from a test: `before` = samples taken while the
+   * aircraft was steady, `after` = samples taken after one `pulseMs` tap on
+   * the axis. Returns {key, value, change} or null when the response was too
+   * small to trust (not live, wrong window, aircraft already moving a lot...).
+   *   roll     -> rollMsPerDegS    = ms per deg/s of turn rate added
+   *   pitch    -> pitchMsPerFpm    = ms per fpm of vertical speed added
+   *   throttle -> throttleMsPerKt  = ms per kt of speed gained or lost
+   */
+  function measureResponse(axis, before, after, pulseMs, direction = 1) {
+    const spec = { roll: ['headingDeg', 'rollMsPerDegS', 0.4], pitch: ['altFt', 'pitchMsPerFpm', 150], throttle: ['speedKt', 'throttleMsPerKt', 3] }[axis];
+    if (!spec || !(pulseMs > 0) || !before || !after || before.length < 3 || after.length < 3) return null;
+    const [field, key, minChange] = spec;
+    let change;
+    if (axis === 'throttle') {
+      // speed settles slowly: compare where it was before with where it ended up
+      change = (mean(after.slice(-2).map((x) => x.speedKt)) - mean(before.slice(-2).map((x) => x.speedKt))) * direction;
+    } else {
+      change = (Math.max(...ratesOf(after, field).map((r) => r * direction)) - mean(ratesOf(before, field))) * 1;
+    }
+    if (!(change > minChange)) return null;
+    const value = pulseMs / change;
+    const range = TUNABLE[key];
+    return { key, value: Math.round(clamp(value, range[0], range[1]) * 1000) / 1000, change };
+  }
+
+  const LOG_COLUMNS = ['t', 'hdg', 'hdgTarget', 'alt', 'altTarget', 'vsFpm', 'speed', 'speedTarget', 'turnDegS', 'accelKtS', 'commands'];
+  /** One CSV row for the flight log (see Download flight log in the FMS settings). */
+  function logRow(sample, result) {
+    const tg = result.targets || {};
+    const r = result.rates || {};
+    const f = (v, d = 1) => (typeof v === 'number' && Number.isFinite(v) ? Number(v.toFixed(d)) : '');
+    return [new Date(sample.atMs).toISOString().slice(11, 23), f(sample.headingDeg, 0), f(tg.headingDeg, 0), f(sample.altFt, 0), f(tg.altFt, 0), f(r.vsFpm, 0), f(sample.speedKt, 0), f(tg.speedKt, 0), f(r.turnDegS, 2), f(r.accelKtS, 2),
+      (result.commands || []).map((c) => `${c.axis}${c.direction > 0 ? '+' : '-'}${c.ms}`).join(' ')];
+  }
+  const toCsv = (rows) => [LOG_COLUMNS.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+  return { create, update, targets, setTuning, measureResponse, logRow, toCsv, DEFAULT_TUNING, TUNABLE, LOG_COLUMNS };
 });

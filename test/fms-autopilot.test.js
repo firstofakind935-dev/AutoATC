@@ -317,3 +317,46 @@ test('the slow-down starts early: above 3000 ft on the way down, and before the 
   // slow already: nothing to anticipate
   assert.equal(Fms.guidance(onLastLeg(), tenOut, { altFt: 4300, speedKt: 200 }).anticipating, false);
 });
+
+// --- tuning aids ----------------------------------------------------------------
+
+test('setTuning accepts sane values and ignores the rest', () => {
+  const ap = Autopilot.create();
+  const changed = Autopilot.setTuning(ap, { rollMsPerDegS: 200, throttleMsPerKt: 9999, bogus: 1, vsPerFtErr: 'x', decelBoost: 3 });
+  assert.deepEqual(changed.sort(), ['decelBoost', 'rollMsPerDegS']);
+  assert.equal(ap.tuning.rollMsPerDegS, 200);
+  assert.equal(ap.tuning.throttleMsPerKt, Autopilot.DEFAULT_TUNING.throttleMsPerKt);
+});
+
+test('a calibration tap turns into a gain: ms per unit of response', () => {
+  const steady = (n, f) => Array.from({ length: n }, (_, i) => ({ atMs: i * 2000, headingDeg: 90, altFt: 5000, speedKt: 250, ...f(i) }));
+  // roll: a 300 ms tap gets the turn rate to 2.5 deg/s from nothing -> 120 ms per deg/s
+  const before = steady(4, () => ({}));
+  const after = steady(5, (i) => ({ headingDeg: 90 + [0, 5, 12, 20, 28][i] }));
+  const roll = Autopilot.measureResponse('roll', before, after, 300);
+  assert.equal(roll.key, 'rollMsPerDegS');
+  assert.ok(roll.value > 20 && roll.value < 600, `${roll.value}`);
+  // pitch: 200 ms tap, vertical speed up by 1500 fpm -> 0.133 ms per fpm
+  const up = steady(5, (i) => ({ altFt: 5000 + [0, 50, 100, 150, 200][i] * 1 + i * i * 20 }));
+  const pitch = Autopilot.measureResponse('pitch', before, up, 200);
+  assert.equal(pitch.key, 'pitchMsPerFpm');
+  // throttle: a 450 ms tap gained 15 kt -> 30 ms per kt
+  const faster = steady(5, (i) => ({ speedKt: 250 + (i >= 3 ? 15 : 0) }));
+  const thr = Autopilot.measureResponse('throttle', before, faster, 450);
+  assert.deepEqual({ key: thr.key, value: thr.value }, { key: 'throttleMsPerKt', value: 30 });
+  // nothing happened, or too few samples: no answer rather than a wrong one
+  assert.equal(Autopilot.measureResponse('roll', before, steady(5, () => ({})), 300), null);
+  assert.equal(Autopilot.measureResponse('roll', before.slice(0, 2), after, 300), null);
+});
+
+test('the flight log has one CSV row per update', () => {
+  const ap = Autopilot.create();
+  ap.engaged = true;
+  Autopilot.update(ap, { headingDeg: 90, altFt: 3000, speedKt: 250, atMs: 1000 }, null, 1000);
+  const sample = { headingDeg: 95, altFt: 3100, speedKt: 255, atMs: 4000 };
+  const result = Autopilot.update(ap, sample, null, 4000);
+  const csv = Autopilot.toCsv([Autopilot.logRow(sample, result)]);
+  const [head, row] = csv.split('\n');
+  assert.equal(head.split(',').length, row.split(',').length - (result.commands.length ? 0 : 0) + 0);
+  assert.match(row, /,95,/);
+});

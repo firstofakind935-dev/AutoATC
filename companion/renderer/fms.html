@@ -88,6 +88,21 @@
       </div>
       <p class="dim small">Keys the autopilot presses. Test presses the key 3 s later, so click into PTFS and watch the aircraft.</p>
       <div id="keymap"></div>
+      <h3>Autopilot tuning</h3>
+      <p class="dim small">How hard the autopilot corrects. Fly straight and level in LIVE mode with the autopilot off, then Calibrate: it taps one control, watches what the aircraft does and works out the gain. Or edit the numbers by hand.</p>
+      <div id="tuning"></div>
+      <div class="row tight">
+        <button id="cal-roll" class="btn secondary small">Calibrate bank</button>
+        <button id="cal-pitch" class="btn secondary small">Calibrate pitch</button>
+        <button id="cal-throttle" class="btn secondary small">Calibrate throttle</button>
+      </div>
+      <p class="dim small" id="cal-msg"></p>
+      <div class="row tight">
+        <button id="tune-reset" class="btn secondary small">Reset to defaults</button>
+        <button id="log-download" class="btn secondary small">Download flight log</button>
+        <button id="log-clear" class="btn secondary small">Clear log</button>
+      </div>
+      <p class="dim small">The flight log (CSV) records heading, altitude and speed against their targets and every input while the autopilot flies - send it over to tune from real data.</p>
       <h3>Phone / tablet control</h3>
       <label class="field">Allow control from
         <select id="remote-mode">

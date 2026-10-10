@@ -56,6 +56,7 @@ const HUD_TYPE_SKINS = [
 const settings = {
   plannerUrl: '',
   skin: 'auto',
+  tuning: {}, // autopilot gains changed from the defaults (see Autopilot.TUNABLE)
   panel: 'auto', // auto = FCU for Airbus A320/330/340, MCP for other jets; native = the simple panel of each FMS style
   keymap: { ...DEFAULT_KEYMAP },
   steering: 'mouse', // mouse | keys - how pitch and bank are flown
@@ -84,6 +85,8 @@ const ui = {
   telemetry: null,
   guidance: null,
   lastInputs: [],
+  flightLog: [], // CSV rows, see Autopilot.logRow
+  calib: null, // a running calibration test
   coRoute: '',
 };
 
@@ -1138,6 +1141,11 @@ async function onTelemetry(sample) {
   if (ui.fms) ui.guidance = Fms.guidance(ui.fms, { lat: sample.lat, lon: sample.lon }, sample);
 
   const out = Autopilot.update(ap, sample, ui.guidance);
+  if (ap.engaged || ap.autothrottle) {
+    ui.flightLog.push(Autopilot.logRow(sample, out));
+    if (ui.flightLog.length > 4000) ui.flightLog.shift();
+  }
+  if (ui.calib) await stepCalibration(sample);
   if (out.disconnected) {
     api?.autopilotReleaseAll();
     api?.autopilotRecenter(null);
@@ -1147,11 +1155,106 @@ async function onTelemetry(sample) {
   render();
 }
 
+// ---------------------------------------------------------------- tuning
+
+const TUNING_LABELS = {
+  turnRatePerDegErr: 'Turn rate per degree of heading error',
+  maxTurnRateDegS: 'Max turn rate (deg/s)',
+  rollMsPerDegS: 'Bank tap per deg/s (ms)',
+  vsPerFtErr: 'Vertical speed per foot of altitude error',
+  pitchMsPerFpm: 'Pitch tap per fpm (ms)',
+  throttleMsPerKt: 'Throttle tap per kt (ms)',
+  decelBoost: 'Extra throttle-back when too fast (x)',
+};
+
+function buildTuningEditor() {
+  const box = $('tuning');
+  if (!box) return;
+  box.innerHTML = '';
+  for (const [key, label] of Object.entries(TUNING_LABELS)) {
+    const [lo, hi] = Autopilot.TUNABLE[key];
+    const line = document.createElement('label');
+    line.className = 'field';
+    line.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.id = `tune-${key}`;
+    input.min = lo; input.max = hi; input.step = 'any';
+    input.value = ap.tuning[key];
+    input.addEventListener('change', () => {
+      const changed = Autopilot.setTuning(ap, { [key]: input.value });
+      if (!changed.length) { input.value = ap.tuning[key]; $('cal-msg').textContent = `${label}: use a value from ${lo} to ${hi}`; return; }
+      settings.tuning[key] = ap.tuning[key];
+      saveSettings();
+    });
+    line.append(input);
+    box.append(line);
+  }
+}
+
+const CAL_PULSE = { roll: { ms: 300, label: 'bank' }, pitch: { ms: 250, label: 'pitch' }, throttle: { ms: 450, label: 'throttle' } };
+
+function startCalibration(axis) {
+  const msg = (t) => { $('cal-msg').textContent = t; };
+  if (!settings.live) return msg('Switch to LIVE first (top right), then click into PTFS.');
+  if (ap.engaged || ap.autothrottle) return msg('Turn the autopilot and A/T off first.');
+  if (!ui.telemetry) return msg('No tracking data yet.');
+  if (axis !== 'throttle' && settings.steering === 'mouse' && !settings.mouseCenter) return msg('Capture the mouse center first.');
+  ui.calib = { axis, phase: 'before', before: [], after: [], startedAt: Date.now(), pulseAt: null };
+  msg(`Calibrating ${CAL_PULSE[axis].label}: keep the aircraft straight and level for about 10 s...`);
+}
+
+async function stepCalibration(sample) {
+  const c = ui.calib;
+  const msg = (t) => { $('cal-msg').textContent = t; };
+  if (c.phase === 'before') {
+    c.before.push(sample);
+    if (c.before.length >= 4 && Date.now() - c.startedAt >= 8000) {
+      c.phase = 'after';
+      c.pulseAt = Date.now();
+      msg(`Tapping ${CAL_PULSE[c.axis].label} for ${CAL_PULSE[c.axis].ms} ms - watch the aircraft...`);
+      await sendCommands([{ axis: c.axis, direction: 1, ms: CAL_PULSE[c.axis].ms }]);
+    }
+  } else if (c.phase === 'after') {
+    c.after.push(sample);
+    if (c.after.length >= 5 && Date.now() - c.pulseAt >= 12000) {
+      const r = Autopilot.measureResponse(c.axis, c.before, c.after, CAL_PULSE[c.axis].ms, 1);
+      ui.calib = null;
+      if (!r) return msg('Not enough response to measure - make sure the autopilot is off, you are straight and level, and the input reached the game. Try again.');
+      const previous = ap.tuning[r.key];
+      Autopilot.setTuning(ap, { [r.key]: r.value });
+      settings.tuning[r.key] = ap.tuning[r.key];
+      saveSettings();
+      buildTuningEditor();
+      msg(`${TUNING_LABELS[r.key]}: ${previous} -> ${ap.tuning[r.key]} (measured). Saved. Re-level the aircraft; you can edit the number if it feels off.`);
+    }
+  }
+}
+
+for (const axis of ['roll', 'pitch', 'throttle']) $(`cal-${axis}`).addEventListener('click', () => startCalibration(axis));
+$('tune-reset').addEventListener('click', () => {
+  settings.tuning = {};
+  Object.assign(ap.tuning, Autopilot.DEFAULT_TUNING);
+  saveSettings();
+  buildTuningEditor();
+  $('cal-msg').textContent = 'Back to the default gains';
+});
+$('log-download').addEventListener('click', () => {
+  if (!ui.flightLog.length) return ($('cal-msg').textContent = 'Nothing logged yet - the log fills while the autopilot or A/T is on.');
+  const url = URL.createObjectURL(new Blob([Autopilot.toCsv(ui.flightLog)], { type: 'text/csv' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: `autopilot-log-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv` });
+  a.click();
+  URL.revokeObjectURL(url);
+});
+$('log-clear').addEventListener('click', () => { ui.flightLog = []; $('cal-msg').textContent = 'Log cleared'; });
+
 // ---------------------------------------------------------------- settings UI
 
 async function loadSettings() {
   const saved = (await api?.loadFmsSettings?.()) || {};
   Object.assign(settings, saved, { keymap: { ...DEFAULT_KEYMAP, ...(saved.keymap || {}) }, live: false });
+  Autopilot.setTuning(ap, settings.tuning);
+  buildTuningEditor();
   $('planner-url').value = settings.plannerUrl || '';
   $('skin-select').value = settings.skin || 'auto';
   $('panel-select').value = settings.panel || 'auto';

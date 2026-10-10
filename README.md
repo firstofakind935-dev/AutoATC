@@ -944,3 +944,18 @@ dark, orange-outlined **A350/A380 FCU**. Click the left or right half of a knob
 helicopters keep the simple panel, and "Panel" in the window's header switches
 every aircraft back to it. Buttons the game can't act on (VOR LOC, APP, CWS,
 EXPED, EFIS controls, intervention buttons) say NOT AVAILABLE when pressed.
+
+### Tuning the autopilot
+
+The gains (how long a tap per degree/second of turn, per fpm, per kt, and how
+hard it corrects) start at defaults that are a guess. **FMS window -> Settings
+-> Autopilot tuning** lets you change them and has three one-click tests:
+fly straight and level in LIVE mode with the autopilot and A/T off, press
+*Calibrate bank / pitch / throttle*. It waits for about 8 s of steady flight,
+taps that control once (300 / 250 / 450 ms), watches the aircraft for 12 s and
+sets the gain from what happened - or says it couldn't measure anything. Each
+result is saved and shown in the number boxes, which you can also edit by
+hand; *Reset to defaults* undoes it all. While the autopilot or A/T is on, a
+flight log (heading, altitude and speed against their targets, rates and every
+input) is kept; *Download flight log* saves it as a CSV for tuning from real
+data.
