@@ -26,13 +26,26 @@ function loadWorldMapAnchors() {
   return JSON.parse(source.trim().replace(/^export default/, '').trim().replace(/;$/, ''));
 }
 
+// 365Radar draws every airport at its 24SPY position (main.js overrides the anchors with spy24Data's
+// airports) - do the same, so a position computed from "distance and bearing from IRFD" is the same point
+// here as on the radar.
+function loadSpyAirports() {
+  try {
+    const source = fs.readFileSync(path.join(__dirname, 'public', '365radar', 'src', 'data', 'spy24Data.js'), 'utf8');
+    return JSON.parse(source.replace(/^\s*\/\/.*\n/gm, '').trim().replace(/^export default/, '').trim().replace(/;$/, '')).airports || [];
+  } catch {
+    return [];
+  }
+}
+const worldMap = loadWorldMapAnchors();
+for (const ap of loadSpyAirports()) worldMap.anchors[ap.icao] = { ...(worldMap.anchors[ap.icao] || {}), x: ap.x, y: ap.y, confidence: '24SPY' };
+
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // The world grid: origin at the north-west corner, x grows east, y grows
 // south (like screen coordinates), both in nautical miles. It's the
 // world-map.png anchors divided by its px-per-nm scale - the same geometry
 // 365Radar uses, minus the image.
-const worldMap = loadWorldMapAnchors();
 const WORLD = {
   units: 'nm',
   axes: 'origin at the north-west corner; x grows east, y grows south',
@@ -43,7 +56,7 @@ const WORLD = {
 // How each anchor was measured, in plain terms (see worldMapAnchors.js's
 // own "note" for the detail).
 function placementOf(confidence) {
-  if (confidence.startsWith('direct')) return 'measured';
+  if (confidence.startsWith('direct') || confidence === '24SPY') return 'measured';
   if (confidence.startsWith('derived')) return 'derived';
   return 'estimated';
 }
