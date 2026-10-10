@@ -355,3 +355,6 @@ The phone/tablet remote now has a second page, **displays.html** (the "PFD / MFD
 - **MFD:** route map (heading-up or north-up, range 5-160 NM) with the active leg in magenta, waypoint names and altitude
   restrictions, next-waypoint distance, destination ETE, plus a vertical profile strip with your altitude against the restrictions.
 Landscape iPad shows them side by side, portrait stacked.
+
+**Install it as a web app:** open `displays.html` in Safari on the iPad, Share -> Add to Home Screen. It then opens full-screen
+like an app (no browser bars), and the page itself is cached so it starts instantly.
