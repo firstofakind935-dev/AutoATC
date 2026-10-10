@@ -53,6 +53,10 @@ contextBridge.exposeInMainWorld('companion', {
 
   // FMS / autopilot window (renderer/fms.html)
   openFms: () => ipcRenderer.invoke('open-fms'),
+  isPilot: () => ipcRenderer.invoke('is-pilot'),
+  getAtcState: () => ipcRenderer.invoke('get-atc-state'),
+  atcAction: (action) => ipcRenderer.send('atc-action', action),
+  onAtcState: (callback) => ipcRenderer.on('atc-state', (event, state) => callback(state)),
   sendTelemetry: (sample) => ipcRenderer.send('telemetry', sample),
   onTelemetry: (callback) => ipcRenderer.on('telemetry', (event, sample) => callback(sample)),
   feedStart: (options) => ipcRenderer.invoke('feed-start', options),

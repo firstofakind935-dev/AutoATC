@@ -442,16 +442,133 @@ function menuPage(s) {
     rows: rows([
       row([], [c(`<${s.titles.rte}`, 'white')], [], [c(`${s.titles.legs}>`, 'white')]),
       row([], [c(`<${s.titles.perf}`, 'white')], [], [c(`${s.titles.prog}>`, 'white')]),
-      row([], [c(`<${s.titles.dir}`, 'white')], [], []),
+      row([], [c(`<${s.titles.dir}`, 'white')], [], [c('ATC COM>', 'white')]),
       row([c('PLANNER', 'label')], [c(settings.plannerUrl ? settings.plannerUrl.replace(/^https?:\/\//, '').slice(0, 22) : 'NOT SET', settings.plannerUrl ? 'green' : 'amber')]),
       row([c('AUTOPILOT INPUTS', 'label')], [c(settings.live ? 'LIVE' : 'DRY RUN', settings.live ? 'amber' : 'green')]),
       blankRow(),
     ]),
-    lsk: { L1: () => goPage('rte'), R1: () => goPage('legs'), L2: () => goPage('perf'), R2: () => goPage('prog'), L3: () => goPage('dir') },
+    lsk: { L1: () => goPage('rte'), R1: () => goPage('legs'), L2: () => goPage('perf'), R2: () => goPage('prog'), L3: () => goPage('dir'), R3: () => goPage('atc') },
   };
 }
 
-const PAGES = { rte: routePage, legs: legsPage, prog: progPage, perf: perfPage, dir: dirPage, menu: menuPage };
+// ---------------------------------------------------------------- ATC COM and SURV (pilot app)
+//
+// Datalink messages from the ATC bots and the radio / transponder state come from the control
+// window (relayed by the main process); tune, swap, squawk and ident go back the same way.
+
+const atc = { messages: [], radio: null, readUpTo: 0, selected: null, assigned: null };
+
+const hhmm = (ms) => new Date(ms).toISOString().slice(11, 16);
+function describeMsg(m) {
+  if (m.kind === 'contact') return `CONTACT ${m.facility || 'ATC'} ${m.frequency || ''}`.trim();
+  if (m.kind === 'pdc') return `PDC ${m.clearance || ''}`;
+  return m.text || '';
+}
+// The transponder code in the latest message that carries one ("squawk 4521").
+function assignedSquawk() {
+  for (const m of [...atc.messages].reverse()) {
+    const hit = /squawk\s*(?:code\s*)?([0-7]{4})/i.exec(`${m.clearance || ''} ${m.text || ''}`);
+    if (hit) return hit[1];
+  }
+  return null;
+}
+const wrapText = (text, width) => {
+  const lines = [];
+  let line = '';
+  for (const word of String(text).toUpperCase().split(/\s+/).filter(Boolean)) {
+    if ((line + ' ' + word).trim().length > width) { if (line) lines.push(line); line = word; } else line = (line + ' ' + word).trim();
+  }
+  if (line) lines.push(line);
+  return lines;
+};
+const radioOf = () => atc.radio?.radios?.[atc.radio?.primaryRadio || 'vhf1'];
+const freqText = (v) => (typeof v === 'number' ? v.toFixed(3) : '---.---');
+
+function atcPage() {
+  const latest = atc.messages.slice(-3).reverse();
+  const radio = radioOf();
+  const list = latest.map((m) => row(
+    [c(`${hhmm(m.createdAt)} ${(m.fromPosition || 'ATC').slice(0, 12)}${m.id > atc.readUpTo ? ' *' : ''}`, 'label')],
+    [c(describeMsg(m).slice(0, COLS), m.id > atc.readUpTo ? 'big green' : 'white')]));
+  if (!list.length) list.push(row([c('MESSAGES', 'label')], [c('NONE RECEIVED', 'dim')]));
+  while (list.length < 3) list.push(blankRow());
+  list.push(row([c(`${atc.radio?.primaryRadio?.toUpperCase() || 'VHF1'} ACTIVE`, 'label')], [c(freqText(radio?.active), 'big green')], [c('STANDBY', 'label')], [c(freqText(radio?.standby), 'big cyan')]));
+  list.push(row([c('TRANSPONDER', 'label')], [c(atc.radio?.squawk || '----', 'big cyan')], [], [c('SURV>', 'white')]));
+  list.push(row([], [c('<MENU', 'white')], [], [c('SWAP>', 'white')]));
+  const lsk = {
+    L4: (sp) => {
+      const f = Number(sp);
+      if (!sp) return flash('ENTER FREQUENCY');
+      if (!(f >= 118 && f <= 136.975)) return flash('FORMAT ERROR');
+      api?.atcAction({ action: 'setStandby', radio: atc.radio?.primaryRadio || 'vhf1', value: f });
+      ui.scratch = '';
+    },
+    R4: () => api?.atcAction({ action: 'swap', radio: atc.radio?.primaryRadio || 'vhf1' }),
+    R5: () => goPage('surv'),
+    L6: () => goPage('menu'),
+    R6: () => api?.atcAction({ action: 'swap', radio: atc.radio?.primaryRadio || 'vhf1' }),
+  };
+  latest.forEach((m, i) => { lsk[`L${i + 1}`] = () => { atc.selected = m; atc.readUpTo = Math.max(atc.readUpTo, m.id); goPage('atcmsg'); }; });
+  return { title: 'ATC COM', titleRight: atc.messages.some((m) => m.id > atc.readUpTo) ? 'NEW MSG' : '', rows: rows(list), lsk };
+}
+
+function atcMsgPage() {
+  const m = atc.selected;
+  if (!m) return atcPage();
+  const body = wrapText(describeMsg(m), COLS);
+  const list = [row([c(`${hhmm(m.createdAt)} FROM ${m.fromPosition || 'ATC'}`.slice(0, COLS), 'label')], [c(body[0] || '', 'big white')])];
+  for (let i = 1; i < 4; i++) list.push(row([], [c(body[i] || '', 'big white')]));
+  const freq = Number(m.frequency);
+  list.push(m.kind === 'contact' && freq >= 118 ? row([c('FREQUENCY', 'label')], [c(m.frequency, 'big green')], [], [c('TUNE>', 'amber')]) : blankRow());
+  list.push(row([], [c('<ATC COM', 'white')]));
+  return {
+    title: 'ATC MESSAGE',
+    rows: rows(list),
+    lsk: {
+      R5: () => { if (freq >= 118) api?.atcAction({ action: 'setStandby', radio: atc.radio?.primaryRadio || 'vhf1', value: freq }); flash('STANDBY SET - SWAP TO USE'); },
+      L6: () => goPage('atc'),
+    },
+  };
+}
+
+function survPage() {
+  const code = atc.radio?.squawk || '----';
+  const given = assignedSquawk();
+  return {
+    title: 'SURV',
+    titleRight: atc.radio?.identing ? 'IDENT' : '',
+    rows: rows([
+      row([c('SQUAWK', 'label')], [c(code, 'big cyan')], [c('IDENT', 'label')], [c(atc.radio?.identing ? 'ACTIVE' : 'IDENT>', atc.radio?.identing ? 'big green' : 'white')]),
+      row([c('ENTER CODE IN SCRATCHPAD', 'label')], [c('[    ]', 'cyan')]),
+      row([c('ATC ASSIGNED', 'label')], [c(given || '----', given ? 'big green' : 'dim')], [], [c(given && given !== code ? 'SET>' : '', 'amber')]),
+      row([c('CALLSIGN', 'label')], [c((settings.feedCallsign || '--------').toUpperCase(), 'big')]),
+      blankRow(),
+      row([], [c('<ATC COM', 'white')], [], [c('MENU>', 'white')]),
+    ]),
+    lsk: {
+      L2: (sp) => {
+        if (!/^[0-7]{4}$/.test(sp)) return flash('FORMAT ERROR');
+        api?.atcAction({ action: 'squawkSet', value: sp });
+        ui.scratch = '';
+      },
+      R1: () => api?.atcAction({ action: 'ident' }),
+      R3: () => { if (given) api?.atcAction({ action: 'squawkSet', value: given }); },
+      L6: () => goPage('atc'),
+      R6: () => goPage('menu'),
+    },
+  };
+}
+
+function applyAtcState(state) {
+  if (state.radio) atc.radio = state.radio;
+  if (state.messages) atc.messages = state.messages;
+  if (ui.page === 'atc' || ui.page === 'surv') {
+    if (ui.page === 'atc' && state.messages) atc.readUpTo = Math.max(atc.readUpTo, ...atc.messages.map((m) => m.id));
+    render();
+  }
+}
+
+const PAGES = { rte: routePage, legs: legsPage, prog: progPage, perf: perfPage, dir: dirPage, menu: menuPage, atc: atcPage, atcmsg: atcMsgPage, surv: survPage };
 
 // ---------------------------------------------------------------- skins
 
@@ -470,7 +587,7 @@ const SKINS = {
     keyCols: 7,
     keys: [
       ['DIR', 'dir'], ['PROG', 'prog'], ['PERF', 'perf'], ['INIT', 'rte'], ['DATA', null], ['', 'blank'], ['BRT', 'noop', 'small'],
-      ['F-PLN', 'legs'], ['RAD NAV', null], ['FUEL PRED', null], ['SEC F-PLN', null], ['ATC COMM', null], ['MCDU MENU', 'menu'], ['DIM', 'noop', 'small'],
+      ['F-PLN', 'legs'], ['RAD NAV', null], ['FUEL PRED', null], ['SEC F-PLN', null], ['ATC COMM', 'atc'], ['MCDU MENU', 'menu'], ['DIM', 'noop', 'small'],
       ['AIR PORT', 'airport', 'nav'], ['', 'blank', 'nav'], ['←', 'prev', 'nav arrow'], ['↑', 'up', 'nav arrow'], ['→', 'next', 'nav arrow'], ['↓', 'down', 'nav arrow'],
     ],
     alpha: [...'ABCDEFGHIJKLMNOPQRSTUVWXY', 'Z', '/', 'SP', 'OVFY', 'CLR'],
@@ -497,7 +614,7 @@ const SKINS = {
       ['ACTIVE', 'legs', 'tab'], ['POSITION', 'prog', 'tab'], ['SEC INDEX', null, 'tab'], ['DATA', 'menu', 'tab'],
       // KCCU page keys
       ['ESC', 'clrinfo'], ['↑', 'up', 'arrow'], ['DIR', 'dir'], ['PERF', 'perf'], ['INIT', 'rte'], ['NAV AID', null], ['C/L MENU', null],
-      ['CLR INFO', 'clrinfo'], ['↓', 'down', 'arrow'], ['F-PLN', 'legs'], ['DEST', 'airport'], ['SEC INDEX', null], ['SURV', null], ['ATC COM', null],
+      ['CLR INFO', 'clrinfo'], ['↓', 'down', 'arrow'], ['F-PLN', 'legs'], ['DEST', 'airport'], ['SEC INDEX', null], ['SURV', 'surv'], ['ATC COM', 'atc'],
       // display selection keys beside the trackball
       ['OIS', 'noop', 'nav'], ['ND', 'noop', 'nav'], ['MFD', 'noop', 'nav on'], ['MAIL BOX', 'noop', 'nav'], ['◀◀', 'up', 'nav'], ['▶▶', 'down', 'nav'],
     ],
@@ -516,7 +633,7 @@ const SKINS = {
     // left. Direct-to is done on LEGS: type the waypoint onto 1L.
     keyCols: 6,
     keys: [
-      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ATC', null], ['VNAV', 'perf'], ['', 'knob'],
+      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ATC', 'atc'], ['VNAV', 'perf'], ['', 'knob'],
       ['FIX', null], ['LEGS', 'legs'], ['HOLD', null], ['FMC COMM', null], ['PROG', 'prog'], ['EXEC', 'exec'],
       ['MENU', 'menu', 'nav'], ['NAV RAD', null, 'nav'], ['PREV PAGE', 'up', 'nav'], ['NEXT PAGE', 'down', 'nav'],
     ],
@@ -598,7 +715,7 @@ const SKINS = {
     keyCols: 8,
     keys: [
       ['PERF', 'perf'], ['NAV', 'menu'], ['PREV', 'up', 'boxed'], ['FPL', 'legs'], ['PROG', 'prog'], ['RTE', 'rte'], ['CB', null], ['BRT DIM', 'noop', 'small'],
-      ['MENU', 'menu'], ['DLK', null], ['NEXT', 'down', 'boxed'], ['', 'blank'], ['TRS', null], ['RADIO', null], ['', null], ['', 'knob'],
+      ['MENU', 'menu'], ['DLK', 'atc'], ['NEXT', 'down', 'boxed'], ['', 'blank'], ['TRS', null], ['RADIO', null], ['', null], ['', 'knob'],
     ],
     alpha: [...'ABCDEF', ...'GHIJKL', ...'MNOPQR', '', ...'STUVW', '', 'X', 'Y', 'Z', 'DEL', 'CLR'],
     alphaCols: 6,
@@ -1315,6 +1432,9 @@ $('log-clear').addEventListener('click', () => { ui.flightLog = []; $('cal-msg')
 async function loadSettings() {
   const saved = (await api?.loadFmsSettings?.()) || {};
   Object.assign(settings, saved, { keymap: { ...DEFAULT_KEYMAP, ...(saved.keymap || {}) }, live: false });
+  const companion = (await api?.loadSettings?.()) || {};
+  if (!settings.feedCallsign && companion.callsign) settings.feedCallsign = companion.callsign;
+  if (companion.monitorUrl && (!saved.feedUrl || saved.feedUrl === 'https://cpdlc.up.railway.app')) settings.feedUrl = companion.monitorUrl;
   Autopilot.setTuning(ap, settings.tuning);
   buildTuningEditor();
   $('planner-url').value = settings.plannerUrl || '';
@@ -1560,6 +1680,8 @@ $('live-dialog').addEventListener('close', () => {
   ui.page = 'rte';
   FmsView.mount(handleInput);
   api?.onTelemetry((sample) => { if (settings.source !== 'feed') ingest(sample); });
+  api?.onAtcState?.(applyAtcState);
+  api?.getAtcState?.().then((state) => state && applyAtcState({ radio: state.radio, messages: state.messages }));
   api?.onFeedSample?.(onFeedSample);
   api?.onFeedStatus?.((status) => { $('feed-status').textContent = status.message || status.state; });
   setInterval(yokeTick, 80);

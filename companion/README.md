@@ -333,3 +333,15 @@ and confirm with the pilot before vectoring off of it - see
 In FMS Settings choose **Position source -> AutoATC monitor**, enter your callsign and your monitor address (https://...), and set **Steering -> Yoke (A/D)**. Position and heading come
 from the game's data feed (no screen reading); lateral steering pulses A/D by heading error (adapted from 24Flight, see THIRD_PARTY.md).
 Regenerate planner plans once so they carry world positions, and run `npm install` for the `ws` dependency.
+
+## AutoATC Pilot (the autopilot app)
+
+The FMS / autopilot is no longer in the plain companion. Run **`npm run pilot`** instead of `npm start`: it is the same app
+(tracking, overlay, radios, datalink) with the FMS / MCDU opening alongside it. In the MCDU:
+
+- **ATC COM** (the ATC / ATC COMM / DLK key on your MCDU, or MENU -> ATC COM): the latest messages from ATC (contact, PDC, text), the
+  active/standby radio. Enter a frequency + `L4` for standby, `SWAP>` to use it; open a CONTACT message and `TUNE>` loads its frequency.
+- **SURV** (SURV key on the A350, or `SURV>` on ATC COM): your squawk, `IDENT>`, enter a 4-digit code on `L2`, and the code ATC assigned
+  (picked out of their message) with `SET>` to load it.
+
+Callsign and monitor address are taken from the companion's own settings.

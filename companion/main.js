@@ -10,6 +10,9 @@ const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
 const { createRelayClient, newRelayCredentials } = require('./lib/relayClient');
 const { createFeed, createMonitorFeed, DEFAULT_URL: DEFAULT_FEED_URL } = require('./lib/acftFeed');
 
+// The pilot app (pilot-main.js) is this same program with the FMS / autopilot, ATC COM and SURV switched on.
+const PILOT = process.env.AUTOATC_PILOT === '1';
+
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
 // never overwrite each other's settings with a stale copy.
@@ -143,7 +146,7 @@ function openFmsWindow() {
     minWidth: 760,
     minHeight: 640,
     alwaysOnTop: true,
-    title: 'FMS / Autopilot',
+    title: 'AutoATC Pilot - FMS / Autopilot',
     backgroundColor: '#15181d',
     webPreferences: PRELOAD_WEB_PREFS,
   });
@@ -225,7 +228,17 @@ ipcMain.handle('focus-control', () => {
 
 // Relays between the control window and the overlay window - they're
 // separate renderer processes and can't reach each other directly.
+const atcState = { radio: null, messages: [] };
 ipcMain.on('control-to-overlay', (event, payload) => {
+  if (payload?.type === 'radio-state') {
+    atcState.radio = payload;
+    sendToFms('atc-state', { radio: payload });
+  } else if (payload?.type === 'cpdlc-messages' && Array.isArray(payload.messages)) {
+    const seen = new Set(atcState.messages.map((m) => m.id));
+    atcState.messages.push(...payload.messages.filter((m) => !seen.has(m.id)));
+    atcState.messages = atcState.messages.slice(-50);
+    sendToFms('atc-state', { messages: atcState.messages });
+  }
   if (overlayWindow) overlayWindow.webContents.send('overlay-command', payload);
 });
 ipcMain.on('overlay-to-control', (event, payload) => {
@@ -270,7 +283,15 @@ ipcMain.handle('feed-start', (event, { url, callsign }) => {
 ipcMain.handle('feed-stop', () => { if (feed) feed.stop(); feed = null; return true; });
 ipcMain.handle('feed-set-callsign', (event, callsign) => { if (feed) feed.setCallsign(callsign); return true; });
 
-ipcMain.handle('open-fms', () => openFmsWindow());
+ipcMain.handle('open-fms', () => { if (PILOT) openFmsWindow(); return PILOT; });
+ipcMain.handle('is-pilot', () => PILOT);
+// What the FMS's ATC COM / SURV pages show: the radios + squawk, and the datalink messages,
+// both of which the control window owns. Cached here so a window opened later still has them.
+ipcMain.handle('get-atc-state', () => atcState);
+// A pilot action on those pages (tune, swap, squawk, ident) - handled by the control window like the overlay's own radio panel.
+ipcMain.on('atc-action', (event, action) => {
+  if (controlWindow) controlWindow.webContents.send('overlay-result', { tag: 'radio-action', ...action });
+});
 // Each tracking update from the control window, for the FMS/autopilot.
 ipcMain.on('telemetry', (event, sample) => {
   if (fmsWindow) fmsWindow.webContents.send('telemetry', sample);
@@ -377,6 +398,7 @@ ipcMain.handle('recognize-heading-text', (event, image) => {
 
 app.whenReady().then(() => {
   createControlWindow();
+  if (PILOT) openFmsWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createControlWindow();
   });
