@@ -325,8 +325,11 @@ let mapHint = null;
 let miniHint = null; // last minimap view, for the next fix
 let lastAutoMapFixAtMs = 0;
 let lastMiniFixAtMs = 0;
-let miniRejected = 0; // minimap fixes in a row that disagreed with where we were
-const MINI_TRUST_SCORE = 0.7;
+let lastNoCoastLogAtMs = 0;
+let miniPending = null; // a minimap fix that disagreed with where we were, waiting for others to agree with it
+const MINI_TRUST_SCORE = 0.75;
+const MINI_CONFIRMATIONS = 3; // agreeing fixes in a row before a jump is believed
+let lastSpeedKts = null; // from the HUD, for the tracking loop
 const MAP_MAX_WIDTH = 1100; // bigger crops are shrunk first - the match doesn't need more
 
 async function runMapFix(trigger, kind = 'big') {
@@ -347,24 +350,32 @@ async function runMapFix(trigger, kind = 'big') {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(captureVideo, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
     const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const fix = await window.companion.fixFromMap({ width: image.width, height: image.height, data: image.data }, { hint: mini ? miniHint : mapHint });
+    const fix = await window.companion.fixFromMap({ width: image.width, height: image.height, data: image.data }, { hint: mini ? miniHint : mapHint, minScore: mini ? 0.6 : 0.45 });
     if (fix.error) {
-      if (trigger === 'manual') setStatus(statusId, fix.error, 'bad');
+      if (trigger === 'manual' || (mini && fix.noCoast && Date.now() - lastNoCoastLogAtMs > 30_000)) {
+        if (trigger === 'manual') setStatus(statusId, fix.error, 'bad');
+        else { lastNoCoastLogAtMs = Date.now(); log('Minimap: ' + fix.error + ' (position carried by dead reckoning).'); }
+      }
       return false;
     }
     const world = { lat: -fix.yNm / 60, lon: fix.xNm / 60 };
     if (mini && currentFix) {
-      // The minimap is matched on coastline alone, so open sea or a look-alike shore can fool it. Trust a fix that
-      // agrees with where we think we are (dead reckoning, a stand or an earlier fix), or one that matches very well;
-      // distrust a big jump on a weak match - unless it keeps happening, then we were the ones who were wrong.
+      // The minimap is matched on coastline alone, so a look-alike shore can fool it. A fix that agrees with where we
+      // believe we are is taken. A jump is only believed when several fixes in a row agree with EACH OTHER (a wrong
+      // match changes every time; a real one doesn't), and a parked aircraft cannot jump at all.
       const moved = Math.hypot((world.lon - currentFix.world.lon) * 60, (world.lat - currentFix.world.lat) * 60);
-      const allowed = 0.6 + ((Date.now() - (lastCorrectionAtMs || Date.now())) / 3_600_000) * 400; // nm: some slack, plus up to 400 kt since the last real fix
-      if (moved > allowed && fix.score < MINI_TRUST_SCORE && miniRejected < 4) {
-        miniRejected += 1;
-        log(`Minimap fix ignored (${moved.toFixed(1)} nm away, match ${Math.round(fix.score * 100)}%).`);
-        return false;
+      const sinceFixHours = (Date.now() - (lastCorrectionAtMs || Date.now())) / 3_600_000;
+      const parked = lastSpeedKts !== null && lastSpeedKts < 5;
+      const allowed = parked ? 0.25 : 0.4 + sinceFixHours * 400;
+      if (moved > allowed) {
+        const same = miniPending && Math.hypot((world.lon - miniPending.world.lon) * 60, (world.lat - miniPending.world.lat) * 60) < 0.3;
+        miniPending = same ? { world, count: miniPending.count + 1 } : { world, count: 1 };
+        if (miniPending.count < MINI_CONFIRMATIONS || fix.score < MINI_TRUST_SCORE) {
+          log(`Minimap fix ignored (${moved.toFixed(1)} nm from where you were, match ${Math.round(fix.score * 100)}%, ${miniPending.count}/${MINI_CONFIRMATIONS} agreeing).`);
+          return false;
+        }
       }
-      miniRejected = 0;
+      miniPending = null;
     }
     if (mini) miniHint = { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score };
     else mapHint = { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score };
@@ -455,7 +466,7 @@ async function setPositionFromStand() {
   lastCorrectionAtMs = Date.now();
   mapHint = null;
   miniHint = null;
-  miniRejected = 0;
+  miniPending = null;
   const summary = `stand ${fix.stand} at ${icao} (${nearest.distanceNm.toFixed(2)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao})`;
   lastFixSummary = summary;
   setSidebar('dotFix', 'sidebarFixText', summary, 'good');
@@ -606,6 +617,7 @@ async function trackTick() {
   }
 
   lastHeadingDeg = heading;
+  lastSpeedKts = info.speedKts;
   const now = Date.now();
   currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts ?? 0, atMs: now });
 
