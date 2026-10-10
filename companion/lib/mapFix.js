@@ -232,6 +232,12 @@ async function fixFromMap(image, options = {}) {
   const marker = findMarker(image);
   if (!marker) return { error: 'no green aircraft marker found on the map' };
   const world = options.world || loadWorldMask();
+  // A view that is nearly all land or all sea has no coastline to match: it fits hundreds of places equally well.
+  const { values } = landMask(image);
+  let land = 0;
+  for (let i = 0; i < values.length; i++) land += values[i];
+  const fraction = land / values.length;
+  if (fraction < 0.06 || fraction > 0.94) return { error: 'this view is almost all land or all sea - no coastline in it to place you by', noCoast: true };
   const reg = await registerToWorld(image, { ...options, world });
   if (!reg) return { error: 'could not match this map view to the world - zoom out a little so some coastline is visible' };
   const wx = reg.x0 + marker.x / reg.zoom, wy = reg.y0 + marker.y / reg.zoom;

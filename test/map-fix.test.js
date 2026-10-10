@@ -61,3 +61,14 @@ test('a small, strongly zoomed-in view (like the minimap) is placed too', async 
   assert.ok(Math.abs(fix.xNm - (spec.x0 + spec.marker.x / spec.zoom) / world.pxPerNm) < 0.03);
   assert.ok(Math.abs(fix.yNm - (spec.y0 + spec.marker.y / spec.zoom) / world.pxPerNm) < 0.03);
 });
+
+test('a view with no coastline is refused instead of guessed', async () => {
+  const world = loadWorldMask();
+  // all land: the middle of Rockford's island
+  const data = new Uint8ClampedArray(200 * 200 * 4);
+  for (let i = 0; i < data.length; i += 4) { data[i] = 67; data[i + 1] = 137; data[i + 2] = 68; data[i + 3] = 255; }
+  data[(100 * 200 + 100) * 4] = 161; data[(100 * 200 + 100) * 4 + 1] = 233; data[(100 * 200 + 100) * 4 + 2] = 93;
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const o = ((100 + dy) * 200 + 100 + dx) * 4; data[o] = 161; data[o + 1] = 233; data[o + 2] = 93; }
+  const res = await fixFromMap({ width: 200, height: 200, data }, { world });
+  assert.ok(res.noCoast, JSON.stringify(res));
+});
