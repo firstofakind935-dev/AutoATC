@@ -389,5 +389,6 @@ $('range-down').addEventListener('click', () => { rangeIndex = Math.max(0, range
 $('range-up').addEventListener('click', () => { rangeIndex = Math.min(RANGES.length - 1, rangeIndex + 1); showRange(); });
 $('full').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); });
 showRange();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // installable + fast to open; works without it
 connect();
 requestAnimationFrame(frame);
