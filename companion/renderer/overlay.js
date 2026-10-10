@@ -42,6 +42,7 @@ function draw() {
     ['heading', '#e11d48'],
     ['info', '#2563eb'],
     ['minimap', '#16a34a'],
+    ['bigmap', '#f59e0b'],
   ];
   ctx.lineWidth = 2;
   for (const [key, color] of labels) {

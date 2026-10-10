@@ -189,6 +189,11 @@ document.getElementById('calibrateBtn').addEventListener('click', () => {
   });
 });
 
+document.getElementById('selectBigMapBtn').addEventListener('click', () => {
+  setStatus('regionStatus', 'Open the big map in the game, then drag a box over the whole map picture...', 'warn');
+  window.companion.sendToOverlay({ type: 'arm', kind: 'drag', tag: 'bigmap' });
+});
+
 document.getElementById('setPositionBtn').addEventListener('click', () => {
   if (!calibration) return;
   setStatus('fixStatus', 'Click your aircraft marker on the minimap...', 'warn');
@@ -201,7 +206,7 @@ window.companion.onOverlayResult(async (result) => {
     return;
   }
 
-  if (result.tag === 'heading' || result.tag === 'info' || result.tag === 'minimap') {
+  if (result.tag === 'heading' || result.tag === 'info' || result.tag === 'minimap' || result.tag === 'bigmap') {
     settings.regions = settings.regions || {};
     settings.regions[result.tag] = result.rect;
     await window.companion.saveSettings(settings);
@@ -310,6 +315,71 @@ async function populateAirportDropdowns() {
   }
 }
 
+// ---------- Position fix from the big map ----------
+// Screenshot of the open big map -> green marker + where the map is looking (lib/mapFix.js). Replaces
+// calibrating on two airports, and works at any zoom or pan. Slow (a second or two the first time, then
+// quick: the last view is used as a hint), so it never blocks the tracking loop.
+
+let mapFixBusy = false;
+let mapHint = null;
+let lastAutoMapFixAtMs = 0;
+const MAP_MAX_WIDTH = 1100; // bigger crops are shrunk first - the match doesn't need more
+
+async function runMapFix(trigger) {
+  const rect = toVideoRect(settings.regions && settings.regions.bigmap);
+  if (!rect) {
+    if (trigger === 'manual') setStatus('mapFixStatus', 'Select the big-map region first (step 3).', 'bad');
+    return false;
+  }
+  if (mapFixBusy || !captureVideo.videoWidth) return false;
+  mapFixBusy = true;
+  try {
+    const scale = Math.min(1, MAP_MAX_WIDTH / rect.w);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(rect.w * scale));
+    canvas.height = Math.max(1, Math.round(rect.h * scale));
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(captureVideo, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
+    const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const fix = await window.companion.fixFromMap({ width: image.width, height: image.height, data: image.data }, { hint: mapHint });
+    if (fix.error) {
+      if (trigger === 'manual') setStatus('mapFixStatus', fix.error, 'bad');
+      return false;
+    }
+    mapHint = { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score };
+    const world = { lat: -fix.yNm / 60, lon: fix.xNm / 60 };
+    const nearest = await window.companion.nearestAirport(airports, world);
+    currentFix = { world, atMs: Date.now() };
+    lastCorrectionAtMs = Date.now();
+    const summary = `${nearest.distanceNm.toFixed(2)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
+    lastFixSummary = summary;
+    setStatus('mapFixStatus', `Fixed: ${summary} (match ${Math.round(fix.score * 100)}%)`, 'ok');
+    setSidebar('dotFix', 'sidebarFixText', summary, 'good');
+    syncBar();
+    log(`Map fix: ${summary}, match ${Math.round(fix.score * 100)}%${trigger === 'auto' ? ' (automatic)' : ''}.`);
+    return true;
+  } catch (err) {
+    if (trigger === 'manual') setStatus('mapFixStatus', `Map fix failed: ${err.message}`, 'bad');
+    return false;
+  } finally {
+    mapFixBusy = false;
+  }
+}
+
+function manualMapFix() {
+  let left = 3;
+  const step = () => {
+    if (left === 0) { runMapFix('manual'); return; }
+    setStatus('mapFixStatus', `Make sure the big map is open - fixing in ${left}...`, 'warn');
+    left -= 1;
+    setTimeout(step, 1000);
+  };
+  step();
+}
+document.getElementById('mapFixBtn').addEventListener('click', manualMapFix);
+// F8 from inside the game: no countdown, the map is already open.
+window.companion.onMapFixHotkey(() => runMapFix('manual'));
+
 // ---------- Tracking loop ----------
 
 function log(message) {
@@ -395,8 +465,13 @@ async function trackTick() {
     log('Skipping - heading/info regions not set yet.');
     return;
   }
+  // While the big map is open, re-fix on it (at most every few seconds) - no clicking, no drift.
+  if (settings.regions.bigmap && Date.now() - lastAutoMapFixAtMs > 4000 && !mapFixBusy) {
+    lastAutoMapFixAtMs = Date.now();
+    runMapFix('auto');
+  }
   if (!currentFix) {
-    log('Skipping - no position fix yet. Click "Set my position" first.');
+    log('Skipping - no position fix yet. Open the big map and press F8 (or click "Set my position").');
     return;
   }
   if (!settings.monitorUrl) {
@@ -421,13 +496,16 @@ async function trackTick() {
   const heading = window.companion.parseHeadingTape(headingText);
   const info = window.companion.parseFlightInfo(infoText);
 
-  if (heading == null || info.speedKts == null) {
+  // Taxi speeds are hard to read; keep reporting from the last fix (held, not moved) instead of vanishing from the radar.
+  const speedUnread = heading != null && info.speedKts == null;
+  if (speedUnread) log('Speed unreadable - position held at the last fix (open the big map + F8 to re-fix).');
+  if (heading == null) {
     log(`Could not read heading/speed cleanly (heading OCR: "${headingText.replace(/\n/g, ' ')}", info OCR: "${infoText.replace(/\n/g, ' ')}") - skipping tick.`);
     return;
   }
 
   const now = Date.now();
-  currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts, atMs: now });
+  currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts ?? 0, atMs: now });
 
   // For the FMS/autopilot window, if it's open (relayed by main.js).
   window.companion.sendTelemetry({

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { fork } = require('child_process');
@@ -398,6 +398,8 @@ ipcMain.handle('recognize-heading-text', (event, image) => {
 
 app.whenReady().then(() => {
   createControlWindow();
+  // F8: take a position fix from the open big map, from inside the game.
+  globalShortcut.register('F8', () => { if (controlWindow) controlWindow.webContents.send('map-fix-hotkey'); });
   if (PILOT) openFmsWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createControlWindow();
@@ -407,6 +409,8 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
 app.on('before-quit', () => {
   if (ocrProcess) ocrProcess.kill();
