@@ -60,6 +60,7 @@ async function loadSettings() {
   document.getElementById('monitorUrl').value = settings.monitorUrl || '';
   document.getElementById('monitorApiKey').value = settings.monitorApiKey || '';
   document.getElementById('intervalSec').value = settings.intervalSec || 5;
+  document.getElementById('autoMiniCheck').checked = Boolean(settings.autoMinimap);
 }
 
 async function saveSettingsFromForm() {
@@ -417,6 +418,11 @@ function manualMapFix() {
 }
 document.getElementById('mapFixBtn').addEventListener('click', manualMapFix);
 document.getElementById('miniFixBtn').addEventListener('click', () => runMapFix('manual', 'mini'));
+document.getElementById('autoMiniCheck').addEventListener('change', async (e) => {
+  settings.autoMinimap = e.target.checked;
+  await window.companion.saveSettings(settings);
+  log(`Automatic minimap fixes ${settings.autoMinimap ? 'ON' : 'OFF'}.`);
+});
 // Saves exactly what the companion sees in the minimap box, to check the region and the marker colour.
 document.getElementById('miniShotBtn').addEventListener('click', () => {
   const rect = toVideoRect(settings.regions && settings.regions.minimap);
@@ -607,7 +613,7 @@ async function trackTick() {
     runMapFix('auto');
   }
   // The minimap, matched against the world map, keeps the position right between fixes - no pilot action.
-  if (settings.regions.minimap && !mapFixBusy && Date.now() - lastMiniFixAtMs > 2500) {
+  if (settings.autoMinimap && settings.regions.minimap && !mapFixBusy && Date.now() - lastMiniFixAtMs > 2500) {
     lastMiniFixAtMs = Date.now();
     runMapFix('auto', 'mini');
   }
