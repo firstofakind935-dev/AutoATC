@@ -37,3 +37,28 @@ test2('yokePulse ignores the deadband and pulses outside it', () => {
   const p = AP.yokePulse(50, 1000, st);
   assert2.ok(p && p.direction > 0 && p.holdMs > 0);
 });
+
+test('companion airports sit where the radar draws them, and calibration + dead reckoning agree on distances', () => {
+  const { loadAirports, nearestAirport } = require('../companion/lib/airports');
+  const { buildCalibration } = require('../companion/lib/calibration');
+  const { integrate } = require('../companion/lib/deadReckoning');
+  const { distanceBearingNm } = require('../companion/lib/coords');
+  const anchors = require('../data/worldAnchors.json').airports;
+  const airports = loadAirports();
+  const byIcao = Object.fromEntries(airports.map((a) => [a.icao, a]));
+  assert2.ok(byIcao.IRFD && byIcao.IMLR);
+  // Distance + bearing between two airports equals what the radar's grid says.
+  const d = distanceBearingNm(byIcao.IRFD.world, byIcao.IMLR.world);
+  const dx = anchors.IMLR.xNm - anchors.IRFD.xNm, dy = anchors.IMLR.yNm - anchors.IRFD.yNm;
+  assert2.ok(Math.abs(d.distanceNm - Math.hypot(dx, dy)) < 0.01);
+  // A minimap calibrated on two airports puts a third pixel where the grid says.
+  const cal = buildCalibration([{ pixel: { x: 0, y: 0 }, world: byIcao.IRFD.world }, { pixel: { x: 100, y: 0 }, world: byIcao.IMLR.world }]);
+  const p = cal.project({ x: 50, y: 0 });
+  const mid = distanceBearingNm(byIcao.IRFD.world, p);
+  assert2.ok(Math.abs(mid.distanceNm - Math.hypot(dx, dy) / 2) < 0.01);
+  // Flying 10 nm east moves the estimate 10 nm east - no cos shrink.
+  const moved = integrate({ world: byIcao.IRFD.world, atMs: 0 }, { headingDeg: 90, speedKts: 10, atMs: 3_600_000 });
+  const m = distanceBearingNm(byIcao.IRFD.world, moved.world);
+  assert2.ok(Math.abs(m.distanceNm - 10) < 0.01 && Math.abs(m.bearingDeg - 90) < 0.1);
+  assert2.strictEqual(nearestAirport(airports, byIcao.IRFD.world).icao, 'IRFD');
+});
