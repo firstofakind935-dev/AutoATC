@@ -57,7 +57,7 @@ const settings = {
   plannerUrl: '',
   skin: 'auto',
   source: 'screen', // screen = read the HUD; feed = the game's own numbers over the live feed
-  feedUrl: '',
+  feedUrl: 'https://cpdlc.up.railway.app',
   feedCallsign: '',
   tuning: {}, // autopilot gains changed from the defaults (see Autopilot.TUNABLE)
   panel: 'auto', // auto = FCU for Airbus A320/330/340, MCP for other jets; native = the simple panel of each FMS style
