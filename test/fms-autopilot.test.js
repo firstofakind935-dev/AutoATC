@@ -246,3 +246,31 @@ test('an "at or above" restriction ahead lifts the target and calls for a climb'
   assert.equal(g.phase, 'CLB');
   assert.ok(g.vnav.targetAltFt >= 2500);
 });
+
+// --- speed restriction -------------------------------------------------------
+
+test('speed is held to 250 kt or less below 3000 ft, and released above it', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 5000 });
+  assert.ok(plan.profile.climbKt > 250, 'the A320 climbs faster than 250, so the limit matters');
+  const fms = Fms.load(plan);
+  const start = plan.waypoints[0];
+  const at = { lat: start.lat, lon: start.lon };
+  const low = Fms.guidance(fms, at, { altFt: 1200, speedKt: 200 });
+  assert.equal(low.speedKt, 250);
+  assert.equal(low.speedLimited, true);
+  const high = Fms.guidance(fms, at, { altFt: 3600, speedKt: 250 });
+  assert.equal(high.speedKt, plan.profile.climbKt);
+  assert.equal(high.speedLimited, false);
+  // just under 3000 on the way back down: limited again, but not flipping at the line
+  assert.equal(Fms.guidance(fms, at, { altFt: 3050, speedKt: 250 }).speedLimited, false, 'stays released between 3000 and 3100');
+  assert.equal(Fms.guidance(fms, at, { altFt: 2900, speedKt: 250 }).speedLimited, true);
+  assert.equal(Fms.guidance(fms, at, { altFt: 3050, speedKt: 250 }).speedLimited, true, 'stays limited until 3100');
+});
+
+test('aircraft already slower than 250 are unaffected', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'DH8D', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 5000 });
+  const fms = Fms.load(plan);
+  const g = Fms.guidance(fms, { lat: plan.waypoints[0].lat, lon: plan.waypoints[0].lon }, { altFt: 100, speedKt: 150 });
+  assert.equal(g.speedKt, plan.profile.climbKt);
+  assert.equal(g.speedLimited, false);
+});

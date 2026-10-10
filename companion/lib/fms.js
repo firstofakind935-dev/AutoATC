@@ -31,6 +31,11 @@
   const MAX_INTERCEPT_DEG = 30;
   // Slow to approach speed this far from the destination.
   const APPROACH_NM = 4;
+  // Speed restriction: 250 kt or less below 3000 ft. Released a little above
+  // so the target doesn't flip back and forth right at 3000.
+  const SPEED_LIMIT_KT = 250;
+  const SPEED_LIMIT_BELOW_FT = 3000;
+  const SPEED_LIMIT_RELEASE_FT = 3100;
 
   function toLocalNm(from, to) {
     return {
@@ -194,7 +199,13 @@
     else if (nextFloor && alt !== null && alt < nextFloor.altFt - 100) phase = 'CLB'; // climb to meet an at-or-above restriction
     else phase = 'CRZ';
 
-    const speedKt = { CLB: p.climbKt, CRZ: p.cruiseKt, DES: p.descentKt, APP: p.approachKt, DONE: p.approachKt }[phase];
+    let speedKt = { CLB: p.climbKt, CRZ: p.cruiseKt, DES: p.descentKt, APP: p.approachKt, DONE: p.approachKt }[phase];
+    if (alt !== null) {
+      if (alt < SPEED_LIMIT_BELOW_FT) state.speedLimited = true;
+      else if (alt > SPEED_LIMIT_RELEASE_FT) state.speedLimited = false;
+    }
+    const speedLimited = Boolean(state.speedLimited) && speedKt > SPEED_LIMIT_KT;
+    if (speedLimited) speedKt = SPEED_LIMIT_KT;
     const verticalSpeedFpm = phase === 'CLB' ? p.climbFpm : phase === 'DES' || phase === 'APP' ? -p.descentFpm : 0;
 
     return {
@@ -203,6 +214,7 @@
       lnav,
       vnav: { targetAltFt, verticalSpeedFpm, pathAltFt: Math.round(pathAltFt), constraint: limitedBy },
       speedKt,
+      speedLimited, // true while the 250 kt below 3000 ft limit is lowering the target
       distanceToDestNm: toDest,
       // Minutes to go at the current speed (or the plan's cruise speed).
       eteMin: (toDest / Math.max(60, telemetry.speedKt || p.cruiseKt)) * 60,
