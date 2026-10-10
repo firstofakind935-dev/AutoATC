@@ -959,3 +959,18 @@ hand; *Reset to defaults* undoes it all. While the autopilot or A/T is on, a
 flight log (heading, altitude and speed against their targets, rates and every
 input) is kept; *Download flight log* saves it as a CSV for tuning from real
 data.
+
+### Just callsign, departure and destination
+
+The planner form asks only for those three. The aircraft (A320), cruise
+altitude, runways, SID, STAR and approach are chosen automatically: the runway
+that points most nearly along the direction of flight, the departure whose last
+fix is on the way to the destination (a SID that ends at the airport, or is
+only radar vectors, is never picked automatically), the STAR that adds the
+least distance, and the best approach for that runway (ILS first; RNP AR last
+because it needs authorization). Without wind or ATIS data this is a sensible
+default, not the runway in use - **Advanced options** has the aircraft,
+cruise altitude, a typed route, and *None* / *I'll choose* for the procedures.
+The FMS also now starts turning early before a sharp turn (a standard-rate
+turn's radius, up to 5 nm), so routes with SIDs and STARs are flown without
+overshooting corners.

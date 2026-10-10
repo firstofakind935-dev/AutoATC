@@ -8,8 +8,10 @@ const { distanceBearing, project } = require('./geo');
 const { findAirport } = require('./navdata');
 const { findAircraft } = require('./aircraft');
 const { findRoute, parseRoute } = require('./route');
-const { expandSid, expandStar, expandApproach } = require('./procedures');
+const { expandSid, expandStar, expandApproach, chooseDeparture, chooseArrival } = require('./procedures');
 
+// Used when the pilot gives only a callsign, departure and destination.
+const DEFAULT_AIRCRAFT = 'A320';
 const MIN_CRUISE_AGL_FT = 1500;
 const CRUISE_SEARCH_STEP_FT = 500;
 // Fraction of the trip the climb + descent may use when picking a cruise
@@ -40,10 +42,10 @@ function semicircularCap(altFt, trackDeg) {
   return thousands * 1000;
 }
 
-function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, route, sid, depRunway, star, arrRunway, starEntry, approach, approachIaf }) {
+function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, route, sid, depRunway, star, arrRunway, starEntry, approach, approachIaf, auto = true }) {
   const flightCallsign = String(callsign || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!flightCallsign) throw planError('Callsign is required');
-  const aircraft = findAircraft(aircraftType);
+  const aircraft = findAircraft(aircraftType || DEFAULT_AIRCRAFT);
   if (!aircraft) throw planError(`Unknown aircraft type "${aircraftType}"`);
   const from = findAirport(origin);
   const to = findAirport(destination);
@@ -54,6 +56,13 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
   // Departure and arrival procedures (SID / STAR / approach) from the charts. The
   // en-route part runs from the end of the SID to the start of the STAR; fixes a
   // chart uses that we have no position for are reported, not guessed.
+  // Procedures the pilot didn't pick are chosen automatically (unless they typed their own
+  // route or switched this off): the runway along the direction of flight, the SID that
+  // exits towards the destination, the STAR that adds the least distance, the best approach.
+  if (auto !== false && !(route && String(route).trim())) {
+    if (!sid && !depRunway) ({ sid, depRunway } = { ...chooseDeparture(from, to) });
+    if (!star && !arrRunway && !approach) ({ star, arrRunway, starEntry, approach, approachIaf } = { ...chooseArrival(from, to) });
+  }
   const procedures = {};
   let sidFixes = [];
   let arrivalFixes = [];

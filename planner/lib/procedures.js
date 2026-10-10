@@ -111,4 +111,102 @@ function expandApproach(icao, name, iaf) {
   return { name: app.name, runway: app.runway, type: app.type, finalCourseDeg: app.finalCourseDeg, missed: app.missed, ...resolved };
 }
 
-module.exports = { listProcedures, expandSid, expandStar, expandApproach, hasProcedures: (icao) => files.has(String(icao || '').toUpperCase()), findAirport };
+// ---- automatic selection ----------------------------------------------------
+// Picks a runway, SID / STAR and approach from the airports alone, the way a
+// dispatcher would without wind: the runway that points most nearly along the
+// direction of flight, the departure that exits towards the destination, and
+// the arrival that adds the least distance.
+
+const { distanceBearing, angleDiff } = require('./geo');
+
+const approachRank = { ILS: 0, LDA: 1, VOR: 2, GLS: 3, RNP: 4 }; // RNP AR needs authorization, GLS needs ground equipment
+const parallelRank = (rwy) => ({ C: 0, R: 1, L: 2 }[String(rwy).slice(-1)] ?? 0);
+const lastPlaced = (list, from) => (list.length ? list[list.length - 1] : from);
+
+function polylineNm(points) {
+  let nm = 0;
+  for (let i = 1; i < points.length; i++) nm += distanceBearing(points[i - 1], points[i]).distanceNm;
+  return nm;
+}
+
+function runwayHeadings(airport) {
+  const out = new Map();
+  for (const r of airport?.runways || []) if (r.headingDeg != null) out.set(normRunway(r.id), r.headingDeg);
+  return out;
+}
+
+/** Departure runway and SID for flying from `from` to `to`; {} when there are no procedures. */
+function chooseDeparture(from, to) {
+  const data = files.get(from.icao);
+  if (!data || !data.sids.length) return {};
+  const track = distanceBearing(from, to).bearingDeg;
+  const headings = runwayHeadings(from);
+  const candidates = [];
+  for (const sid of data.sids) {
+    for (const key of Object.keys(sid.runways)) {
+      for (const rwy of splitKey(key)) {
+        const heading = headings.get(rwy);
+        if (heading == null) continue;
+        const resolved = resolveLegs(sid.runways[key]);
+        const exit = lastPlaced(resolved.fixes, from);
+        // distance flown via the SID's last fix, plus penalties: fixes with no position, and SIDs that are only radar vectors
+        const via = distanceBearing(from, exit).distanceNm + distanceBearing(exit, to).distanceNm;
+        const score = Math.abs(angleDiff(heading, track)) * 0.4 + (via - distanceBearing(from, to).distanceNm) + resolved.unplaced.length * 6 + (resolved.fixes.length ? 0 : 5) + parallelRank(rwy) * 0.01;
+        // a SID that ends at the airport itself (or is only vectors) is not a route to anywhere, so it is never picked automatically
+        if (!resolved.fixes.length || distanceBearing(from, exit).distanceNm < 2.5) continue;
+        candidates.push({ sid: sid.name, depRunway: rwy, score });
+      }
+    }
+  }
+  candidates.sort((a, b) => a.score - b.score);
+  // nothing sensible (every departure goes the wrong way): fly direct rather than a long detour
+  return candidates[0] && candidates[0].score < 25 ? { sid: candidates[0].sid, depRunway: candidates[0].depRunway } : {};
+}
+
+/** Arrival runway, STAR, entry and approach; {} when there are no procedures. */
+function chooseArrival(from, to) {
+  const data = files.get(to.icao);
+  if (!data || (!data.stars.length && !data.approaches.length)) return {};
+  const track = distanceBearing(from, to).bearingDeg;
+  const headings = runwayHeadings(to);
+  const direct = distanceBearing(from, to).distanceNm;
+  const best = [];
+  const runways = new Set([...data.stars.flatMap((p) => Object.keys(p.runways).flatMap(splitKey)), ...data.approaches.flatMap((a) => splitKey(a.runway))]);
+  for (const rwy of runways) {
+    const heading = headings.get(rwy);
+    if (heading == null) continue;
+    // an approach: the best kind that this runway has, placed fixes preferred
+    const apps = data.approaches.filter((a) => splitKey(a.runway).includes(rwy)).map((a) => ({ a, resolved: resolveLegs(a.legs), rank: (approachRank[a.type] ?? 5) }));
+    apps.sort((x, y) => (x.rank + x.resolved.unplaced.length * 0.5) - (y.rank + y.resolved.unplaced.length * 0.5));
+    const app = apps[0];
+    for (const star of data.stars) {
+      const legs = legsFor(star.runways, rwy);
+      if (!legs) continue;
+      const resolved = resolveLegs(legs);
+      const entries = (star.entries || []).map(lookup).filter(Boolean);
+      const entry = entries.sort((a, b) => distanceBearing(from, a).distanceNm - distanceBearing(from, b).distanceNm)[0];
+      if (!entry && !resolved.fixes.length) continue;
+      const path = [from, ...(entry ? [entry] : []), ...resolved.fixes];
+      const end = path[path.length - 1];
+      let iaf = null;
+      if (app) {
+        const placed = (app.a.iaf || []).map(lookup).filter(Boolean);
+        iaf = placed.sort((a, b) => distanceBearing(end, a).distanceNm - distanceBearing(end, b).distanceNm)[0] || null;
+        if (iaf) path.push(iaf);
+      }
+      const total = polylineNm(path) + distanceBearing(path[path.length - 1], to).distanceNm;
+      const score = (total - direct) + resolved.unplaced.length * 6 + (/only if unable|use only if/i.test(star.notes || '') ? 15 : 0)
+        + Math.abs(angleDiff(heading, track)) * 0.1 + (app ? app.rank * 2 + app.resolved.unplaced.length : 12) + parallelRank(rwy) * 0.01;
+      best.push({ score, star: star.name, arrRunway: rwy, starEntry: entry && entry.ident, approach: app && app.a.name, approachIaf: iaf && iaf.ident });
+    }
+  }
+  best.sort((a, b) => a.score - b.score);
+  const pick = best[0];
+  if (!pick) return {};
+  const out = { star: pick.star, arrRunway: pick.arrRunway };
+  if (pick.starEntry && (data.stars.find((s) => s.name === pick.star).entries || []).includes(pick.starEntry)) out.starEntry = pick.starEntry;
+  if (pick.approach) { out.approach = pick.approach; if (pick.approachIaf) out.approachIaf = pick.approachIaf; }
+  return out;
+}
+
+module.exports = { chooseDeparture, chooseArrival, listProcedures, expandSid, expandStar, expandApproach, hasProcedures: (icao) => files.has(String(icao || '').toUpperCase()), findAirport };

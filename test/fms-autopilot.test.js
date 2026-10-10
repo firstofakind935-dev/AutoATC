@@ -360,3 +360,20 @@ test('the flight log has one CSV row per update', () => {
   assert.equal(head.split(',').length, row.split(',').length - (result.commands.length ? 0 : 0) + 0);
   assert.match(row, /,95,/);
 });
+
+test('a waypoint before a sharp turn is sequenced early, and before a gentle one it is not', () => {
+  const base = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 5000, auto: false });
+  const make = (third) => {
+    const plan = { ...base, waypoints: [
+      { ident: 'A', type: 'WPT', lat: 41.5, lon: -0.2 },
+      { ident: 'B', type: 'WPT', lat: 41.5, lon: -0.1 },
+      { ident: 'C', type: 'WPT', ...third },
+    ] };
+    return Fms.load(plan);
+  };
+  const before = { lat: 41.5, lon: -0.1 - 2.5 / (60 * Math.cos((41.5 * Math.PI) / 180)) }; // 2.5 nm short of B on the first leg
+  const sharp = make({ lat: 41.5, lon: -0.2 }); // doubles back
+  assert.equal(Fms.sequence(sharp, before, 250)?.ident, 'B', 'turns early for a sharp corner');
+  const gentle = make({ lat: 41.5, lon: 0 }); // carries straight on
+  assert.equal(Fms.sequence(gentle, before, 250), null, 'no early turn when the route goes straight on');
+});

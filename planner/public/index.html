@@ -22,13 +22,24 @@
     <h2>New flight plan</h2>
     <form id="plan-form">
       <label>Callsign <input name="callsign" required maxlength="10" placeholder="N42Y" autocomplete="off"></label>
-      <label>Aircraft <select name="aircraftType" required></select></label>
       <label>Departure <select name="origin" required></select></label>
       <label>Arrival <select name="destination" required></select></label>
-      <label>Cruise altitude <input name="cruiseAltFt" type="number" step="500" min="0" placeholder="Auto"></label>
-      <label class="wide">Route <input name="route" placeholder="Leave blank to find one, or type waypoints: SHELL NIKON" autocomplete="off"></label>
-      <details class="wide" id="procs" hidden>
-        <summary>Departure / arrival procedures <span class="dim small" id="procs-hint"></span></summary>
+      <details class="wide" id="advanced">
+        <summary>Advanced options <span class="dim small">aircraft, cruise altitude, route, procedures - all chosen automatically if left alone</span></summary>
+        <div class="procs-grid">
+          <label>Aircraft <select name="aircraftType"></select></label>
+          <label>Cruise altitude <input name="cruiseAltFt" type="number" step="500" min="0" placeholder="Auto"></label>
+          <label class="wide">Route <input name="route" placeholder="Leave blank to find one, or type waypoints: SHELL NIKON" autocomplete="off"></label>
+          <label>Procedures
+            <select name="procMode" id="proc-mode">
+              <option value="auto">Automatic (runway, SID, STAR, approach)</option>
+              <option value="none">None - waypoint to waypoint</option>
+              <option value="manual">I'll choose</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <div class="wide" id="procs" hidden>
         <div class="procs-grid">
           <label>Departure runway <select name="depRunway"></select></label>
           <label>SID <select name="sid"></select></label>
@@ -39,7 +50,7 @@
           <label>Approach start (IAF) <select name="approachIaf"></select></label>
         </div>
         <p class="dim small">From the AeroNav charts. Fixes the charts use that have no position are skipped and flagged in the plan.</p>
-      </details>
+      </div>
       <div class="wide actions">
         <button class="primary" type="submit">Generate flight plan</button>
         <span id="form-error" class="error" role="alert"></span>

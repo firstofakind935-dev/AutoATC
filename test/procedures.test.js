@@ -57,7 +57,7 @@ test('fixes with no position are skipped and flagged, not invented', () => {
 });
 
 test('a plan without procedures is unchanged', () => {
-  const plan = buildPlan({ ...base, origin: 'IRFD', destination: 'ITKO' });
+  const plan = buildPlan({ ...base, origin: 'IRFD', destination: 'ITKO', auto: false });
   assert.equal(plan.procedures, undefined);
 });
 
@@ -78,4 +78,32 @@ test('a Tokyo arrival with an approach builds a plan, flagging fixes with no pos
   const ids = plan.waypoints.map((w) => w.ident);
   assert.ok(ids.includes('PIPER') && ids.includes('ASTRO') && ids.includes('SHIBA'));
   assert.ok(plan.warnings.some((w) => /APPROACH.*LORRY, LYCOS/.test(w)));
+});
+
+test('with only a callsign, departure and destination, the procedures pick themselves', () => {
+  // no aircraft, no runway, no SID, no STAR: all automatic
+  const a = buildPlan({ callsign: 'N42Y', origin: 'ITKO', destination: 'IRFD' });
+  assert.equal(a.aircraft.icao, 'A320', 'a default aircraft');
+  assert.ok(a.procedures.sid && a.procedures.star && a.procedures.approach, 'SID, STAR and approach chosen');
+  assert.match(a.procedures.approach.name, /^ILS/, 'an ILS is preferred to an RNP AR approach');
+  const heading = findAirport('IRFD').runways.find((r) => r.id === a.procedures.star.runway).headingDeg;
+  assert.ok(Math.abs(heading - 250) < 40 || Math.abs(heading - 70) < 40, `runway ${a.procedures.star.runway} faces along the arrival direction`);
+  // it never picks a procedure that flies the wrong way: every fix stays near the airports involved
+  for (const w of a.waypoints) assert.ok(Math.min(distanceNm(findAirport('ITKO'), w), distanceNm(findAirport('IRFD'), w)) < 40);
+  // a departure whose only SIDs end at the airport is flown direct
+  const direct = buildPlan({ callsign: 'N42Y', origin: 'IPPH', destination: 'ILAR' });
+  assert.equal(direct.procedures, undefined);
+  // airports without charts behave as before
+  assert.equal(buildPlan({ callsign: 'N42Y', origin: 'IZOL', destination: 'ILAR' }).procedures, undefined);
+});
+
+test('the pilot can still pick procedures, or switch them off', () => {
+  const picked = buildPlan({ ...base, origin: 'IRFD', destination: 'ITKO', sid: 'DARRK3', depRunway: '25L' });
+  assert.equal(picked.procedures.sid.name, 'DARRK3');
+  assert.ok(picked.procedures.star, 'the arrival side, which the pilot did not touch, is still automatic');
+  const armed = buildPlan({ ...base, origin: 'ITKO', destination: 'IRFD', star: 'KUNAV2', arrRunway: '25L' });
+  assert.equal(armed.procedures.star.name, 'KUNAV2');
+  assert.equal(armed.procedures.approach, undefined, 'a side the pilot touched is not auto-filled');
+  const typed = buildPlan({ ...base, origin: 'IRFD', destination: 'ITKO', route: 'SKYDV' });
+  assert.equal(typed.procedures, undefined, 'a typed route stays as typed');
 });
