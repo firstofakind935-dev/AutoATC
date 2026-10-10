@@ -8,7 +8,7 @@ const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
 const { createMouseSteer } = require('./lib/mouseSteer');
 const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
 const { createRelayClient, newRelayCredentials } = require('./lib/relayClient');
-const { createFeed, DEFAULT_URL: DEFAULT_FEED_URL } = require('./lib/acftFeed');
+const { createFeed, createMonitorFeed, DEFAULT_URL: DEFAULT_FEED_URL } = require('./lib/acftFeed');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
@@ -247,20 +247,23 @@ ipcMain.handle('save-fms-settings', (event, settings) => {
 // Live aircraft feed: true position, heading, altitude and speed for your callsign.
 ipcMain.handle('feed-start', (event, { url, callsign }) => {
   if (feed) feed.stop();
-  let WebSocketImpl;
-  try {
-    WebSocketImpl = require('ws'); // loaded here so the app still starts if `npm install` hasn't fetched it
-  } catch {
-    sendToFms('feed-status', { state: 'error', detail: 'the "ws" package is missing - run npm install' });
+  const handlers = { callsign, onSample: (sample) => sendToFms('feed-sample', sample), onStatus: (status) => sendToFms('feed-status', status) };
+  // An http(s) address is AutoATC's own monitor (the default); ws(s) is a raw aircraft data feed.
+  if (/^wss?:/i.test(url || '')) {
+    let WebSocketImpl;
+    try {
+      WebSocketImpl = require('ws'); // loaded here so the app still starts if `npm install` hasn't fetched it
+    } catch {
+      sendToFms('feed-status', { state: 'error', message: 'the "ws" package is missing - run npm install' });
+      return false;
+    }
+    feed = createFeed({ ...handlers, url, WebSocketImpl });
+  } else if (/^https?:/i.test(url || '')) {
+    feed = createMonitorFeed({ ...handlers, url });
+  } else {
+    sendToFms('feed-status', { state: 'error', message: 'enter the monitor address (https://...)' });
     return false;
   }
-  feed = createFeed({
-    url: url || DEFAULT_FEED_URL,
-    callsign,
-    WebSocketImpl,
-    onSample: (sample) => sendToFms('feed-sample', sample),
-    onStatus: (status) => sendToFms('feed-status', status),
-  });
   feed.start();
   return true;
 });

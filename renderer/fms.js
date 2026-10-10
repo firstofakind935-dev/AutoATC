@@ -1181,7 +1181,7 @@ async function ingest(sample) {
 
 function onFeedSample(s) {
   if (settings.source !== 'feed') return;
-  const world = World.studsToWorld(s.studX, s.studY);
+  const world = typeof s.xNm === 'number' ? { xNm: s.xNm, yNm: s.yNm } : World.studsToWorld(s.studX, s.studY);
   const flat = World.worldToFlat(world.xNm, world.yNm);
   ingest({ ...s, lat: flat.lat, lon: flat.lon, atMs: s.atMs || Date.now() });
 }
@@ -1189,7 +1189,8 @@ function onFeedSample(s) {
 function startFeed() {
   const callsign = (settings.feedCallsign || '').trim();
   if (!callsign) { $('feed-status').textContent = 'Enter your callsign'; return api?.feedStop?.(); }
-  api?.feedStart?.({ url: settings.feedUrl || undefined, callsign });
+  if (!settings.feedUrl) { $('feed-status').textContent = 'Enter the monitor address'; return api?.feedStop?.(); }
+  api?.feedStart?.({ url: settings.feedUrl, callsign });
 }
 
 // Pulses A/D (key taps whose length follows the heading error) while the autopilot is engaged.
