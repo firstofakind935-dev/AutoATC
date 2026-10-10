@@ -36,6 +36,10 @@
   const SPEED_LIMIT_KT = 250;
   const SPEED_LIMIT_BELOW_FT = 3000;
   const SPEED_LIMIT_RELEASE_FT = 3100;
+  // Anticipating a slow-down: aircraft shed speed at roughly this rate, so the
+  // lower speed is targeted early enough to actually be there when the
+  // restriction (250 kt at 3000 ft, approach speed at the final approach) starts.
+  const DECEL_KT_PER_S = 0.8;
 
   function toLocalNm(from, to) {
     return {
@@ -200,9 +204,24 @@
     else phase = 'CRZ';
 
     let speedKt = { CLB: p.climbKt, CRZ: p.cruiseKt, DES: p.descentKt, APP: p.approachKt, DONE: p.approachKt }[phase];
+    // Anticipate: start slowing before a restriction begins, by the time it takes
+    // to shed the extra speed at DECEL_KT_PER_S.
+    const descending = phase === 'DES' || phase === 'APP';
+    let anticipating = false;
+    const speedNow = typeof telemetry.speedKt === 'number' ? telemetry.speedKt : speedKt;
+    if (phase !== 'APP' && phase !== 'DONE' && speedKt > p.approachKt) {
+      const secs = Math.max(0, speedNow - p.approachKt) / DECEL_KT_PER_S;
+      const leadNm = (Math.max(speedNow, p.approachKt) / 3600) * secs / 2; // average speed while slowing
+      if (toDest <= APPROACH_NM + leadNm) { speedKt = p.approachKt; anticipating = true; }
+    }
     if (alt !== null) {
-      if (alt < SPEED_LIMIT_BELOW_FT) state.speedLimited = true;
-      else if (alt > SPEED_LIMIT_RELEASE_FT) state.speedLimited = false;
+      // On the way down, the 250 kt limit starts early enough that 250 is reached by 3000 ft.
+      const excess = Math.max(0, speedNow - SPEED_LIMIT_KT);
+      const leadFt = descending ? (excess / DECEL_KT_PER_S) * (p.descentFpm / 60) : 0;
+      if (alt < SPEED_LIMIT_BELOW_FT + leadFt) {
+        if (alt >= SPEED_LIMIT_BELOW_FT) anticipating = true;
+        state.speedLimited = true;
+      } else if (alt > SPEED_LIMIT_RELEASE_FT + leadFt) state.speedLimited = false;
     }
     const speedLimited = Boolean(state.speedLimited) && speedKt > SPEED_LIMIT_KT;
     if (speedLimited) speedKt = SPEED_LIMIT_KT;
@@ -215,6 +234,7 @@
       vnav: { targetAltFt, verticalSpeedFpm, pathAltFt: Math.round(pathAltFt), constraint: limitedBy },
       speedKt,
       speedLimited, // true while the 250 kt below 3000 ft limit is lowering the target
+      anticipating, // true when the target was lowered early, ahead of a restriction
       distanceToDestNm: toDest,
       // Minutes to go at the current speed (or the plan's cruise speed).
       eteMin: (toDest / Math.max(60, telemetry.speedKt || p.cruiseKt)) * 60,

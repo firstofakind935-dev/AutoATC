@@ -291,3 +291,29 @@ test('auto-throttle pulls back harder when too fast than it adds thrust when too
   assert.ok(feed(330).ms <= Autopilot.DEFAULT_TUNING.maxDecelPulseMs);
   assert.ok(slow.ms <= Autopilot.DEFAULT_TUNING.maxPulseMs);
 });
+
+test('the slow-down starts early: above 3000 ft on the way down, and before the final approach', () => {
+  const plan = buildPlan({ callsign: 'T1', aircraftType: 'A320', origin: 'IRFD', destination: 'ITKO', cruiseAltFt: 8000 });
+  const dest = plan.waypoints[plan.waypoints.length - 1];
+  // 10 nm out on the last leg, a little above the descent path: in the descent
+  const onLastLeg = () => {
+    const fms = Fms.load(plan);
+    fms.activeIndex = fms.waypoints.length - 1;
+    fms.legFrom = { lat: dest.lat - 0.5, lon: dest.lon, ident: 'X' };
+    return fms;
+  };
+  const tenOut = { lat: dest.lat - 10 / 60, lon: dest.lon };
+  const early = Fms.guidance(onLastLeg(), tenOut, { altFt: 4300, speedKt: 310 });
+  assert.equal(early.phase, 'DES');
+  assert.ok(early.speedKt <= 250, `slowing already, while still 1300 ft above the 3000 ft line (${early.speedKt})`);
+  assert.equal(early.anticipating, true);
+  // the same altitude and speed while climbing is not limited early
+  const climb = Fms.guidance(Fms.load(plan), { lat: plan.waypoints[0].lat, lon: plan.waypoints[0].lon }, { altFt: 4300, speedKt: 250 });
+  assert.equal(climb.speedKt, plan.profile.climbKt);
+  // approach speed is targeted before the 4 nm point when going fast, not only at it
+  const sixOut = Fms.guidance(onLastLeg(), { lat: dest.lat - 6 / 60, lon: dest.lon }, { altFt: 2500, speedKt: 250 });
+  assert.equal(sixOut.speedKt, plan.profile.approachKt);
+  assert.equal(sixOut.anticipating, true);
+  // slow already: nothing to anticipate
+  assert.equal(Fms.guidance(onLastLeg(), tenOut, { altFt: 4300, speedKt: 200 }).anticipating, false);
+});
