@@ -54,7 +54,7 @@ const HUD_TYPE_SKINS = [
 // ---------------------------------------------------------------- state
 
 const settings = {
-  plannerUrl: '',
+  plannerUrl: 'https://dispatch365.up.railway.app',
   skin: 'auto',
   source: 'screen', // screen = read the HUD; feed = the game's own numbers over the live feed
   feedUrl: 'https://cpdlc.up.railway.app',
