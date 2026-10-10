@@ -112,6 +112,7 @@
             <button class="btn btn-secondary" id="selectHeadingBtn">Select heading region</button>
             <button class="btn btn-secondary" id="selectInfoBtn">Select info-box region</button>
             <button class="btn btn-secondary" id="selectMinimapBtn">Select minimap region</button>
+            <button class="btn btn-secondary" id="selectBigMapBtn">Select big-map region</button>
           </div>
           <div class="card-actions">
             <span class="status-pill" id="regionStatus"></span>
@@ -125,9 +126,20 @@
       <section class="card" id="calibration" hidden>
         <div class="card-header">
           <span class="step-badge">4</span>
-          <h2>Calibrate the map</h2>
+          <h2>Position fix</h2>
         </div>
         <div class="card-body">
+          <p class="hint">
+            <b>Best:</b> open the big map in the game, select its region above once, then press
+            <b>F8</b> (or the button). The companion finds your green aircraft marker and works out where the
+            map is looking by itself - no airports to click, any zoom or pan. While tracking it re-fixes
+            on its own whenever the big map is open.
+          </p>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="mapFixBtn">Fix from big map (F8)</button>
+            <span class="status-pill" id="mapFixStatus">No map fix yet</span>
+          </div>
+          <p class="hint">Or the old way with the minimap:</p>
           <p class="hint">
             Pick two airports you can currently see on your minimap, then click each one's exact
             spot directly on your game (through the overlay), in order. Re-calibrate any time you

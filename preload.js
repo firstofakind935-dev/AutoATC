@@ -26,6 +26,7 @@ const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
 const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
+const { fixFromMap } = tryRequire('mapFix', './lib/mapFix');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
 // renderer - not functions/class instances - so calibration.project() gets
@@ -101,6 +102,9 @@ contextBridge.exposeInMainWorld('companion', {
   nearestAirport,
   integrate,
   findMarkerCentroid,
+  // Position from a screenshot of the in-game big map (lib/mapFix.js).
+  fixFromMap: (image, options) => fixFromMap(image, options),
+  onMapFixHotkey: (callback) => ipcRenderer.on('map-fix-hotkey', () => callback()),
   // Runs in the main process (see main.js's 'recognize-text' handler) -
   // not called directly here, unlike the other lib/*.js functions above.
   recognizeText: (image) => ipcRenderer.invoke('recognize-text', image),

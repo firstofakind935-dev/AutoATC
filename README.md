@@ -358,3 +358,15 @@ Landscape iPad shows them side by side, portrait stacked.
 
 **Install it as a web app:** open `displays.html` in Safari on the iPad, Share -> Add to Home Screen. It then opens full-screen
 like an app (no browser bars), and the page itself is cached so it starts instantly.
+
+## Position fix from the big map (replaces calibrating on two airports)
+
+1. Show the overlay, then in step 3 click **Select big-map region** and drag a box over the big map picture in the game (open it first).
+2. Open the big map and press **F8** (or **Fix from big map**). The companion finds your bright-green aircraft marker, and works out
+   where the map is looking by matching its coastlines against the radar's world map (`data/worldMask.json`) - at any zoom or pan.
+   No airports to click. It prints the match percentage; a good one is 60% or more.
+3. While tracking, it re-fixes by itself every few seconds whenever the big map is open, so the radar position stays right (also while
+   taxiing, when the speed readout can't be trusted). Close the map and it carries on by dead reckoning from the last fix.
+
+Keep some coastline in view - a map zoomed in on the middle of an island, with only land, can't be matched. Rebuild the mask with
+`python3 scripts/build-world-mask.py` if the radar's world map image changes.
