@@ -29,8 +29,6 @@ const SECRET_RE = /^[a-f0-9]{64}$/;
 const MAX_SESSIONS = 2000;
 const MAX_PHONES_PER_SESSION = 5;
 const MAX_VIEW_BYTES = 64 * 1024;
-const LOCKOUT_FAILURES = 10;
-const LOCKOUT_MS = 60_000;
 const KEEPALIVE_MS = 15_000;
 
 const normalizeCode = (raw) => String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -53,28 +51,10 @@ const send = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stri
 function createRelayRouter() {
   const router = express.Router();
   const sessions = new Map(); // code -> {secret, host, phones:Set, lastView}
-  const failures = new Map(); // ip -> {count, since}
-
-  const lockedOut = (ip) => {
-    const f = failures.get(ip);
-    return Boolean(f && f.count >= LOCKOUT_FAILURES && Date.now() - f.since < LOCKOUT_MS);
-  };
-  const noteFailure = (ip) => {
-    const f = failures.get(ip);
-    if (!f || Date.now() - f.since > LOCKOUT_MS) failures.set(ip, { count: 1, since: Date.now() });
-    else f.count += 1;
-    if (failures.size > 10_000) failures.clear(); // memory bound under abuse
-  };
-
   // The session a phone's code names, or null (and the response handled).
   function phoneSession(req, res, rawCode) {
-    if (lockedOut(req.ip)) {
-      res.status(429).send('Too many wrong codes - wait a minute');
-      return null;
-    }
     const session = sessions.get(normalizeCode(rawCode));
     if (!session || !session.host) {
-      noteFailure(req.ip);
       res.status(404).send('No pilot online with that code');
       return null;
     }

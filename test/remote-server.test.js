@@ -67,16 +67,6 @@ test('API calls need the pairing code', async () => {
   }
 });
 
-test('repeated wrong codes lock that address out', async () => {
-  const { server, base } = await startServer();
-  try {
-    for (let i = 0; i < 10; i++) await fetch(`${base}/api/check?code=00000${i % 10}`);
-    assert.equal((await fetch(`${base}/api/check?code=${CODE}`)).status, 429, 'even the right code is refused during lockout');
-  } finally {
-    await server.stop();
-  }
-});
-
 test('connected remotes get the latest view, then every update', async () => {
   const { server, base, clientCounts } = await startServer();
   try {

@@ -82,7 +82,7 @@ function connect() {
     // offline (app closed, PC asleep) means keep trying until it's back.
     const res = await fetch(`api/check?code=${encodeURIComponent(code)}`).catch(() => null);
     if (res && res.status === 401) return showPairing('The pairing code changed - enter the new one.');
-    if (!res || res.status === 404 || res.status === 429) {
+    if (!res || res.status === 404) {
       events.close();
       setConn(res ? 'PC OFFLINE' : 'NO CONNECTION', false);
       retryTimer = setTimeout(connect, 5000);
@@ -96,7 +96,6 @@ function connect() {
 async function pair(value) {
   const res = await fetch(`api/check?code=${encodeURIComponent(value)}`).catch(() => null);
   if (!res) return showPairing('Cannot connect. Check this device is online (and on the same Wi-Fi, for a 6-digit code).');
-  if (res.status === 429) return showPairing('Too many wrong codes - wait a minute and try again.');
   if (res.status === 404) return showPairing('No pilot online with that code. Is the companion app open with remote control turned on?');
   if (res.status !== 204) {
     storeCode(null);

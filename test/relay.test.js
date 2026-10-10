@@ -126,16 +126,6 @@ test("someone who knows a code can't pose as that pilot's PC", { skip }, async (
   }
 });
 
-test('guessing codes gets locked out', { skip }, async () => {
-  const relay = await startRelay();
-  try {
-    for (let i = 0; i < 10; i++) await fetch(`${relay.base}/remote/api/check?code=AAAAAAAAAAA${i}`);
-    assert.equal((await fetch(`${relay.base}/remote/api/check?code=BBBBBBBBBBBB`)).status, 429);
-  } finally {
-    await relay.close();
-  }
-});
-
 test('the PC reconnects by itself after the relay restarts', { skip }, async () => {
   let relay = await startRelay();
   const port = Number(relay.base.split(':').pop());
