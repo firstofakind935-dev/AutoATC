@@ -56,10 +56,13 @@ const HUD_TYPE_SKINS = [
 const settings = {
   plannerUrl: '',
   skin: 'auto',
+  source: 'screen', // screen = read the HUD; feed = the game's own numbers over the live feed
+  feedUrl: '',
+  feedCallsign: '',
   tuning: {}, // autopilot gains changed from the defaults (see Autopilot.TUNABLE)
   panel: 'auto', // auto = FCU for Airbus A320/330/340, MCP for other jets; native = the simple panel of each FMS style
   keymap: { ...DEFAULT_KEYMAP },
-  steering: 'mouse', // mouse | keys - how pitch and bank are flown
+  steering: 'mouse', // mouse | keys | yoke - how pitch and bank are flown (yoke = A/D pulsed for the roll, like 24Flight)
   mouseCenter: null, // {x, y} screen point where the aircraft flies straight and level
   mouseDeflectionPx: 120, // how far off center a nudge moves the cursor
   invertPitch: false,
@@ -85,6 +88,8 @@ const ui = {
   telemetry: null,
   guidance: null,
   lastInputs: [],
+  rawPlan: null, // the plan as the planner made it (activatePlan frames it for the position source)
+  yoke: { pct: 0, state: { nextAt: 0 } },
   flightLog: [], // CSV rows, see Autopilot.logRow
   calib: null, // a running calibration test
   coRoute: '',
@@ -150,13 +155,23 @@ async function loadNavdata() {
   if (ui.navdata || !settings.plannerUrl) return;
   try {
     const res = await fetch(`${settings.plannerUrl.replace(/\/$/, '')}/api/navdata`);
-    if (res.ok) ui.navdata = await res.json();
+    if (res.ok) {
+      const nav = await res.json();
+      ui.navdata = settings.source === 'feed' ? World.navdataToWorld(nav) : nav;
+    }
   } catch {
     // DIR TO a fix outside the plan just won't find it.
   }
 }
 
 function activatePlan(plan) {
+  ui.rawPlan = plan;
+  // With the live feed, positions are on the world grid, so the route is flown there.
+  if (settings.source === 'feed') {
+    const world = World.planToWorld(plan);
+    if (!world) { ui.message = 'MAKE THE PLAN AGAIN'; return; } // an old plan without world positions
+    plan = world;
+  }
   ui.plan = plan;
   ui.fms = Fms.load(plan);
   ui.scroll = 0;
@@ -1101,10 +1116,13 @@ function disconnectAp(reason) {
 }
 
 async function sendCommands(commands) {
+  // A/D steering flies the roll itself (see yokeTick); pitch still goes by mouse when its centre is set, else by keys.
+  if (settings.steering === 'yoke') commands = commands.filter((cmd) => cmd.axis !== 'roll');
+  const useMouse = settings.steering === 'mouse' || (settings.steering === 'yoke' && Boolean(settings.mouseCenter));
   const byAxis = Object.fromEntries(commands.map((cmd) => [cmd.axis, cmd]));
 
   // Pitch and bank: one mouse nudge covering both axes (PTFS), or keys.
-  if (settings.steering === 'mouse' && (byAxis.roll || byAxis.pitch)) {
+  if (useMouse && (byAxis.roll || byAxis.pitch)) {
     const { roll, pitch } = byAxis;
     const parts = [];
     if (roll) parts.push(`${roll.direction > 0 ? 'right' : 'left'} ${roll.ms}ms`);
@@ -1127,14 +1145,15 @@ async function sendCommands(commands) {
   }
 
   for (const cmd of commands) {
-    if (settings.steering === 'mouse' && cmd.axis !== 'throttle') continue;
+    if (useMouse && cmd.axis !== 'throttle') continue;
     const key = settings.keymap[AXIS_KEYS[cmd.axis][cmd.direction > 0 ? 1 : 0]];
     if (settings.live) api?.autopilotPress(key, cmd.ms);
     logInput(`${key} ${cmd.ms}ms  (${cmd.axis} ${cmd.direction > 0 ? '+' : '−'})`);
   }
 }
 
-async function onTelemetry(sample) {
+// Every position update lands here - from the screen reader or from the live feed.
+async function ingest(sample) {
   const first = !ui.telemetry;
   ui.telemetry = sample;
   if (first) syncSelectionsToAircraft();
@@ -1146,6 +1165,9 @@ async function onTelemetry(sample) {
     if (ui.flightLog.length > 4000) ui.flightLog.shift();
   }
   if (ui.calib) await stepCalibration(sample);
+  // A/D steering: the yoke follows the heading error to this update's target.
+  ui.yoke.pct = ap.engaged && settings.steering === 'yoke' && typeof sample.headingDeg === 'number'
+    ? Autopilot.yokePercent(((out.targets.headingDeg - sample.headingDeg + 540) % 360) - 180, ap.tuning.yokeFullDeg) : 0;
   if (out.disconnected) {
     api?.autopilotReleaseAll();
     api?.autopilotRecenter(null);
@@ -1154,6 +1176,45 @@ async function onTelemetry(sample) {
   await sendCommands(out.commands);
   render();
 }
+
+// ---------------------------------------------------------------- live feed + A/D yoke
+
+function onFeedSample(s) {
+  if (settings.source !== 'feed') return;
+  const world = World.studsToWorld(s.studX, s.studY);
+  const flat = World.worldToFlat(world.xNm, world.yNm);
+  ingest({ ...s, lat: flat.lat, lon: flat.lon, atMs: s.atMs || Date.now() });
+}
+
+function startFeed() {
+  const callsign = (settings.feedCallsign || '').trim();
+  if (!callsign) { $('feed-status').textContent = 'Enter your callsign'; return api?.feedStop?.(); }
+  api?.feedStart?.({ url: settings.feedUrl || undefined, callsign });
+}
+
+// Pulses A/D (key taps whose length follows the heading error) while the autopilot is engaged.
+function yokeTick() {
+  if (!(ap.engaged && settings.steering === 'yoke' && settings.live)) return;
+  const pulse = Autopilot.yokePulse(ui.yoke.pct, Date.now(), ui.yoke.state);
+  if (!pulse) return;
+  const key = settings.keymap[pulse.direction > 0 ? 'rollRight' : 'rollLeft'];
+  api?.autopilotPress(key, pulse.holdMs);
+  logInput(`${key} ${Math.round(pulse.holdMs)}ms  (yoke ${Math.round(ui.yoke.pct)}%)`);
+}
+
+function syncSourceVisibility() {
+  $('feed-settings').hidden = settings.source !== 'feed';
+}
+function applySource() {
+  ui.navdata = null;
+  if (settings.source === 'feed') { startFeed(); } else { api?.feedStop?.(); }
+  if (ui.rawPlan) activatePlan(ui.rawPlan);
+  loadNavdata();
+  syncSourceVisibility();
+}
+$('source').addEventListener('change', () => { settings.source = $('source').value; saveSettings(); applySource(); });
+$('feed-callsign').addEventListener('change', () => { settings.feedCallsign = $('feed-callsign').value.trim(); saveSettings(); if (settings.source === 'feed') startFeed(); });
+$('feed-url').addEventListener('change', () => { settings.feedUrl = $('feed-url').value.trim(); saveSettings(); if (settings.source === 'feed') startFeed(); });
 
 // ---------------------------------------------------------------- tuning
 
@@ -1259,6 +1320,10 @@ async function loadSettings() {
   $('skin-select').value = settings.skin || 'auto';
   $('panel-select').value = settings.panel || 'auto';
   $('steering').value = settings.steering;
+  $('source').value = settings.source;
+  $('feed-callsign').value = settings.feedCallsign || '';
+  $('feed-url').value = settings.feedUrl || '';
+  syncSourceVisibility();
   $('deflection').value = settings.mouseDeflectionPx;
   $('invert-pitch').checked = settings.invertPitch;
   showMouseCenter();
@@ -1325,7 +1390,7 @@ function showMouseCenter() {
 
 function syncSteeringVisibility() {
   const mouse = settings.steering === 'mouse';
-  $('mouse-settings').hidden = !mouse;
+  $('mouse-settings').hidden = !(mouse || settings.steering === 'yoke');
   for (const el of document.querySelectorAll('.steer-keys')) el.hidden = mouse;
 }
 
@@ -1493,7 +1558,11 @@ $('live-dialog').addEventListener('close', () => {
   await buildKeymapEditor();
   ui.page = 'rte';
   FmsView.mount(handleInput);
-  api?.onTelemetry(onTelemetry);
+  api?.onTelemetry((sample) => { if (settings.source !== 'feed') ingest(sample); });
+  api?.onFeedSample?.(onFeedSample);
+  api?.onFeedStatus?.((status) => { $('feed-status').textContent = status.message || status.state; });
+  setInterval(yokeTick, 80);
+  if (settings.source === 'feed') startFeed();
   api?.onRemoteInput?.(handleInput);
   setInterval(render, 1000); // keeps ages/ETEs ticking, here and on remotes
   render();

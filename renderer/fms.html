@@ -65,11 +65,25 @@
       <label class="field">Flight planner URL
         <input id="planner-url" placeholder="https://your-planner.up.railway.app">
       </label>
+      <h3>Position source</h3>
+      <label class="field">Where the autopilot gets heading, altitude, speed and position
+        <select id="source">
+          <option value="screen">Reading the screen (OCR)</option>
+          <option value="feed">Live feed - the game's own numbers (recommended)</option>
+        </select>
+      </label>
+      <div id="feed-settings" hidden>
+        <label class="field">Your callsign (as in the game) <input id="feed-callsign" placeholder="N42Y" autocomplete="off"></label>
+        <label class="field">Feed address <input id="feed-url" placeholder="wss://24data.ptfs.app/wss" autocomplete="off"></label>
+        <p class="dim small" id="feed-status">Not connected</p>
+        <p class="dim small">The live feed gives the true position and heading every second, so the autopilot needs no screen reading and no manual position fixes. Plans made with the planner need to be regenerated once (they carry world positions).</p>
+      </div>
       <h3>Game controls</h3>
       <label class="field">Pitch &amp; bank control
         <select id="steering">
           <option value="mouse">Mouse (PTFS)</option>
           <option value="keys">Keys</option>
+          <option value="yoke">A / D keys, pulsed (24Flight style)</option>
         </select>
       </label>
       <div id="mouse-settings">
@@ -140,6 +154,7 @@
   </form>
 </dialog>
 
+<script src="../lib/world.js"></script>
 <script src="../lib/fms.js"></script>
 <script src="../lib/autopilot.js"></script>
 <script src="fmsView.js"></script>
