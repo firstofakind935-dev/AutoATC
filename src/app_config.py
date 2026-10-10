@@ -40,6 +40,7 @@ if getattr(sys, "frozen", False):
     SETTINGS_PATH = CONFIG_DIR / "settings.json"
     # The reference map is the ATC365 radar world map bundled with the app, so every pilot reports in the same frame.
     REFERENCE_MAP_PATH = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "reference_map.png"
+    USER_REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map.png"  # your own capture (Set Reference Map), if any
 
     if not SETTINGS_PATH.exists():
         SETTINGS_PATH.write_text(
@@ -61,7 +62,8 @@ if getattr(sys, "frozen", False):
 else:
     CONFIG_DIR = Path(__file__).resolve().parent
     SETTINGS_PATH = CONFIG_DIR / "config.py"
-    REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map.png"
+    REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map.png"  # the radar world map shipped in src/
+    USER_REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map_user.png"  # your own capture (Set Reference Map), if any
     settings = runpy.run_path(str(SETTINGS_PATH))
 
 

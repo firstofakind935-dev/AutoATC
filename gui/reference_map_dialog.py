@@ -25,7 +25,7 @@ if SRC_DIR not in sys.path:
 
 import app_config  # noqa: E402
 
-REFERENCE_MAP_PATH = str(app_config.REFERENCE_MAP_PATH)
+REFERENCE_MAP_PATH = str(app_config.USER_REFERENCE_MAP_PATH)  # your own capture; the shipped radar map is never overwritten
 
 MAX_DISPLAY_WIDTH = 1100
 MAX_DISPLAY_HEIGHT = 700

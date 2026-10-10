@@ -16,6 +16,7 @@ a = Analysis(
         'marker_finder',
         'map_locator',
         'monitor_client',
+        'reference_registration',
     ],
     hookspath=[],
     runtime_hooks=[],

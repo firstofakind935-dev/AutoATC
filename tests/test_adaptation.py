@@ -45,6 +45,41 @@ class LocatorTest(unittest.TestCase):
         self.assertIsNone(loc.locate_crop(sea))
 
 
+class ReferenceRegistrationTest(unittest.TestCase):
+    def test_your_own_reference_is_lined_up_with_the_radar_map(self):
+        import tempfile
+        from reference_registration import prepare_tracking_reference
+
+        ref = cv2.imread(REFERENCE)
+        # "your capture": most of the play area, drawn at 1.5x - a different size than the shipped map
+        x0, y0, w, h = 600, 500, 900, 700
+        user = fake_minimap(ref, x0, y0, w, h, 1.5)
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mine.png")
+            cv2.imwrite(path, user)
+            locator, to_radar, message = prepare_tracking_reference(REFERENCE, path)
+        self.assertIn("Using your reference map", message)
+        # a point at pixel (300, 450) of the capture is (x0 + 300/1.5, y0 + 450/1.5) on the radar map
+        rx, ry = to_radar(300, 450)
+        self.assertLess(abs(rx - (x0 + 200)), 4)
+        self.assertLess(abs(ry - (y0 + 300)), 4)
+
+    def test_falls_back_to_the_radar_map(self):
+        import tempfile
+        from reference_registration import prepare_tracking_reference
+
+        sea = np.zeros((300, 300, 3), np.uint8)
+        sea[:] = (125, 90, 59)
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "sea.png")
+            cv2.imwrite(path, sea)
+            _, to_radar, message = prepare_tracking_reference(REFERENCE, path)
+        self.assertIn("could not be lined up", message)
+        self.assertEqual(to_radar(10, 20), (10, 20))
+        _, to_radar, message = prepare_tracking_reference(REFERENCE, os.path.join(d, "missing.png"))
+        self.assertIn("radar world map", message)
+
+
 class MonitorClientTest(unittest.TestCase):
     def setUp(self):
         self.airports = monitor_client.load_airports()

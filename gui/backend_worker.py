@@ -26,8 +26,10 @@ import broadcast_server  # noqa: E402
 import monitor_client  # noqa: E402
 from marker_finder import find_marker_pixel  # noqa: E402
 from map_locator import MapLocator  # noqa: E402
+from reference_registration import prepare_tracking_reference  # noqa: E402
 
-REFERENCE_MAP_PATH = str(config.REFERENCE_MAP_PATH)
+REFERENCE_MAP_PATH = str(config.REFERENCE_MAP_PATH)  # the radar world map shipped with the app
+USER_REFERENCE_MAP_PATH = str(config.USER_REFERENCE_MAP_PATH)  # your own capture, if you made one
 
 # Matches below this confidence are treated as "no reliable fix" and skipped
 # rather than sent out - avoids spamming garbage positions on a bad frame.
@@ -53,13 +55,14 @@ class TrackerWorker(QThread):
         import numpy as np
 
         if not os.path.exists(REFERENCE_MAP_PATH):
-            self.error.emit(
-                "No reference map found. Click 'Set Reference Map' first."
-            )
+            self.error.emit("The shipped radar world map (src/reference_map.png) is missing.")
             return
 
         try:
-            locator = MapLocator(REFERENCE_MAP_PATH)
+            locator, to_radar_px, reference_message = prepare_tracking_reference(
+                REFERENCE_MAP_PATH, USER_REFERENCE_MAP_PATH
+            )
+            self.log.emit(reference_message)
         except Exception as e:
             self.error.emit(f"Failed to load reference map: {e}")
             return
@@ -100,8 +103,9 @@ class TrackerWorker(QThread):
                                 )
                             else:
                                 self.position.emit(abs_x, abs_y)
+                                radar_x, radar_y = to_radar_px(abs_x, abs_y)
                                 monitor_result = reporter.report(
-                                    self.callsign, self.aircraft_type, abs_x, abs_y
+                                    self.callsign, self.aircraft_type, radar_x, radar_y
                                 )
                                 if monitor_result:
                                     self.log.emit(monitor_result)
