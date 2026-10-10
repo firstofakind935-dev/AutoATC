@@ -378,8 +378,11 @@ async function runMapFix(trigger, kind = 'big') {
       const allowed = parked ? 0.25 : 0.4 + sinceFixHours * 400;
       if (moved > allowed) {
         const same = miniPending && Math.hypot((world.lon - miniPending.world.lon) * 60, (world.lat - miniPending.world.lat) * 60) < 0.3;
-        miniPending = same ? { world, count: miniPending.count + 1 } : { world, count: 1 };
-        if (miniPending.count < MINI_CONFIRMATIONS || fix.score < MINI_TRUST_SCORE) {
+        miniPending = same ? { world, count: miniPending.count + 1, since: miniPending.since } : { world, count: 1, since: Date.now() };
+        // A parked aircraft needs the same answer to hold for a minute with a very strong match: a static scene repeats
+        // the same wrong match every frame, so counting frames alone proves nothing.
+        const held = !parked || Date.now() - miniPending.since >= 60_000;
+        if (miniPending.count < MINI_CONFIRMATIONS || fix.score < (parked ? 0.85 : MINI_TRUST_SCORE) || !held) {
           log(`Minimap fix ignored (${moved.toFixed(1)} nm from where you were, match ${Math.round(fix.score * 100)}%, ${miniPending.count}/${MINI_CONFIRMATIONS} agreeing).`);
           return false;
         }
