@@ -66,10 +66,10 @@
       if (b) dispatch({ type: 'panel', id: b.dataset.id, action: b.dataset.action, big: e.shiftKey });
     });
     $('ap-panel').addEventListener('wheel', (e) => {
-      const w = e.target.closest('.knob-window[data-id]');
+      const w = e.target.closest('.knob-window[data-id], [data-wheel]');
       if (!w) return;
       e.preventDefault();
-      dispatch({ type: 'panel', id: w.dataset.id, action: e.deltaY < 0 ? 'inc' : 'dec', big: e.shiftKey });
+      dispatch({ type: 'panel', id: w.dataset.id || w.dataset.wheel, action: e.deltaY < 0 ? 'inc' : 'dec', big: e.shiftKey });
     }, { passive: false });
     // A physical keyboard types into the scratchpad too.
     document.addEventListener('keydown', (e) => {
@@ -207,7 +207,49 @@
     }
   }
 
+  // ---- Boeing MCP and Airbus FCU panels: one control per named slot, laid out like the real units.
+  const cpBtn = (c, extra = '') => `<button class="cp-btn ${c.lit ? 'lit' : ''} ${escapeHtml(c.cls || '')} ${extra}" data-id="${c.id}" data-action="click" title="${escapeHtml(c.label)}"><span class="cp-label">${escapeHtml(c.label)}</span><i class="cp-lamp"></i></button>`;
+  const cpWin = (label, value, cls = '') => `<div class="cp-win ${cls}"><span class="cp-wlabel">${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`;
+  // A round knob: click its left half to turn down, right half to turn up (Shift = big step); the wheel works too.
+  const cpKnob = (c, cls = '') => `<div class="cp-knob ${cls}" data-wheel="${c.id}">`
+    + `<button data-id="${c.id}" data-action="dec" title="down (Shift: bigger step)">&minus;</button><button data-id="${c.id}" data-action="inc" title="up (Shift: bigger step)">+</button></div>`
+    + (c.pushLabel || c.pullLabel
+      ? `<div class="cp-pp">${c.pullLabel ? `<button data-id="${c.id}" data-action="pull">PULL</button>` : ''}${c.pushLabel ? `<button data-id="${c.id}" data-action="push">PUSH</button>` : ''}</div>`
+      : '');
+  const cpWheel = (c) => `<div class="cp-wheel" data-wheel="${c.id}"><span>UP</span><button data-id="${c.id}" data-action="inc" title="climb (Shift: bigger step)"></button><button data-id="${c.id}" data-action="dec" title="descend (Shift: bigger step)"></button><span>DN</span></div>`;
+
+  function mcpHtml(k) {
+    return `<div class="cockpit mcp">`
+      + `<div class="cp-mod"><div class="cp-stack">${cpWin(k.courseL.label, k.courseL.value)}${cpBtn(k.fdL, 'sw')}</div></div>`
+      + `<div class="cp-mod"><div class="cp-label-top">A/T</div>${cpBtn(k.at, 'sw')}</div>`
+      + `<div class="cp-mod">${cpWin(k.ias.label, k.ias.value)}<div class="cp-row">${cpKnob(k.ias)}<div class="cp-col">${cpBtn(k.co)}${cpBtn(k.spdIntv)}</div></div><div class="cp-row">${cpBtn(k.n1)}${cpBtn(k.speed)}${cpBtn(k.lvlchg)}</div></div>`
+      + `<div class="cp-mod"><div class="cp-grid2">${cpBtn(k.vnav)}${cpBtn(k.lnav)}${cpBtn(k.vorloc)}${cpBtn(k.hdgsel)}${cpBtn(k.app)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.hdg.label, k.hdg.value)}${cpKnob(k.hdg)}</div>`
+      + `<div class="cp-mod">${cpWin(k.alt.label, k.alt.value)}<div class="cp-row">${cpKnob(k.alt)}${cpBtn(k.altIntv)}</div><div class="cp-row">${cpBtn(k.althld)}${cpBtn(k.vsbtn)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.vs.label, k.vs.value)}${cpWheel(k.vs)}</div>`
+      + `<div class="cp-mod"><div class="cp-label-top">A/P ENGAGE</div><div class="cp-grid2 eng">${cpBtn(k.cmdA)}${cpBtn(k.cmdB)}${cpBtn(k.cwsA)}${cpBtn(k.cwsB)}</div>${cpBtn(k.disengage)}</div>`
+      + `<div class="cp-mod"><div class="cp-stack">${cpWin(k.courseR.label, k.courseR.value)}${cpBtn(k.fdR, 'sw')}</div></div>`
+      + `</div>`;
+  }
+
+  function fcuHtml(k, style) {
+    const a350 = style === 'fcu350';
+    const lcd = [['SPD', k.spd], ['HDG', k.hdg], ['ALT', k.alt], ['V/S', k.vs]]
+      .map(([label, c]) => cpWin(label, c.managed ? `${c.value}•` : c.value, c.managed ? 'managed' : '')).join('');
+    return `<div class="cockpit ${a350 ? 'fcu350' : 'fcu'}">`
+      + `<div class="fcu-lcd">${lcd}</div>`
+      + `<div class="fcu-controls">`
+      + `<div class="cp-mod"><div class="cp-label-top">SPD MACH</div>${cpBtn(k.spdMach)}${cpKnob(k.spd, 'big')}</div>`
+      + `<div class="cp-mod"><div class="cp-label-top">HDG TRK</div>${cpBtn(k.hdgTrk)}${cpKnob(k.hdg, 'big')}</div>`
+      + `<div class="cp-mod"><div class="cp-grid2">${cpBtn(k.ap1)}${cpBtn(k.ap2)}</div>${cpBtn(k.athr)}${cpBtn(k.loc)}</div>`
+      + `<div class="cp-mod"><div class="cp-label-top">ALT</div>${cpBtn(k.metric)}${cpKnob(k.alt, 'big')}</div>`
+      + `<div class="cp-mod"><div class="cp-label-top">V/S FPA</div>${cpBtn(k.vsFpa)}${cpKnob(k.vs, 'big')}</div>`
+      + `<div class="cp-mod">${cpBtn(k.exped)}${cpBtn(k.appr)}</div>`
+      + `</div></div>`;
+  }
+
   function panelItemHtml(item, skin) {
+    if (item.type === 'cockpit') return item.style === 'mcp' ? mcpHtml(item.controls) : fcuHtml(item.controls, item.style);
     if (item.type === 'group') return `<div class="group">${item.items.map((i) => panelItemHtml(i, skin)).join('')}</div>`;
     if (item.type === 'button') {
       return `<button class="ap-btn ${item.lit ? 'lit' : ''} ${escapeHtml(item.cls || '')}" data-id="${item.id}" data-action="click">${escapeHtml(item.label)}</button>`;

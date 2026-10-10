@@ -931,3 +931,16 @@ below 3000 ft** (released at 3100 ft so it doesn't flip at the line); aircraft
 that are already slower are unaffected. So when the autopilot levels off or starts a
 descent and the speed drifts, throttle taps follow it; it cannot see engine
 power, only the speed it reads from the screen.
+
+### Autopilot panels
+
+The FMS window and the phone remote draw the real panels: the **Boeing MCP**
+(course, IAS/MACH, heading, altitude and vertical-speed windows, A/T ARM,
+N1 / SPEED / LVL CHG, V NAV / L NAV / HDG SEL / ALT HLD / V/S, CMD A/B,
+DISENGAGE) for Boeing and every other jet; the **Airbus A320/330/340 FCU**
+(SPD / HDG / ALT / V/S windows, push-pull knobs, AP1, AP2, A/THR); and the
+dark, orange-outlined **A350/A380 FCU**. Click the left or right half of a knob
+(or use the mouse wheel; Shift for bigger steps). Props, light aircraft and
+helicopters keep the simple panel, and "Panel" in the window's header switches
+every aircraft back to it. Buttons the game can't act on (VOR LOC, APP, CWS,
+EXPED, EFIS controls, intervention buttons) say NOT AVAILABLE when pressed.

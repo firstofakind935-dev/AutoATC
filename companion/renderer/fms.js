@@ -56,6 +56,7 @@ const HUD_TYPE_SKINS = [
 const settings = {
   plannerUrl: '',
   skin: 'auto',
+  panel: 'auto', // auto = FCU for Airbus A320/330/340, MCP for other jets; native = the simple panel of each FMS style
   keymap: { ...DEFAULT_KEYMAP },
   steering: 'mouse', // mouse | keys - how pitch and bank are flown
   mouseCenter: null, // {x, y} screen point where the aircraft flies straight and level
@@ -729,7 +730,100 @@ function knob({ label, value, managed, step, bigStep, set, push, pull, pushLabel
 }
 const button = (label, lit, onClick, cls = '') => ({ type: 'button', label, lit, onClick, cls });
 
+// Which autopilot panel to draw: Airbus A320/330/340 get the FCU, A350/A380 their
+// own FCU, every other jet the Boeing MCP, and turboprops, light aircraft and helicopters keep the
+// simple panel of their FMS style. Settings can switch back to the simple one.
+const JET_CATEGORIES = new Set(['narrowbody', 'widebody', 'regionaljet', 'bizjet', 'supersonic']);
+function panelStyle(skinId) {
+  if (settings.panel === 'native') return 'native';
+  if (skinId === 'airbus') return 'fcu';
+  if (skinId === 'a350') return 'fcu350';
+  if (['boeing', 'boeing787', 'a220', 'embraer'].includes(skinId)) return 'mcp';
+  if (skinId === 'generic' && JET_CATEGORIES.has(ui.plan?.aircraft?.category)) return 'mcp';
+  return 'native';
+}
+
+const na = () => flash('NOT AVAILABLE');
+const display = (label, value) => ({ type: 'display', label, value });
+
+// LVL CHG / FLCH: climb or descend to the selected altitude at the selected speed.
+function lvlChg() {
+  if (!ui.telemetry) return flash('NO TRACKING DATA');
+  ap.vertical = 'ALT';
+  ap.speedMode = 'SEL';
+  if (!ap.autothrottle) return toggleAt();
+  return render();
+}
+const altDiff = () => (typeof ui.telemetry?.altFt === 'number' ? Math.abs(ui.telemetry.altFt - ap.selected.altFt) : 0);
+
+/** Boeing 737/747/777-style mode control panel, one control per named slot. */
+function mcpControls() {
+  const s = ap.selected;
+  const managedSpeed = ap.speedMode === 'MANAGED' && ui.guidance?.speedKt;
+  const course = ui.guidance?.lnav ? pad3(ui.guidance.lnav.desiredTrackDeg) : '---';
+  return {
+    courseL: display('COURSE', course),
+    courseR: display('COURSE', course),
+    at: button('A/T ARM', ap.autothrottle, toggleAt, 'switch'),
+    n1: button('N1', false, na),
+    speed: button('SPEED', ap.autothrottle && ap.speedMode === 'SEL', () => { ap.speedMode = 'SEL'; if (!ap.autothrottle) toggleAt(); else render(); }),
+    lvlchg: button('LVL CHG', ap.vertical === 'ALT' && altDiff() > 300, lvlChg),
+    ias: knob({ label: 'IAS/MACH', value: managedSpeed || s.speedKt, raw: () => s.speedKt, step: 1, bigStep: 10, set: (v) => (s.speedKt = Math.max(40, Math.min(600, v))) }),
+    co: button('C/O', false, na, 'round'),
+    spdIntv: button('SPD INTV', false, na, 'round'),
+    vnav: button('V NAV', ap.vertical === 'VNAV', () => setVertical('VNAV')),
+    lnav: button('L NAV', ap.lateral === 'LNAV', () => setLateral('LNAV')),
+    vorloc: button('VOR LOC', false, na),
+    app: button('APP', false, na),
+    hdgsel: button('HDG SEL', ap.lateral === 'HDG', () => setLateral('HDG')),
+    hdg: knob({ label: 'HEADING', value: pad3(s.headingDeg % 360 || 360), step: 1, bigStep: 10, set: (v) => (s.headingDeg = wrapHdg(v)), raw: () => s.headingDeg }),
+    alt: knob({ label: 'ALTITUDE', value: s.altFt, step: 100, bigStep: 1000, set: (v) => (s.altFt = clampAlt(v)) }),
+    altIntv: button('ALT INTV', false, na, 'round'),
+    althld: button('ALT HLD', ap.vertical === 'ALT' && altDiff() <= 300, altHold),
+    vsbtn: button('V/S', ap.vertical === 'VS', () => setVertical('VS')),
+    vs: knob({ label: 'VERT SPEED', value: `${s.vsFpm > 0 ? '+' : ''}${s.vsFpm}`, step: 100, bigStep: 500, set: (v) => (s.vsFpm = Math.max(-6000, Math.min(6000, v))), raw: () => s.vsFpm }),
+    cmdA: button('CMD', ap.engaged, toggleAp),
+    cmdB: button('CMD', false, toggleAp),
+    cwsA: button('CWS', false, na),
+    cwsB: button('CWS', false, na),
+    disengage: button('DISENGAGE', false, () => { if (ap.engaged) toggleAp(); }, 'disengage'),
+    fdL: button('F/D', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'switch'),
+    fdR: button('F/D', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'switch'),
+  };
+}
+
+/** Airbus A320/330/340 flight control unit (the centre section). */
+function fcuControls() {
+  const s = ap.selected;
+  const managedSpeed = ap.speedMode === 'MANAGED';
+  const managedHdg = ap.lateral === 'LNAV';
+  const managedAlt = ap.vertical === 'VNAV';
+  return {
+    spd: knob({ label: 'SPD', value: managedSpeed ? '---' : s.speedKt, managed: managedSpeed, raw: () => s.speedKt, step: 1, bigStep: 10, set: (v) => (s.speedKt = Math.max(40, Math.min(600, v))), push: () => { ap.speedMode = 'MANAGED'; }, pull: () => { ap.speedMode = 'SEL'; } }),
+    hdg: knob({ label: 'HDG', value: managedHdg ? '---' : pad3(s.headingDeg % 360 || 360), managed: managedHdg, step: 1, bigStep: 10, set: (v) => (s.headingDeg = wrapHdg(v)), raw: () => s.headingDeg, push: () => setLateral('LNAV'), pull: () => { syncIfDashed(); setLateral('HDG'); } }),
+    alt: knob({ label: 'ALT', value: String(s.altFt).padStart(5, '0'), step: 100, bigStep: 1000, set: (v) => (s.altFt = clampAlt(v)), raw: () => s.altFt, push: () => setVertical('VNAV'), pull: () => { ap.vertical = 'ALT'; ap.speedMode = 'SEL'; } }),
+    vs: knob({ label: 'V/S', value: ap.vertical === 'VS' ? `${s.vsFpm > 0 ? '+' : s.vsFpm < 0 ? '-' : ''}${String(Math.abs(s.vsFpm)).padStart(4, '0')}` : '-----', step: 100, bigStep: 500, set: (v) => (s.vsFpm = Math.max(-6000, Math.min(6000, v))), raw: () => s.vsFpm, push: altHold, pull: () => setVertical('VS') }),
+    modeSpd: display('SPD', managedSpeed ? 'MANAGED' : 'SELECTED'),
+    loc: button('LOC', false, na),
+    ap1: button('AP 1', ap.engaged, toggleAp),
+    ap2: button('AP 2', false, toggleAp),
+    athr: button('A/THR', ap.autothrottle, toggleAt),
+    exped: button('EXPED', false, na),
+    appr: button('APPR', false, na),
+    hdgTrk: button('HDG TRK', false, na, 'round'),
+    vsFpa: button('V/S FPA', false, na, 'round'),
+    spdMach: button('SPD MACH', false, na, 'round'),
+    metric: button('METRIC ALT', false, na, 'round'),
+    managedAlt: display('ALT', managedAlt ? 'MANAGED' : 'SELECTED'),
+    fd: button('FD', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'round'),
+    ils: button('LS', false, na, 'round'),
+  };
+}
+
 function panelFor(skinId) {
+  const style = panelStyle(skinId);
+  if (style === 'mcp') return [{ type: 'cockpit', style, controls: mcpControls() }];
+  if (style === 'fcu' || style === 'fcu350') return [{ type: 'cockpit', style, controls: fcuControls() }];
   const s = ap.selected;
   // While managed, non-Airbus speed windows show the FMS target speed.
   const managedSpeed = ap.speedMode === 'MANAGED' && ui.guidance?.speedKt;
@@ -816,6 +910,10 @@ function buildPanel(skinId) {
   let next = 0;
   const serialize = (item) => {
     if (item.type === 'group') return { type: 'group', items: item.items.map(serialize) };
+    if (item.type === 'cockpit') {
+      return { type: 'cockpit', style: item.style, controls: Object.fromEntries(Object.entries(item.controls).map(([name, c]) => [name, serialize(c)])) };
+    }
+    if (item.type === 'display') return { type: 'display', label: item.label, value: String(item.value) };
     const id = `c${next++}`;
     panelHandlers.set(id, item);
     if (item.type === 'button') return { type: 'button', id, label: item.label, lit: Boolean(item.lit), cls: item.cls || '' };
@@ -887,7 +985,7 @@ function buildView() {
     annunciators: s.annunciators || [],
     execLit: Boolean(ui.pending),
     panel: buildPanel(skinId),
-    fma: { cols: fmaColumns(skinId), warn: ap.disconnectReason || '' },
+    fma: { cols: fmaColumns(panelStyle(skinId) === 'mcp' ? 'boeing' : skinId), warn: ap.disconnectReason || '' },
     status: buildStatus(),
   };
 }
@@ -1011,6 +1109,7 @@ async function loadSettings() {
   Object.assign(settings, saved, { keymap: { ...DEFAULT_KEYMAP, ...(saved.keymap || {}) }, live: false });
   $('planner-url').value = settings.plannerUrl || '';
   $('skin-select').value = settings.skin || 'auto';
+  $('panel-select').value = settings.panel || 'auto';
   $('steering').value = settings.steering;
   $('deflection').value = settings.mouseDeflectionPx;
   $('invert-pitch').checked = settings.invertPitch;
@@ -1216,6 +1315,11 @@ api?.onRelayStatus?.(async ({ state, detail }) => {
 
 $('skin-select').addEventListener('change', () => {
   settings.skin = $('skin-select').value;
+  saveSettings();
+  render();
+});
+$('panel-select').addEventListener('change', () => {
+  settings.panel = $('panel-select').value;
   saveSettings();
   render();
 });

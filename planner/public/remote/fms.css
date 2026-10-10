@@ -516,3 +516,78 @@ body[data-skin="a220"] .numeric { display: none; }
   body[data-skin="a220"] .alpha .key { height: 30px; font-size: 11px; }
   body[data-skin="a220"] .fkeys, body[data-skin="a220"] .keypad { padding-left: 8px; padding-right: 8px; }
 }
+
+/* ---------- Boeing MCP and Airbus FCU panels ---------- */
+.ap-panel:has(.cockpit) { display: block; padding: 8px; }
+.cockpit { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: flex-end; justify-content: center; padding: 10px 12px; border-radius: 6px; border: 1px solid #000; }
+.cp-mod { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.cp-row { display: flex; gap: 5px; align-items: center; }
+.cp-col { display: flex; flex-direction: column; gap: 4px; }
+.cp-stack { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.cp-grid2 { display: grid; grid-template-columns: repeat(2, auto); gap: 5px; }
+.cp-grid2.eng { grid-template-columns: repeat(2, auto); }
+.cp-label-top { font: 700 10px var(--font-screen, monospace); letter-spacing: 0.7px; color: #e8e8e8; }
+
+.cp-win { display: flex; flex-direction: column; align-items: center; min-width: 74px; padding: 2px 8px 3px; background: #050505; border: 1px solid #000; border-radius: 3px; box-shadow: inset 0 0 6px #000; }
+.cp-win .cp-wlabel { font: 700 9px var(--font-screen, monospace); letter-spacing: 0.8px; color: #cfd3d8; }
+.cp-win b { font: 700 24px var(--font-screen, monospace); letter-spacing: 2px; color: #f1f1f1; font-variant-numeric: tabular-nums; }
+
+.cp-btn { position: relative; min-width: 54px; padding: 6px 8px 14px; background: #2c2f33; color: #f2f2f2; border: 1px solid #000; border-radius: 4px; cursor: pointer; font: 700 11px var(--font-screen, monospace); letter-spacing: 0.3px; }
+.cp-btn:hover { filter: brightness(1.15); }
+.cp-lamp { position: absolute; left: 7px; right: 7px; bottom: 4px; height: 6px; border-radius: 1px;
+  background: repeating-conic-gradient(#1b3a23 0 25%, #254d2f 0 50%) 0 0 / 5px 5px; }
+.cp-btn.lit .cp-lamp { background: repeating-conic-gradient(#43d65f 0 25%, #8cf59c 0 50%) 0 0 / 5px 5px; box-shadow: 0 0 8px #43d65f; }
+.cp-btn.round { min-width: 0; width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 8px; background: #121315; }
+.cp-btn.round .cp-label { display: block; transform: scale(0.85); }
+.cp-btn.round .cp-lamp { display: none; }
+.cp-btn.round.lit { box-shadow: 0 0 0 2px #43d65f inset; }
+.cp-btn.disengage { background: #b9bcb4; color: #1a1a1a; min-width: 128px; padding-bottom: 8px; }
+.cp-btn.disengage .cp-lamp { display: none; }
+.cp-btn.sw { min-width: 50px; background: #1b1d20; }
+
+.cp-knob { position: relative; width: 56px; height: 56px; border-radius: 50%; display: flex; overflow: hidden; border: 2px solid #111;
+  background: radial-gradient(circle at 35% 30%, #8d9096, #3e4146 70%); box-shadow: 0 2px 4px #000; }
+.cp-knob.big { width: 64px; height: 64px; }
+.cp-knob button { flex: 1; background: transparent; border: 0; color: #111; font: 700 16px monospace; cursor: pointer; }
+.cp-knob button:hover { background: rgba(255,255,255,0.18); }
+.cp-pp { display: flex; gap: 3px; }
+.cp-pp button { padding: 1px 6px; font-size: 9px; background: #16191d; color: #e8e8e8; border: 1px solid #000; border-radius: 3px; cursor: pointer; }
+.cp-wheel { width: 42px; height: 72px; display: flex; flex-direction: column; align-items: center; font: 700 9px monospace; color: #ddd; }
+.cp-wheel button { width: 36px; height: 24px; margin: 1px 0; border: 1px solid #111; border-radius: 3px; cursor: pointer;
+  background: repeating-linear-gradient(0deg, #cfd2d6 0 3px, #8d9096 3px 5px); }
+
+/* Boeing MCP */
+.cockpit.mcp { background: linear-gradient(#41454b, #34383d); }
+
+/* Airbus A320 / A330 / A340 FCU */
+.cockpit.fcu, .cockpit.fcu350 { flex-direction: column; align-items: stretch; gap: 8px; }
+.fcu-lcd { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: #0b0b0b; padding: 6px; border-radius: 4px; }
+.fcu-lcd .cp-win { background: #000; box-shadow: none; border: 0; }
+.fcu-lcd .cp-win b { color: #ffcf3a; font-size: 26px; }
+.fcu-lcd .cp-win.managed b { color: #ffcf3a; }
+.fcu-controls { display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: center; align-items: flex-end; }
+.cockpit.fcu { background: linear-gradient(#a7aaae, #8e9195); }
+.cockpit.fcu .cp-label-top { color: #1a1a1a; }
+.cockpit.fcu .cp-btn { background: #202226; }
+.cockpit.fcu .cp-lamp { background: #2c3a2c; }
+.cockpit.fcu .cp-btn.lit .cp-lamp { background: #43e06a; box-shadow: 0 0 8px #43e06a; }
+.cockpit.fcu .cp-knob { background: radial-gradient(circle at 35% 30%, #e1e3e6, #9b9ea3 70%); }
+
+/* Airbus A350 / A380 FCU: dark glass, orange outlines, blue windows */
+.cockpit.fcu350 { background: #0a0b0d; border-color: #1d1f23; }
+.cockpit.fcu350 .fcu-lcd { background: #111833; }
+.cockpit.fcu350 .fcu-lcd .cp-win { background: #1c2552; border-radius: 2px; }
+.cockpit.fcu350 .fcu-lcd .cp-win b { color: #e8ecff; }
+.cockpit.fcu350 .fcu-lcd .cp-win .cp-wlabel { color: #ffb02e; }
+.cockpit.fcu350 .cp-label-top { color: #ffb02e; }
+.cockpit.fcu350 .cp-btn { background: #101114; color: #ffb02e; border: 1px solid #b97a14; }
+.cockpit.fcu350 .cp-lamp { background: #1e3322; }
+.cockpit.fcu350 .cp-btn.lit .cp-lamp { background: #43e06a; box-shadow: 0 0 8px #43e06a; }
+.cockpit.fcu350 .cp-knob { background: #0c0d10; border: 2px solid #ffb02e; box-shadow: 0 0 6px rgba(255,176,46,0.35); }
+.cockpit.fcu350 .cp-knob button { color: #ffb02e; }
+.cockpit.fcu350 .cp-pp button { background: #101114; color: #ffb02e; border-color: #b97a14; }
+.cockpit.mcp { gap: 8px 6px; }
+.cockpit.mcp .cp-btn { min-width: 46px; padding: 5px 4px 13px; font-size: 10px; }
+.cockpit.mcp .cp-win { min-width: 60px; }
+.cockpit.mcp .cp-win b { font-size: 20px; letter-spacing: 1px; }
+.cockpit.mcp .cp-btn.disengage { min-width: 104px; }
