@@ -82,6 +82,9 @@ class MainWindow(QMainWindow):
 
         self.calibrate_btn = QPushButton("Set Reference Map")
         self.calibrate_btn.clicked.connect(self.open_reference_map_setup)
+        # ATC365 build: the reference map is the radar world map shipped in src/ - capturing your own would overwrite it.
+        self.calibrate_btn.setEnabled(False)
+        self.calibrate_btn.setToolTip("Not needed in the ATC365 build: it uses the radar world map.")
         bar.addWidget(self.calibrate_btn)
 
         bar.addSpacing(12)
@@ -207,7 +210,7 @@ class MainWindow(QMainWindow):
         self.status_label.setProperty("state", "idle")
         self.callsign_input.setEnabled(True)
         self.aircraft_input.setEnabled(True)
-        self.calibrate_btn.setEnabled(True)
+        self.calibrate_btn.setEnabled(False)  # stays off (see above)
 
         if self.worker is not None:
             self.worker.stop()
