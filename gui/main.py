@@ -9,7 +9,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QListWidget, QListWidgetItem, QTabWidget,
-    QTextEdit, QFrame, QSizePolicy, QLineEdit,
+    QTextEdit, QFrame, QSizePolicy, QLineEdit, QComboBox,
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QIcon
@@ -17,6 +17,8 @@ from PyQt6.QtGui import QFont, QIcon
 from updater import check_for_update, CURRENT_VERSION, apply_pending_update_and_maybe_restart
 from backend_worker import TrackerWorker, WebhookEventWorker
 from reference_map_dialog import ReferenceMapDialog
+import stands
+import user_state
 
 APP_TITLE = f"PTFS Tracker v{CURRENT_VERSION}"
 
@@ -40,6 +42,8 @@ class MainWindow(QMainWindow):
         self.connected = False
         self.worker = None
         self.webhook_event_workers = []
+        self.user_state = user_state.load()
+        self.anchor = None  # (x_nm, y_nm) from the stand entry, for the next/current tracker
 
         self._build_ui()
         self._log(f"PTFS Tracker version {CURRENT_VERSION}")
@@ -62,6 +66,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(8)
 
         root.addLayout(self._build_top_bar())
+        root.addLayout(self._build_stand_bar())
         root.addLayout(self._build_body(), stretch=1)
 
     def _build_top_bar(self):
@@ -114,6 +119,40 @@ class MainWindow(QMainWindow):
         self.freq_value.setObjectName("freqLabel")
         bar.addWidget(self.freq_value)
 
+        return bar
+
+    def _build_stand_bar(self):
+        bar = QHBoxLayout()
+        bar.addWidget(QLabel("Start from a stand:"))
+
+        self.stand_airport = QComboBox()
+        for icao, names in stands.list_stands().items():
+            self.stand_airport.addItem(f"{icao} ({len(names)} stands)", icao)
+        bar.addWidget(self.stand_airport)
+
+        self.stand_input = QLineEdit()
+        self.stand_input.setPlaceholderText("Stand no.")
+        self.stand_input.setFixedWidth(80)
+        self.stand_input.setMaxLength(3)
+        self.stand_input.returnPressed.connect(self.set_from_stand)
+        bar.addWidget(self.stand_input)
+
+        self.stand_btn = QPushButton("Set position from stand")
+        self.stand_btn.clicked.connect(self.set_from_stand)
+        bar.addWidget(self.stand_btn)
+
+        bar.addSpacing(12)
+        bar.addWidget(QLabel("Nudge:"))
+        for label, dx, dy in (("\u2190", -0.01, 0), ("\u2191", 0, -0.01), ("\u2193", 0, 0.01), ("\u2192", 0.01, 0)):
+            btn = QPushButton(label)
+            btn.setFixedWidth(34)
+            btn.setToolTip("Move where stands at this airport are put (about 18 m a click)")
+            btn.clicked.connect(lambda _=False, dx=dx, dy=dy: self.nudge_stand(dx, dy))
+            bar.addWidget(btn)
+
+        self.stand_status = QLabel("")
+        bar.addWidget(self.stand_status)
+        bar.addStretch(1)
         return bar
 
     def _build_body(self):
@@ -175,7 +214,8 @@ class MainWindow(QMainWindow):
             self.aircraft_input.setEnabled(False)
             self.calibrate_btn.setEnabled(False)
 
-            self.worker = TrackerWorker(callsign, aircraft_type)
+            self.worker = TrackerWorker(callsign, aircraft_type, anchor=self.anchor, user_state=self.user_state)
+            self.anchor = None
             self.worker.log.connect(self._log)
             self.worker.position.connect(self._on_position_update)
             self.worker.error.connect(self._on_worker_error)
@@ -193,6 +233,34 @@ class MainWindow(QMainWindow):
         else:
             self._do_disconnect()
         self._refresh_style()
+
+    def set_from_stand(self):
+        icao = self.stand_airport.currentData()
+        fix = stands.stand_fix(icao, self.stand_input.text().strip(), self.user_state["standOffsets"])
+        if "error" in fix:
+            self.stand_status.setText(fix["error"])
+            self._log(f"Stand: {fix['error']}")
+            return
+        self.anchor = (fix["xNm"], fix["yNm"])
+        self.stand_status.setText(f"On stand {fix['stand']} at {icao}.")
+        if self.worker is not None:
+            self.worker.set_anchor(*self.anchor)
+        else:
+            self._log(f"Stand {fix['stand']} at {icao} set - it is used when you press Connect.")
+
+    def nudge_stand(self, dx, dy):
+        icao = self.stand_airport.currentData()
+        current = self.user_state["standOffsets"].get(icao) or stands.shipped_nudge(icao)
+        self.user_state["standOffsets"][icao] = {
+            "dxNm": round(current["dxNm"] + dx, 3),
+            "dyNm": round(current["dyNm"] + dy, 3),
+        }
+        user_state.save(self.user_state)
+        if self.worker is not None:
+            self.worker.user_state = self.user_state
+        self.set_from_stand()
+        n = self.user_state["standOffsets"][icao]
+        self.stand_status.setText(f"{icao} nudge: {n['dxNm']:.3f} nm east, {n['dyNm']:.3f} nm south")
 
     def force_disconnect(self):
         if self.connected:

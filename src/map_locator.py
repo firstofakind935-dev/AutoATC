@@ -50,6 +50,7 @@ class MapLocator:
         # The reference is the radar world map (the whole play area, low resolution), so the live minimap is
         # usually zoomed in several times over it: search small scales too, spaced geometrically.
         self._scales = np.geomspace(scale_min, scale_max, scale_steps)
+        self.last_reason = None
 
     @staticmethod
     def _match(image, template):
@@ -80,8 +81,14 @@ class MapLocator:
         Returns (top_left_x, top_left_y, scale, confidence): where the crop sits on the reference map, in
         reference pixels, and how many reference pixels one crop pixel covers. None if nothing fits.
         """
+        self.last_reason = None
         crop_mask = land_mask(crop_bgr)
         ch, cw = crop_mask.shape[:2]
+        # A view that is nearly all land or all sea has no coastline to match: it fits hundreds of places equally well.
+        fraction = float(crop_mask.mean())
+        if fraction < 0.06 or fraction > 0.94:
+            self.last_reason = "no coastline in the minimap view (almost all land or all sea)"
+            return None
         f = self.COARSE
 
         # Coarse: every scale, on shrunken masks.

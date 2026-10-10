@@ -18,6 +18,8 @@ from pathlib import Path
 
 import requests
 
+import frames
+
 PX_PER_NM = 48.0  # the bundled reference map: the radar world map at 2x its 24 px per nm
 SPEED_WINDOW_SECONDS = 8.0
 MIN_MOVING_KT = 3.0  # below this, keep the last heading instead of a noisy course
@@ -58,6 +60,8 @@ class MonitorReporter:
         self._fixes = deque()  # (time, x_nm, y_nm)
         self._last_post = 0.0
         self._heading = None
+        self.user_offsets = {}  # the pilot's airport calibrations
+        self.user_stand_nudges = {}  # the pilot's stand nudges
 
     @property
     def configured(self):
@@ -83,8 +87,12 @@ class MonitorReporter:
         return speed, self._heading
 
     def build_payload(self, callsign, aircraft_type, px, py, now=None):
-        now = self.clock() if now is None else now
+        """Payload for a reference-map pixel taken as-is (no frame shift)."""
         x_nm, y_nm = pixel_to_nm(px, py)
+        return self.build_payload_nm(callsign, aircraft_type, x_nm, y_nm, now)
+
+    def build_payload_nm(self, callsign, aircraft_type, x_nm, y_nm, now=None):
+        now = self.clock() if now is None else now
         icao, distance, bearing = nearest_airport(self.airports, x_nm, y_nm)
         speed, heading = self._course_and_speed(now, x_nm, y_nm)
         return {
@@ -104,11 +112,17 @@ class MonitorReporter:
         }
 
     def report(self, callsign, aircraft_type, px, py):
-        """Posts one fix (throttled). Returns a message to log, or None when nothing was worth saying."""
+        """A fix on the reference map picture: carried into the radar's frame, then posted (throttled)."""
+        x_nm, y_nm = pixel_to_nm(px, py)
+        gx, gy, *_ = frames.picture_to_game(x_nm, y_nm, self.user_offsets, self.user_stand_nudges)
+        return self.report_game(callsign, aircraft_type, gx, gy)
+
+    def report_game(self, callsign, aircraft_type, x_nm, y_nm):
+        """Posts a position already on the radar's grid (nm). Returns a message to log, or None."""
         if not self.configured:
             return None
         now = self.clock()
-        payload = self.build_payload(callsign, aircraft_type, px, py, now)  # always fed, so speed uses every fix
+        payload = self.build_payload_nm(callsign, aircraft_type, x_nm, y_nm, now)  # always fed, so speed uses every fix
         if now - self._last_post < self.min_interval:
             return None
         headers = {"Content-Type": "application/json"}

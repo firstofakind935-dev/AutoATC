@@ -86,3 +86,14 @@ A typical tracking session can display information such as:
 ```text
 Tracker started for KLM43AK (B738).
 Discord signed on message sent.
+
+## Stand entry, frames and fix filtering (added on this branch)
+
+- **Start from a stand.** Row under the top bar: pick the airport, type your stand number, press *Set position from stand* (works before or after
+  Connect). The position is a point on the radar's grid from the ground charts (`src/stands.json`), plus the airport's nudge; Tokyo ships with a measured
+  one. The ← ↑ ↓ → buttons nudge stands at that airport (about 18 m a click) while you watch the radar; saved in `src/user_state.json`.
+- **Picture frame to radar frame.** Minimap fixes are matched on the world-map picture; `src/frames.py` carries them into the radar's frame with per-airport
+  offsets (`src/picture_offsets.json`), so they agree with the stands.
+- **Which fixes to believe** (`src/position_filter.py`): the first fix must be a strong match (or start from a stand); a parked aircraft can't jump;
+  a bigger jump needs 3 agreeing strong fixes, and for a parked aircraft the same answer must hold for a minute at 85%+. Views with no coastline are refused.
+- The tracker keeps reporting the stand position to the monitor until fixes agree with it.

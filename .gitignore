@@ -6,3 +6,4 @@ calibration.json
 .venv/
 gui/dist/
 gui/build/
+src/user_state.json

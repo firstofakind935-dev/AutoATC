@@ -24,6 +24,8 @@ import app_config as config  # noqa: E402
 import webhook         # noqa: E402
 import broadcast_server  # noqa: E402
 import monitor_client  # noqa: E402
+import frames  # noqa: E402
+from position_filter import PositionFilter  # noqa: E402
 from marker_finder import find_marker_pixel  # noqa: E402
 from map_locator import MapLocator  # noqa: E402
 from reference_registration import prepare_tracking_reference  # noqa: E402
@@ -43,11 +45,17 @@ class TrackerWorker(QThread):
     session_started = pyqtSignal(str, str)
     session_stopped = pyqtSignal(str, str)
 
-    def __init__(self, callsign: str, aircraft_type: str):
+    def __init__(self, callsign: str, aircraft_type: str, anchor=None, user_state=None):
         super().__init__()
         self._running = False
         self.callsign = callsign
         self.aircraft_type = aircraft_type
+        self._anchor = anchor  # (x_nm, y_nm) on the radar grid from a stand entry, applied at the next tick
+        self.user_state = user_state or {"standOffsets": {}, "airportOffsets": {}}
+
+    def set_anchor(self, x_nm: float, y_nm: float):
+        """A known position (a stand): trusted outright. Safe to call from the GUI thread."""
+        self._anchor = (x_nm, y_nm)
 
     def run(self):
         import mss
@@ -74,6 +82,10 @@ class TrackerWorker(QThread):
         )
         if not reporter.configured:
             self.log.emit("No MONITOR_URL in settings - positions will not reach ATC365.")
+        reporter.user_offsets = self.user_state.get("airportOffsets", {})
+        reporter.user_stand_nudges = self.user_state.get("standOffsets", {})
+        filt = PositionFilter()
+        last_ignored_log = 0.0
 
         session_started = False
         try:
@@ -85,16 +97,27 @@ class TrackerWorker(QThread):
                 )
                 self.session_started.emit(self.callsign, self.aircraft_type)
                 while self._running:
+                    now = time.time()
+                    if self._anchor is not None:
+                        ax, ay = self._anchor
+                        self._anchor = None
+                        filt.anchor(ax, ay, now)
+                        self.log.emit(f"Position set from your stand ({ax:.2f}, {ay:.2f}).")
+
                     shot = sct.grab(config.MINIMAP_REGION)
                     frame = cv2.cvtColor(np.array(shot), cv2.COLOR_BGRA2BGR)
                     marker_px = find_marker_pixel(frame)
 
                     if marker_px is None:
-                        self.log.emit("Marker not found this frame.")
+                        if not filt.has_position:
+                            self.log.emit("Marker not found this frame.")
                     else:
                         result = locator.locate_marker(frame, marker_px)
                         if result is None:
-                            self.log.emit("Could not match minimap to reference map.")
+                            reason = getattr(locator, "last_reason", None) or "Could not match minimap to reference map."
+                            if not filt.has_position or now - last_ignored_log > 10:
+                                last_ignored_log = now
+                                self.log.emit(f"Minimap: {reason}")
                         else:
                             abs_x, abs_y, confidence = result
                             if confidence < MIN_CONFIDENCE:
@@ -102,28 +125,44 @@ class TrackerWorker(QThread):
                                     f"Low-confidence match ({confidence:.2f}), skipping."
                                 )
                             else:
-                                self.position.emit(abs_x, abs_y)
+                                # Matched on the world-map picture; carry it into the radar's frame before judging it.
                                 radar_x, radar_y = to_radar_px(abs_x, abs_y)
-                                monitor_result = reporter.report(
-                                    self.callsign, self.aircraft_type, radar_x, radar_y
+                                px_nm, py_nm = monitor_client.pixel_to_nm(radar_x, radar_y)
+                                gx, gy, *_ = frames.picture_to_game(
+                                    px_nm, py_nm,
+                                    self.user_state.get("airportOffsets", {}),
+                                    self.user_state.get("standOffsets", {}),
                                 )
-                                if monitor_result:
-                                    self.log.emit(monitor_result)
-                                webhook_result = webhook.post_position(
-                                    abs_x, abs_y,
-                                    callsign=self.callsign,
-                                    aircraft_type=self.aircraft_type,
-                                )
-                                if webhook_result:
-                                    self.log.emit(webhook_result)
-                                broadcast_server.broadcast({
-                                    "callsign": self.callsign,
-                                    "aircraft_type": self.aircraft_type,
-                                    "x": abs_x,
-                                    "y": abs_y,
-                                    "confidence": confidence,
-                                    "timestamp": time.time(),
-                                })
+                                ok, reason = filt.accept(gx, gy, confidence, now)
+                                if not ok:
+                                    if now - last_ignored_log > 5:
+                                        last_ignored_log = now
+                                        self.log.emit(f"Minimap fix {reason}")
+                                else:
+                                    self.position.emit(abs_x, abs_y)
+                                    webhook_result = webhook.post_position(
+                                        abs_x, abs_y,
+                                        callsign=self.callsign,
+                                        aircraft_type=self.aircraft_type,
+                                    )
+                                    if webhook_result:
+                                        self.log.emit(webhook_result)
+                                    broadcast_server.broadcast({
+                                        "callsign": self.callsign,
+                                        "aircraft_type": self.aircraft_type,
+                                        "x": abs_x,
+                                        "y": abs_y,
+                                        "confidence": confidence,
+                                        "timestamp": time.time(),
+                                    })
+
+                    # Report whatever we believe our position is (a stand entry holds you there until fixes agree).
+                    if filt.has_position:
+                        monitor_result = reporter.report_game(
+                            self.callsign, self.aircraft_type, filt.pos[0], filt.pos[1]
+                        )
+                        if monitor_result:
+                            self.log.emit(monitor_result)
 
                     time.sleep(config.POLL_INTERVAL_SECONDS)
         except Exception as e:
