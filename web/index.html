@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PTFS Live Tracker</title>
+<style>
+  body {
+    margin: 0;
+    background: #0b0f14;
+    color: #e6edf3;
+    font-family: system-ui, sans-serif;
+  }
+  #status {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #8b949e;
+    border-bottom: 1px solid #21262d;
+  }
+  #status.connected { color: #3fb950; }
+  #status.disconnected { color: #f85149; }
+  #canvasWrap { padding: 16px; }
+  canvas {
+    background: #111820;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    display: block;
+  }
+  #log {
+    padding: 0 16px 16px;
+    font-size: 12px;
+    color: #8b949e;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+  <div id="status" class="disconnected">Connecting to ws://localhost:8765 ...</div>
+  <div id="canvasWrap">
+    <canvas id="map" width="700" height="500"></canvas>
+  </div>
+  <div id="log"></div>
+
+<script>
+// --- Adjust these to match the real coordinate range of your PTFS map ---
+// This maps game X/Y onto the canvas. Tweak GAME_BOUNDS to whatever
+// range your calibration points actually cover.
+const GAME_BOUNDS = { minX: -5000, maxX: 5000, minY: -5000, maxY: 5000 };
+
+const canvas = document.getElementById('map');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const logEl = document.getElementById('log');
+
+const planes = {}; // callsign -> {x, y, timestamp}
+
+function gameToCanvas(gx, gy) {
+  const nx = (gx - GAME_BOUNDS.minX) / (GAME_BOUNDS.maxX - GAME_BOUNDS.minX);
+  const ny = (gy - GAME_BOUNDS.minY) / (GAME_BOUNDS.maxY - GAME_BOUNDS.minY);
+  return [nx * canvas.width, canvas.height - ny * canvas.height];
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // grid
+  ctx.strokeStyle = '#1c2530';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const x = (canvas.width / 10) * i;
+    const y = (canvas.height / 10) * i;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  for (const [callsign, plane] of Object.entries(planes)) {
+    const [cx, cy] = gameToCanvas(plane.x, plane.y);
+    ctx.fillStyle = '#58a6ff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = '12px system-ui';
+    ctx.fillText(callsign, cx + 8, cy - 8);
+  }
+}
+
+function connect() {
+  const ws = new WebSocket('ws://localhost:8765');
+
+  ws.onopen = () => {
+    statusEl.textContent = 'Connected';
+    statusEl.className = 'connected';
+  };
+
+  ws.onclose = () => {
+    statusEl.textContent = 'Disconnected — retrying in 3s...';
+    statusEl.className = 'disconnected';
+    setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    planes[data.callsign] = data;
+    draw();
+
+    const line = document.createElement('div');
+    line.textContent = `${new Date(data.timestamp * 1000).toLocaleTimeString()} — ` +
+                        `${data.callsign}: (${data.x.toFixed(1)}, ${data.y.toFixed(1)})`;
+    logEl.prepend(line);
+    while (logEl.children.length > 30) logEl.removeChild(logEl.lastChild);
+  };
+}
+
+connect();
+draw();
+</script>
+</body>
+</html>

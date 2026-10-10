@@ -1,0 +1,117 @@
+/* Dark theme, vPilot-inspired */
+
+QWidget {
+    background-color: #12161b;
+    color: #d7dde3;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12px;
+}
+
+QMainWindow {
+    background-color: #12161b;
+}
+
+/* Top bar buttons */
+QPushButton {
+    background-color: #1c232b;
+    border: 1px solid #2c353f;
+    border-radius: 3px;
+    padding: 5px 14px;
+    color: #d7dde3;
+}
+QPushButton:hover {
+    background-color: #253039;
+}
+QPushButton:disabled {
+    color: #5a636c;
+}
+
+#connectButton {
+    background-color: #1f3a2a;
+    border: 1px solid #2f6b46;
+    color: #6fe39a;
+    font-weight: bold;
+}
+#connectButton:checked, #connectButton[connected="true"] {
+    background-color: #3a1f1f;
+    border: 1px solid #6b2f2f;
+    color: #e36f6f;
+}
+
+#disconnectButton {
+    background-color: #3a1f1f;
+    border: 1px solid #6b2f2f;
+    color: #e36f6f;
+    max-width: 24px;
+}
+
+/* Status text */
+#statusLabel {
+    color: #8b939b;
+}
+#statusLabel[state="connected"] {
+    color: #4fd67a;
+}
+#statusLabel[state="error"] {
+    color: #e36f6f;
+}
+
+/* Controllers/positions list */
+QListWidget#positionsList {
+    background-color: #0d1014;
+    border: 1px solid #232b33;
+}
+QListWidget#positionsList::item {
+    padding: 4px 8px;
+    color: #4fb0e3;
+}
+QListWidget#positionsList::item:selected {
+    background-color: #1c232b;
+}
+
+/* Tabs */
+QTabWidget::pane {
+    border: 1px solid #232b33;
+    background-color: #0d1014;
+}
+QTabBar::tab {
+    background-color: #1c232b;
+    padding: 6px 16px;
+    border: 1px solid #232b33;
+    border-bottom: none;
+}
+QTabBar::tab:selected {
+    background-color: #0d1014;
+    color: #4fb0e3;
+}
+
+/* Message log */
+QTextEdit#messageLog {
+    background-color: #0d1014;
+    border: none;
+    color: #d7dde3;
+    font-family: Consolas, monospace;
+}
+
+/* Callsign / aircraft type inputs */
+QLineEdit {
+    background-color: #0d1014;
+    border: 1px solid #2c353f;
+    border-radius: 3px;
+    padding: 4px 6px;
+    color: #d7dde3;
+}
+QLineEdit:focus {
+    border: 1px solid #4fb0e3;
+}
+QLineEdit:disabled {
+    color: #5a636c;
+    background-color: #14181d;
+}
+
+/* Frequency-style readouts */
+#freqLabel {
+    color: #4fd6d6;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+}

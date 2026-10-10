@@ -1,0 +1,126 @@
+{
+ "note": "Airport points on the ATC365 radar grid in nautical miles (x east, y south, origin north-west) - the same points the radar draws airports at (24SPY positions). Copied from AutoATC data/worldAnchors.json. src/reference_map.png is the radar world map at 48 px per nm.",
+ "pxPerNm": 48,
+ "airports": {
+  "IRFD": {
+   "xNm": 20.917,
+   "yNm": 21.179
+  },
+  "IMLR": {
+   "xNm": 15.921,
+   "yNm": 19.321
+  },
+  "IPPH": {
+   "xNm": 27.271,
+   "yNm": 8.567
+  },
+  "IZOL": {
+   "xNm": 35.4,
+   "yNm": 15.85
+  },
+  "IBTH": {
+   "xNm": 23.583,
+   "yNm": 13.45
+  },
+  "ISAU": {
+   "xNm": 7.821,
+   "yNm": 23.217
+  },
+  "ISKP": {
+   "xNm": 29.583,
+   "yNm": 18.825
+  },
+  "ILAR": {
+   "xNm": 28.321,
+   "yNm": 24.679
+  },
+  "IPAP": {
+   "xNm": 31.492,
+   "yNm": 25.213
+  },
+  "IKFL": {
+   "xNm": 8.5,
+   "yNm": 14.25
+  },
+  "ITEY": {
+   "xNm": 9.208,
+   "yNm": 13.875
+  },
+  "IGCG": {
+   "xNm": 9.5,
+   "yNm": 13.125
+  },
+  "TVO": {
+   "xNm": 8.983,
+   "yNm": 14.592
+  },
+  "IUFO": {
+   "xNm": 25.125,
+   "yNm": 12.458
+  },
+  "IGRV": {
+   "xNm": 8.729,
+   "yNm": 13.946
+  },
+  "IBLT": {
+   "xNm": 18.433,
+   "yNm": 20.129
+  },
+  "IDCS": {
+   "xNm": 20.371,
+   "yNm": 1.188
+  },
+  "IGAR": {
+   "xNm": 16.888,
+   "yNm": 22.029
+  },
+  "IHEN": {
+   "xNm": 27.054,
+   "yNm": 27.346
+  },
+  "IIAB": {
+   "xNm": 28.821,
+   "yNm": 27.108
+  },
+  "IJAF": {
+   "xNm": 35.804,
+   "yNm": 14.842
+  },
+  "ILKL": {
+   "xNm": 28.629,
+   "yNm": 9.808
+  },
+  "ISCM": {
+   "xNm": 32.883,
+   "yNm": 13.333
+  },
+  "ITKO": {
+   "xNm": 19.433,
+   "yNm": 5.058
+  },
+  "ITRC": {
+   "xNm": 20.625,
+   "yNm": 23.875
+  },
+  "IBAR": {
+   "xNm": 30.225,
+   "yNm": 26.446
+  },
+  "IBRD": {
+   "xNm": 19.167,
+   "yNm": 6.292
+  },
+  "SHV": {
+   "xNm": 29.067,
+   "yNm": 8.463
+  },
+  "ITRN": {
+   "xNm": 21.225,
+   "yNm": 24.067
+  },
+  "OWO": {
+   "xNm": 19.813,
+   "yNm": 18.808
+  }
+ }
+}
