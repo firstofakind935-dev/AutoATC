@@ -380,6 +380,65 @@ document.getElementById('mapFixBtn').addEventListener('click', manualMapFix);
 // F8 from inside the game: no countdown, the map is already open.
 window.companion.onMapFixHotkey(() => runMapFix('manual'));
 
+// ---------- Position fix from a stand number ----------
+// Parked at a stand: the stand's own spot on the ground chart (lib/stands.js), checked against the heading.
+
+let lastHeadingDeg = null; // from the tracking loop
+
+async function currentHeading() {
+  // Read the heading now if the region is set (tracking may not be running), else use the last one tracking saw.
+  try {
+    const rect = toVideoRect(settings.regions && settings.regions.heading);
+    if (rect && captureVideo.videoWidth) {
+      const frame = document.createElement('canvas');
+      frame.width = captureVideo.videoWidth;
+      frame.height = captureVideo.videoHeight;
+      frame.getContext('2d').drawImage(captureVideo, 0, 0);
+      const heading = window.companion.parseHeadingTape(await ocrRegion(frame, rect, { heading: true }));
+      if (heading != null) return heading;
+    }
+  } catch { /* fall through to the last reading */ }
+  return lastHeadingDeg;
+}
+
+async function populateStandAirports() {
+  const stands = window.companion.listStands();
+  const select = document.getElementById('standAirport');
+  select.innerHTML = '';
+  for (const icao of Object.keys(stands)) select.appendChild(new Option(`${icao} (${stands[icao].length} stands)`, icao));
+}
+
+async function setPositionFromStand() {
+  const icao = document.getElementById('standAirport').value;
+  const stand = document.getElementById('standInput').value.trim();
+  if (!icao || !stand) { setStatus('standStatus', 'Pick the airport and type your stand number.', 'bad'); return; }
+  const heading = await currentHeading();
+  const fix = window.companion.standFix(icao, stand, heading);
+  if (fix.error) { setStatus('standStatus', fix.error, 'bad'); return; }
+  const nearest = await window.companion.nearestAirport(airports, fix.world);
+  currentFix = { world: fix.world, atMs: Date.now() };
+  lastCorrectionAtMs = Date.now();
+  mapHint = null;
+  const summary = `stand ${fix.stand} at ${icao} (${nearest.distanceNm.toFixed(2)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao})`;
+  lastFixSummary = summary;
+  setSidebar('dotFix', 'sidebarFixText', summary, 'good');
+  syncBar();
+  let note = `Fixed on stand ${fix.stand}.`;
+  let tone = 'ok';
+  if (typeof heading === 'number' && fix.headingOk === false) {
+    note = `Fixed on stand ${fix.stand}, but heading ${Math.round(heading)}° doesn't fit its line (${fix.axisDeg}°/${(fix.axisDeg + 180) % 360}°) - right stand?`;
+    tone = 'warn';
+  } else if (typeof heading === 'number') {
+    note += ` Heading ${Math.round(heading)}° fits the line.`;
+  } else {
+    note += ' (No heading read - set the heading region to check it.)';
+  }
+  setStatus('standStatus', note, tone);
+  log(`Stand fix: ${summary}.${typeof heading === 'number' ? ` Heading ${Math.round(heading)}°.` : ''}`);
+}
+document.getElementById('standFixBtn').addEventListener('click', setPositionFromStand);
+document.getElementById('standInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') setPositionFromStand(); });
+
 // ---------- Tracking loop ----------
 
 function log(message) {
@@ -504,6 +563,7 @@ async function trackTick() {
     return;
   }
 
+  lastHeadingDeg = heading;
   const now = Date.now();
   currentFix = await window.companion.integrate(currentFix, { headingDeg: heading, speedKts: info.speedKts ?? 0, atMs: now });
 
@@ -758,5 +818,6 @@ function showLoadErrors() {
   showLoadErrors();
   await loadSettings();
   await populateAirportDropdowns();
+  populateStandAirports();
   await populateDisplays();
 })();
