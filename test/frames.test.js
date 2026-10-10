@@ -5,7 +5,7 @@ const { standFix } = require('../companion/lib/stands');
 
 test('a picture-frame fix at ITKO stand 22 is carried to the stand', () => {
   // What the radar showed for N42Y parked at ITKO stand 22 (a map fix, on the picture): 19.30, 5.05.
-  const stand = standFix('ITKO', '22');
+  const stand = standFix('ITKO', '22'); // with ITKO's shipped nudge: where the real stand is on the map
   const raw = pictureToGame(19.3, 5.05);
   assert.ok(Math.hypot(raw.xNm - stand.xNm, raw.yNm - stand.yNm) < 0.12, `${raw.xNm}, ${raw.yNm} vs ${stand.xNm}, ${stand.yNm}`);
   assert.strictEqual(raw.icao, 'ITKO');

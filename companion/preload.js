@@ -27,7 +27,7 @@ const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 const { fixFromMap } = tryRequire('mapFix', './lib/mapFix');
-const { standFix, listStands } = tryRequire('stands', './lib/stands');
+const { standFix, listStands, shippedOffsets } = tryRequire('stands', './lib/stands');
 const { pictureToGame } = tryRequire('frames', './lib/frames');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
@@ -109,6 +109,7 @@ contextBridge.exposeInMainWorld('companion', {
   // Position from a stand number (lib/stands.js).
   standFix,
   listStands,
+  shippedStandOffsets: () => shippedOffsets(),
   // Picture-frame fix -> the radar / ground-chart frame (lib/frames.js).
   pictureToGame,
   onMapFixHotkey: (callback) => ipcRenderer.on('map-fix-hotkey', () => callback()),

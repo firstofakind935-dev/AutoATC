@@ -1,0 +1,9 @@
+{
+ "note": "Per airport: nm (x east, y south) added to a stand fix, to line the ground chart up with the real map where the chart is traced a little off. ITKO measured from a screenshot: the radar showed the aircraft at the position from the chart (stand 22) and the pilot marked the real stand 22 about 207 px left and 153 px up at ~1140 px per nm.",
+ "airports": {
+  "ITKO": {
+   "dxNm": -0.181,
+   "dyNm": -0.134
+  }
+ }
+}

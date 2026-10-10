@@ -9,7 +9,8 @@ const path = require('path');
 const World = require('./world');
 
 // data/ sits two levels up in the repo (companion/lib/) and one level up in the standalone companion app.
-const FILES = [path.join(__dirname, '..', '..', 'data', 'stands.json'), path.join(__dirname, '..', 'data', 'stands.json')];
+const dataFiles = (name) => [path.join(__dirname, '..', '..', 'data', name), path.join(__dirname, '..', 'data', name)];
+const FILES = dataFiles('stands.json');
 
 let cache = null;
 function load() {
@@ -17,6 +18,15 @@ function load() {
   const file = FILES.find((f) => fs.existsSync(f));
   cache = file ? JSON.parse(fs.readFileSync(file, 'utf8')).airports || {} : {};
   return cache;
+}
+
+let shipped = null;
+function shippedOffsets() {
+  if (!shipped) {
+    const file = dataFiles('standOffsets.json').find((f) => fs.existsSync(f));
+    shipped = file ? JSON.parse(fs.readFileSync(file, 'utf8')).airports || {} : {};
+  }
+  return shipped;
 }
 
 /** { ICAO: ['1', '2', ...] } for every airport with stand data. */
@@ -37,7 +47,7 @@ const axisDiff = (h, axis) => {
  * Where stand `stand` at `icao` is, as {xNm, yNm, world: {lat, lon}} on the radar grid, or {error}.
  * `headingDeg` (optional) is checked against the stand line: headingOk says whether it fits.
  */
-function standFix(icao, stand, headingDeg = null) {
+function standFix(icao, stand, headingDeg = null, userOffsets = {}) {
   const stands = load()[String(icao || '').toUpperCase()];
   if (!stands) return { error: `no stand data for ${icao || 'that airport'} yet` };
   const key = String(stand || '').trim().replace(/^0+(?=\d)/, '');
@@ -46,8 +56,11 @@ function standFix(icao, stand, headingDeg = null) {
 
   // The aircraft sits along the stand's line - its middle is the best single point. Stands drawn without a line use the number's own spot.
   const point = s.line ? [(s.line.a[0] + s.line.b[0]) / 2, (s.line.a[1] + s.line.b[1]) / 2] : [s.x, s.y];
-  const { xNm, yNm } = unitsToWorld(point[0], point[1]);
-  const out = { xNm, yNm, world: World.worldToFlat(xNm, yNm), stand: key, source: s.line ? 'stand line' : 'stand number' };
+  const base = unitsToWorld(point[0], point[1]);
+  // Where the chart sits a little off the real map, the airport carries a nudge: the pilot's own, else the shipped one.
+  const nudge = userOffsets[String(icao).toUpperCase()] || shippedOffsets()[String(icao).toUpperCase()] || { dxNm: 0, dyNm: 0 };
+  const xNm = base.xNm + nudge.dxNm, yNm = base.yNm + nudge.dyNm;
+  const out = { xNm, yNm, world: World.worldToFlat(xNm, yNm), stand: key, source: s.line ? 'stand line' : 'stand number', nudge };
   if (s.line) {
     out.axisDeg = Math.round(bearingOf(s.line.a, s.line.b));
     if (typeof headingDeg === 'number') {
@@ -59,4 +72,4 @@ function standFix(icao, stand, headingDeg = null) {
   return out;
 }
 
-module.exports = { standFix, listStands };
+module.exports = { standFix, listStands, shippedOffsets };

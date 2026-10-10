@@ -395,3 +395,10 @@ show up at the other end of the terminal. Fixes are now shifted by a per-airport
 small enough to trust; the bigger ones need a calibration). To calibrate an airport yourself: park on a stand, press **Set position from stand**,
 take a map or minimap fix (F8 or *Fix from minimap now*), then press **Calibrate airport from this stand**. The gap is saved and used for every
 later fix near that airport.
+
+### Stand nudge
+
+If, after **Set position from stand**, the radar blip is not on your stand, use the arrow buttons under the stand fields: each click moves where stands at
+that airport are put by about 18 m (Shift = 5x) and re-applies the fix, so you can watch the blip walk onto the stand. The nudge is saved per airport.
+Tokyo ships with a measured nudge (the ground chart sits about 0.22 nm off the real map there). The same nudge is added when a map or minimap fix is carried
+across, so both ways of fixing agree.

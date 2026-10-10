@@ -364,7 +364,7 @@ async function runMapFix(trigger, kind = 'big') {
     // The fix is on the world-map picture; the radar, ground charts and stands are in the game frame. Carry it across
     // with the offset for the airport it is near (or the pilot's own calibration of that airport).
     lastRawFix = { xNm: fix.xNm, yNm: fix.yNm, at: Date.now() };
-    const adj = window.companion.pictureToGame(fix.xNm, fix.yNm, settings.airportOffsets || {});
+    const adj = window.companion.pictureToGame(fix.xNm, fix.yNm, settings.airportOffsets || {}, settings.standOffsets || {});
     fix.xNm = adj.xNm;
     fix.yNm = adj.yNm;
     const world = { lat: -fix.yNm / 60, lon: fix.xNm / 60 };
@@ -473,7 +473,7 @@ async function setPositionFromStand() {
   const stand = document.getElementById('standInput').value.trim();
   if (!icao || !stand) { setStatus('standStatus', 'Pick the airport and type your stand number.', 'bad'); return; }
   const heading = await currentHeading();
-  const fix = window.companion.standFix(icao, stand, heading);
+  const fix = window.companion.standFix(icao, stand, heading, settings.standOffsets || {});
   if (fix.error) { setStatus('standStatus', fix.error, 'bad'); return; }
   lastStandFix = { icao, xNm: fix.xNm, yNm: fix.yNm };
   const nearest = await window.companion.nearestAirport(airports, fix.world);
@@ -500,6 +500,22 @@ async function setPositionFromStand() {
   log(`Stand fix: ${summary}.${typeof heading === 'number' ? ` Heading ${Math.round(heading)}°.` : ''}`);
 }
 document.getElementById('standFixBtn').addEventListener('click', setPositionFromStand);
+
+// Nudge buttons: move where stands at this airport are put, in small steps, while watching the radar. Saved per airport.
+async function nudgeStand(dx, dy) {
+  const icao = document.getElementById('standAirport').value;
+  const stand = document.getElementById('standInput').value.trim();
+  if (!icao || !stand) { setStatus('standStatus', 'Pick the airport and type your stand number first.', 'bad'); return; }
+  const current = (settings.standOffsets && settings.standOffsets[icao]) || window.companion.shippedStandOffsets()[icao] || { dxNm: 0, dyNm: 0 };
+  settings.standOffsets = { ...(settings.standOffsets || {}), [icao]: { dxNm: Math.round((current.dxNm + dx) * 1000) / 1000, dyNm: Math.round((current.dyNm + dy) * 1000) / 1000 } };
+  await window.companion.saveSettings(settings);
+  await setPositionFromStand();
+  const n = settings.standOffsets[icao];
+  setStatus('standStatus', `${icao} stand nudge: ${n.dxNm.toFixed(3)} nm east, ${n.dyNm.toFixed(3)} nm south. Watch the radar.`, 'ok');
+}
+for (const [id, dx, dy] of [['nudgeW', -0.01, 0], ['nudgeE', 0.01, 0], ['nudgeN', 0, -0.01], ['nudgeS', 0, 0.01]]) {
+  document.getElementById(id).addEventListener('click', (e) => nudgeStand(dx * (e.shiftKey ? 5 : 1), dy * (e.shiftKey ? 5 : 1)));
+}
 // Park on a stand, press the stand button, take a map or minimap fix, then press this: the gap between the two is
 // remembered for that airport and applied to every later fix near it.
 async function calibrateAirportFromStand() {

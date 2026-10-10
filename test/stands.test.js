@@ -41,3 +41,13 @@ test('bad stand numbers and airports say so', () => {
   assert.match(standFix('IMLR', '1').error, /no stand data/);
   assert.strictEqual(standFix('IRFD', '012').stand, '12');
 });
+
+test('airport nudges move the stand fix; the pilot\'s own beats the shipped one', () => {
+  const plain = standFix('IRFD', '12');
+  const nudged = standFix('IRFD', '12', null, { IRFD: { dxNm: 0.1, dyNm: -0.05 } });
+  assert.ok(Math.abs(nudged.xNm - plain.xNm - 0.1) < 1e-9 && Math.abs(nudged.yNm - plain.yNm + 0.05) < 1e-9);
+  // ITKO ships a measured nudge (the chart sits ~0.22 nm off the real map there)
+  const itko = standFix('ITKO', '22');
+  const raw = standFix('ITKO', '22', null, { ITKO: { dxNm: 0, dyNm: 0 } });
+  assert.ok(Math.abs(itko.xNm - raw.xNm + 0.181) < 1e-6 && Math.abs(itko.yNm - raw.yNm + 0.134) < 1e-6);
+});
