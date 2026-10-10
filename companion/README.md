@@ -330,6 +330,6 @@ and confirm with the pilot before vectoring off of it - see
 
 ## Live feed + A/D yoke steering
 
-In FMS Settings choose **Position source -> Live feed**, enter your callsign, and set **Steering -> Yoke (A/D)**. Position and heading come
+In FMS Settings choose **Position source -> AutoATC monitor**, enter your callsign and your monitor address (https://...), and set **Steering -> Yoke (A/D)**. Position and heading come
 from the game's data feed (no screen reading); lateral steering pulses A/D by heading error (adapted from 24Flight, see THIRD_PARTY.md).
 Regenerate planner plans once so they carry world positions, and run `npm install` for the `ws` dependency.

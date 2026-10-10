@@ -47,3 +47,18 @@ test('the feed reports status and delivers only your aircraft', () => {
   feed.stop();
   assert.equal(states.at(-1), 'stopped');
 });
+
+test('monitor feed picks your callsign from the traffic list', async () => {
+  const { createMonitorFeed } = require('../companion/lib/acftFeed');
+  const got = [];
+  const feed = createMonitorFeed({
+    url: 'http://x/', callsign: 'n42y', intervalMs: 5,
+    fetchImpl: async (u) => ({ ok: u === 'http://x/api/public/v1/traffic', json: async () => ({ aircraft: [
+      { callsign: 'OTHER1', xNm: 1, yNm: 2 }, { callsign: 'N42Y', xNm: 10, yNm: 20, headingDeg: 90, altitudeFt: 5000, speedKt: 200, reportAgeMs: 0 }] }) }),
+    onSample: (s) => got.push(s),
+  });
+  feed.start();
+  await new Promise((r) => setTimeout(r, 30));
+  feed.stop();
+  require('node:assert').ok(got.length && got[0].xNm === 10 && got[0].headingDeg === 90);
+});

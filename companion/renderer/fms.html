@@ -69,14 +69,14 @@
       <label class="field">Where the autopilot gets heading, altitude, speed and position
         <select id="source">
           <option value="screen">Reading the screen (OCR)</option>
-          <option value="feed">Live feed - the game's own numbers (recommended)</option>
+          <option value="feed">AutoATC monitor - your tracked position (recommended)</option>
         </select>
       </label>
       <div id="feed-settings" hidden>
-        <label class="field">Your callsign (as in the game) <input id="feed-callsign" placeholder="N42Y" autocomplete="off"></label>
-        <label class="field">Feed address <input id="feed-url" placeholder="wss://24data.ptfs.app/wss" autocomplete="off"></label>
+        <label class="field">Your callsign (as in tracking) <input id="feed-callsign" placeholder="N42Y" autocomplete="off"></label>
+        <label class="field">Monitor address <input id="feed-url" placeholder="https://your-monitor.up.railway.app" autocomplete="off"></label>
         <p class="dim small" id="feed-status">Not connected</p>
-        <p class="dim small">The live feed gives the true position and heading every second, so the autopilot needs no screen reading and no manual position fixes. Plans made with the planner need to be regenerated once (they carry world positions).</p>
+        <p class="dim small">Reads your position back from the AutoATC monitor (the same reports the radar shows), once a second, so the autopilot needs no extra screen reading. Keep tracking on. Plans made with the planner need to be regenerated once (they carry world positions).</p>
       </div>
       <h3>Game controls</h3>
       <label class="field">Pitch &amp; bank control
