@@ -731,7 +731,7 @@ function knob({ label, value, managed, step, bigStep, set, push, pull, pushLabel
 const button = (label, lit, onClick, cls = '') => ({ type: 'button', label, lit, onClick, cls });
 
 // Which autopilot panel to draw: Airbus A320/330/340 get the FCU, A350/A380 their
-// own FCU, the A220 its flight control panel, every other jet the Boeing MCP, and turboprops, light aircraft and helicopters keep the
+// own FCU, the A220 its flight control panel, the Embraer E-Jet its guidance panel, every other jet the Boeing MCP, and turboprops, light aircraft and helicopters keep the
 // simple panel of their FMS style. Settings can switch back to the simple one.
 const JET_CATEGORIES = new Set(['narrowbody', 'widebody', 'regionaljet', 'bizjet', 'supersonic']);
 function panelStyle(skinId) {
@@ -739,7 +739,8 @@ function panelStyle(skinId) {
   if (skinId === 'airbus') return 'fcu';
   if (skinId === 'a350') return 'fcu350';
   if (skinId === 'a220') return 'fcp';
-  if (['boeing', 'boeing787', 'embraer'].includes(skinId)) return 'mcp';
+  if (skinId === 'embraer') return 'gp';
+  if (['boeing', 'boeing787'].includes(skinId)) return 'mcp';
   if (skinId === 'generic' && JET_CATEGORIES.has(ui.plan?.aircraft?.category)) return 'mcp';
   return 'native';
 }
@@ -790,6 +791,23 @@ function mcpControls() {
     disengage: button('DISENGAGE', false, () => { if (ap.engaged) toggleAp(); }, 'disengage'),
     fdL: button('F/D', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'switch'),
     fdR: button('F/D', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'switch'),
+  };
+}
+
+/** Embraer E-Jet guidance panel. */
+function gpControls() {
+  const k = fcpControls();
+  const course = ui.guidance?.lnav ? pad3(ui.guidance.lnav.desiredTrackDeg) : '---';
+  const decor = (label) => button(label, false, na);
+  return {
+    ...k,
+    hdg: { ...k.hdg, label: 'HDG SEL', pushLabel: 'SYNC', push: () => { if (typeof ui.telemetry?.headingDeg === 'number') ap.selected.headingDeg = Math.round(ui.telemetry.headingDeg) || 360; } },
+    ias: { ...k.ias, label: 'SPEED' },
+    alt: { ...k.alt, label: 'ALT SEL' },
+    crs: knob({ label: 'CRS', value: course, step: 1, bigStep: 10, set: () => {}, raw: () => 0 }),
+    fd: button('FD', ui.fd !== false, () => { ui.fd = ui.fd === false; render(); }, 'switch'),
+    src: decor('SRC'), bank: decor('BANK'),
+    hsi: decor('HSI'), wx: decor('WX'), fms: decor('FMS'), prev: decor('PREV'), vl: decor('V/L'), fpr: decor('FPR'), brg1: decor('BRG ○'), brg2: decor('BRG ◇'),
   };
 }
 
@@ -848,6 +866,7 @@ function fcuControls() {
 function panelFor(skinId) {
   const style = panelStyle(skinId);
   if (style === 'mcp') return [{ type: 'cockpit', style, controls: mcpControls() }];
+  if (style === 'gp') return [{ type: 'cockpit', style, controls: gpControls() }];
   if (style === 'fcp') return [{ type: 'cockpit', style, controls: fcpControls() }];
   if (style === 'fcu' || style === 'fcu350') return [{ type: 'cockpit', style, controls: fcuControls() }];
   const s = ap.selected;

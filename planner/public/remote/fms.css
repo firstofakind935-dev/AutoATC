@@ -600,3 +600,13 @@ body[data-skin="a220"] .numeric { display: none; }
 .cockpit.fcp .cp-knob { background: radial-gradient(circle at 35% 30%, #6e7581, #272b33 70%); }
 .cockpit.fcp .cp-btn.disc { background: #7d1111; color: #fff; min-width: 74px; padding-bottom: 8px; }
 .cockpit.fcp .cp-btn.disc .cp-lamp { display: none; }
+
+/* Embraer E-Jet guidance panel: grey panel, black buttons, black knobs */
+.cockpit.gp { background: linear-gradient(#7a7d82, #62656a); gap: 8px 12px; }
+.cockpit.gp .cp-btn { min-width: 40px; background: #17181a; padding: 5px 4px 12px; font-size: 9px; }
+.cockpit.gp .cp-win b { color: #f1f1f1; font-size: 20px; }
+.cockpit.gp .cp-knob { background: radial-gradient(circle at 35% 30%, #4a4c50, #0c0c0d 70%); }
+.cockpit.gp .cp-knob button { color: #ddd; }
+.cockpit.gp .cp-label-top, .cockpit.gp .cp-win .cp-wlabel { color: #e8e8e8; }
+.cockpit.gp .cp-btn.disc { background: #7d1111; color: #fff; min-width: 74px; padding-bottom: 8px; }
+.cockpit.gp .cp-btn.disc .cp-lamp { display: none; }

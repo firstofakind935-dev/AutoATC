@@ -214,7 +214,7 @@
   const cpKnob = (c, cls = '') => `<div class="cp-knob ${cls}" data-wheel="${c.id}">`
     + `<button data-id="${c.id}" data-action="dec" title="down (Shift: bigger step)">&minus;</button><button data-id="${c.id}" data-action="inc" title="up (Shift: bigger step)">+</button></div>`
     + (c.pushLabel || c.pullLabel
-      ? `<div class="cp-pp">${c.pullLabel ? `<button data-id="${c.id}" data-action="pull">PULL</button>` : ''}${c.pushLabel ? `<button data-id="${c.id}" data-action="push">PUSH</button>` : ''}</div>`
+      ? `<div class="cp-pp">${c.pullLabel ? `<button data-id="${c.id}" data-action="pull">${escapeHtml(c.pullLabel)}</button>` : ''}${c.pushLabel ? `<button data-id="${c.id}" data-action="push">${escapeHtml(c.pushLabel)}</button>` : ''}</div>`
       : '');
   const cpWheel = (c) => `<div class="cp-wheel" data-wheel="${c.id}"><span>UP</span><button data-id="${c.id}" data-action="inc" title="climb (Shift: bigger step)"></button><button data-id="${c.id}" data-action="dec" title="descend (Shift: bigger step)"></button><span>DN</span></div>`;
 
@@ -259,7 +259,23 @@
       + `</div>`;
   }
 
+  function gpHtml(k) {
+    return `<div class="cockpit gp">`
+      + `<div class="cp-mod"><div class="cp-row">${cpBtn(k.hsi)}${cpBtn(k.wx)}${cpBtn(k.fms)}</div><div class="cp-row">${cpBtn(k.brg1)}${cpBtn(k.prev)}${cpBtn(k.vl)}</div><div class="cp-row">${cpBtn(k.brg2)}${cpBtn(k.fpr)}</div></div>`
+      + `<div class="cp-mod">${cpBtn(k.fd, 'sw')}${cpWin(k.crs.label, k.crs.value)}${cpKnob(k.crs)}</div>`
+      + `<div class="cp-mod"><div class="cp-row">${cpBtn(k.nav)}${cpBtn(k.hdgBtn)}</div><div class="cp-row">${cpBtn(k.appr)}${cpBtn(k.bank)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.hdg.label, k.hdg.value)}${cpKnob(k.hdg)}</div>`
+      + `<div class="cp-mod"><div class="cp-col">${cpBtn(k.ap)}${cpBtn(k.yd)}${cpBtn(k.src)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.ias.label, k.ias.value)}${cpKnob(k.ias)}</div>`
+      + `<div class="cp-mod"><div class="cp-row">${cpBtn(k.at)}${cpBtn(k.flc)}${cpBtn(k.altBtn)}</div><div class="cp-row">${cpBtn(k.vnav)}${cpBtn(k.vsBtn)}${cpBtn(k.spd)}</div></div>`
+      + `<div class="cp-mod">${cpWin(k.alt.label, k.alt.value)}${cpKnob(k.alt)}</div>`
+      + `<div class="cp-mod">${cpWin(k.vs.label, k.vs.value)}${cpWheel(k.vs)}</div>`
+      + `<div class="cp-mod">${cpBtn(k.disc)}</div>`
+      + `</div>`;
+  }
+
   function panelItemHtml(item, skin) {
+    if (item.type === 'cockpit' && item.style === 'gp') return gpHtml(item.controls);
     if (item.type === 'cockpit' && item.style === 'fcp') return fcpHtml(item.controls);
     if (item.type === 'cockpit') return item.style === 'mcp' ? mcpHtml(item.controls) : fcuHtml(item.controls, item.style);
     if (item.type === 'group') return `<div class="group">${item.items.map((i) => panelItemHtml(i, skin)).join('')}</div>`;
