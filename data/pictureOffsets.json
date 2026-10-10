@@ -1,0 +1,33 @@
+{
+ "note": "Per airport: how far (nm, x east, y south) the radar/ground-chart position of the airport (24SPY) is from where the world-map picture shows it. Added to fixes matched on the picture. Built by scripts/build-world-anchors.js.",
+ "airports": {
+  "IRFD": {
+   "dxNm": -0.042,
+   "dyNm": -0.196
+  },
+  "IPPH": {
+   "dxNm": -1.229,
+   "dyNm": -0.933
+  },
+  "IZOL": {
+   "dxNm": 1.025,
+   "dyNm": 0.767
+  },
+  "ITKO": {
+   "dxNm": 0.433,
+   "dyNm": 0.267
+  },
+  "ILAR": {
+   "dxNm": 0.071,
+   "dyNm": -0.113
+  },
+  "IBTH": {
+   "dxNm": -0.208,
+   "dyNm": -0.092
+  },
+  "IMLR": {
+   "dxNm": 0.213,
+   "dyNm": 0.654
+  }
+ }
+}

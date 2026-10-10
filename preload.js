@@ -28,6 +28,7 @@ const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader
 const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
 const { fixFromMap } = tryRequire('mapFix', './lib/mapFix');
 const { standFix, listStands } = tryRequire('stands', './lib/stands');
+const { pictureToGame } = tryRequire('frames', './lib/frames');
 
 // contextBridge can only pass plain, structured-cloneable data across to the
 // renderer - not functions/class instances - so calibration.project() gets
@@ -108,6 +109,8 @@ contextBridge.exposeInMainWorld('companion', {
   // Position from a stand number (lib/stands.js).
   standFix,
   listStands,
+  // Picture-frame fix -> the radar / ground-chart frame (lib/frames.js).
+  pictureToGame,
   onMapFixHotkey: (callback) => ipcRenderer.on('map-fix-hotkey', () => callback()),
   // Runs in the main process (see main.js's 'recognize-text' handler) -
   // not called directly here, unlike the other lib/*.js functions above.
