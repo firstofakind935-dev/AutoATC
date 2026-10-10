@@ -51,3 +51,13 @@ test('says so when there is no marker', async () => {
   for (let i = 0; i < shot.data.length; i += 4) if (shot.data[i + 1] > 200) { shot.data[i] = 67; shot.data[i + 1] = 137; shot.data[i + 2] = 68; }
   assert.match((await fixFromMap(shot, { world })).error, /marker/);
 });
+
+test('a small, strongly zoomed-in view (like the minimap) is placed too', async () => {
+  const world = loadWorldMask();
+  // 250 px showing about 1 nm: much more zoomed in than the big map
+  const spec = { x0: 460, y0: 480, width: 250, height: 250, zoom: 8, marker: { x: 120, y: 100 } };
+  const fix = await fixFromMap(fakeShot(world, spec), { world });
+  assert.ok(!fix.error, fix.error);
+  assert.ok(Math.abs(fix.xNm - (spec.x0 + spec.marker.x / spec.zoom) / world.pxPerNm) < 0.03);
+  assert.ok(Math.abs(fix.yNm - (spec.y0 + spec.marker.y / spec.zoom) / world.pxPerNm) < 0.03);
+});

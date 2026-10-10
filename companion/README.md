@@ -377,3 +377,12 @@ Parked at a stand at Rockford (IRFD), Tokyo (ITKO) or Perth (IPPH): in the Posit
 **Set position from stand**. You are put on that stand's line on the ground chart (a fix good to a few metres, no map or minimap needed),
 and your heading is read and checked against the line's direction - it warns if it doesn't fit ("right stand?"). The stand data comes from
 the radar's ground charts (`data/stands.json`, rebuilt with `scripts/build-stands.js`); other airports' charts have no stand numbers yet.
+
+## Stand + minimap tracking
+
+1. Parked: enter your airport and stand and press **Set position from stand** (an exact start).
+2. Select the **minimap region** (step 3) and start tracking. Every few seconds the companion finds your green marker in the minimap and matches
+   the minimap against the world map's coastline (any zoom). A good match re-fixes you; the speed and heading read off the HUD carry you between
+   fixes and over open sea, where a coastline match is impossible. A match that jumps somewhere unlikely on a weak score is ignored (the log says so).
+3. **Save minimap picture** writes minimap-region.png so you can check the box and the marker; **Fix from minimap now** forces one.
+The idea of matching the minimap against a reference map comes from PimPlaying's vptfstrack (MIT), see `test-pim-vpilot`.
