@@ -22,12 +22,12 @@
     <h2>New flight plan</h2>
     <form id="plan-form">
       <label>Callsign <input name="callsign" required maxlength="10" placeholder="N42Y" autocomplete="off"></label>
+      <label>Aircraft <select name="aircraftType" required></select></label>
       <label>Departure <select name="origin" required></select></label>
       <label>Arrival <select name="destination" required></select></label>
       <details class="wide" id="advanced">
-        <summary>Advanced options <span class="dim small">aircraft, cruise altitude, route, procedures - all chosen automatically if left alone</span></summary>
+        <summary>Advanced options <span class="dim small">cruise altitude, route, procedures - all chosen automatically if left alone</span></summary>
         <div class="procs-grid">
-          <label>Aircraft <select name="aircraftType"></select></label>
           <label>Cruise altitude <input name="cruiseAltFt" type="number" step="500" min="0" placeholder="Auto"></label>
           <label class="wide">Route <input name="route" placeholder="Leave blank to find one, or type waypoints: SHELL NIKON" autocomplete="off"></label>
           <label>Procedures

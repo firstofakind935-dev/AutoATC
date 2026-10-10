@@ -48,7 +48,7 @@ async function loadReferenceData() {
   navdata = nav;
   const form = $('plan-form');
   for (const a of aircraft) form.aircraftType.append(option(a.icao, `${a.name} (${a.icao})`));
-  form.aircraftType.value = 'A320';
+  form.aircraftType.value = 'A320'; // default
   for (const name of ['origin', 'destination']) {
     for (const ap of nav.airports) form[name].append(option(ap.icao, `${ap.icao} · ${ap.name}`));
   }
