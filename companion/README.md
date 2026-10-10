@@ -345,3 +345,13 @@ The FMS / autopilot is no longer in the plain companion. Run **`npm run pilot`**
   (picked out of their message) with `SET>` to load it.
 
 Callsign and monitor address are taken from the companion's own settings.
+
+## PFD + MFD for iPads (and other big screens)
+
+The phone/tablet remote now has a second page, **displays.html** (the "PFD / MFD" button on the remote page's top bar, or
+`<address>/displays.html` / `<planner>/remote/displays.html`). Pair on the MCDU page once; the displays reuse the same code.
+- **PFD:** speed and altitude tapes with the autopilot's target bugs, heading tape, V/S, FMA (modes), and an artificial horizon.
+  The game sends no pitch/bank, so the horizon is estimated from turn rate and climb rate.
+- **MFD:** route map (heading-up or north-up, range 5-160 NM) with the active leg in magenta, waypoint names and altitude
+  restrictions, next-waypoint distance, destination ETE, plus a vertical profile strip with your altitude against the restrictions.
+Landscape iPad shows them side by side, portrait stacked.

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AutoATC Displays">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>AutoATC Displays</title>
+<link rel="stylesheet" href="displays.css">
+</head>
+<body>
+<header class="bar">
+  <a class="btn" href="./">MCDU</a>
+  <span id="conn" class="pill">CONNECTING</span>
+  <span id="trk" class="pill">NO TRACKING DATA</span>
+  <span class="spacer"></span>
+  <button class="btn" id="orient">HDG UP</button>
+  <button class="btn" id="range-down">−</button>
+  <span id="range" class="pill">20 NM</span>
+  <button class="btn" id="range-up">+</button>
+  <button class="btn" id="full">⛶</button>
+</header>
+<main class="displays">
+  <section class="screen pfd"><canvas id="pfd"></canvas></section>
+  <section class="screen mfd">
+    <canvas id="mfd"></canvas>
+    <canvas id="profile"></canvas>
+  </section>
+</main>
+<p class="note">Attitude is estimated from your turn rate and climb rate (the game doesn't send pitch and bank). Route and modes come from the FMS on your PC.</p>
+<script src="displays.js"></script>
+</body>
+</html>

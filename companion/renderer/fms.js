@@ -1167,6 +1167,42 @@ function buildView() {
     panel: buildPanel(skinId),
     fma: { cols: fmaColumns(panelStyle(skinId) === 'mcp' ? 'boeing' : skinId), warn: ap.disconnectReason || '' },
     status: buildStatus(),
+    flight: buildFlight(),
+  };
+}
+
+// What the PFD / MFD page (remote/displays.html) draws: your position and speeds, the route, and the autopilot's modes and targets.
+function buildFlight() {
+  const t = ui.telemetry;
+  const g = ui.guidance;
+  const tg = Autopilot.targets(ap, g);
+  const r1 = (n) => (typeof n === 'number' ? Math.round(n * 10) / 10 : null);
+  return {
+    frame: settings.source === 'feed' ? 'world' : 'geo', // world: 1 deg of lon = 60 nm everywhere
+    t: t && typeof t.lat === 'number' ? {
+      lat: t.lat, lon: t.lon, headingDeg: t.headingDeg ?? null, altFt: t.altFt ?? null, speedKt: t.speedKt ?? null,
+      onGround: Boolean(t.onGround), ageMs: Math.max(0, Date.now() - (t.atMs || Date.now())),
+    } : null,
+    route: ui.fms ? ui.fms.waypoints.map((w) => ({
+      ident: w.ident, lat: Math.round(w.lat * 1e5) / 1e5, lon: Math.round(w.lon * 1e5) / 1e5,
+      ...(typeof w.altMinFt === 'number' ? { altMinFt: w.altMinFt } : {}),
+      ...(typeof w.altMaxFt === 'number' ? { altMaxFt: w.altMaxFt } : {}),
+      ...(typeof w.altAtFt === 'number' ? { altAtFt: w.altAtFt } : {}),
+    })) : [],
+    active: ui.fms ? ui.fms.activeIndex : 0,
+    origin: ui.plan?.origin?.icao || null,
+    destination: ui.plan?.destination?.icao || null,
+    cruiseAltFt: ui.fms?.cruiseAltFt ?? null,
+    ap: {
+      engaged: ap.engaged, autothrottle: ap.autothrottle, lateral: ap.lateral, vertical: ap.vertical, speedMode: ap.speedMode,
+      targetHeadingDeg: tg.headingDeg, targetAltFt: tg.altFt, targetSpeedKt: tg.speedKt,
+      selectedVsFpm: ap.selected.vsFpm,
+    },
+    nav: g ? {
+      phase: g.phase, toIdent: g.lnav?.toIdent || null, toDistanceNm: r1(g.lnav?.toDistanceNm),
+      desiredTrackDeg: g.lnav?.desiredTrackDeg ?? null, xtkNm: r1(g.lnav?.xtkNm),
+      distanceToDestNm: r1(g.distanceToDestNm), eteMin: r1(g.eteMin), pathAltFt: g.vnav?.pathAltFt ?? null,
+    } : null,
   };
 }
 

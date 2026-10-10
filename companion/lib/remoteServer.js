@@ -29,6 +29,9 @@ const FILES = {
   '/remote.css': ['remote/remote.css', 'text/css; charset=utf-8'],
   '/manifest.json': ['remote/manifest.json', 'application/manifest+json'],
   '/icon.svg': ['remote/icon.svg', 'image/svg+xml'],
+  '/displays.html': ['remote/displays.html', 'text/html; charset=utf-8'],
+  '/displays.js': ['remote/displays.js', 'text/javascript; charset=utf-8'],
+  '/displays.css': ['remote/displays.css', 'text/css; charset=utf-8'],
   '/fms.css': ['renderer/fms.css', 'text/css; charset=utf-8'],
   '/fmsView.js': ['renderer/fmsView.js', 'text/javascript; charset=utf-8'],
 };
