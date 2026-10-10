@@ -140,11 +140,14 @@
             <span class="status-pill" id="mapFixStatus">No map fix yet</span>
           </div>
           <p class="hint">
-            <b>Minimap (automatic):</b> select the minimap region above. While tracking, the companion matches the minimap
+            <b>Minimap (automatic):</b> select the minimap region above. When you tick the box below, the companion matches the minimap
             against the world map every few seconds and keeps your position right, using your marker. A match that jumps
             somewhere unlikely is ignored unless it is very strong, so dead reckoning (heading + speed) and your stand fix
             carry you over open sea.
           </p>
+          <label class="checkbox-row">
+            <input type="checkbox" id="autoMiniCheck"> Fix from the minimap automatically while tracking (off until you've checked it places you right)
+          </label>
           <div class="card-actions">
             <button class="btn btn-secondary" id="miniFixBtn">Fix from minimap now</button>
             <button class="btn btn-secondary" id="miniShotBtn">Save minimap picture</button>
