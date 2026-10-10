@@ -36,6 +36,32 @@ const WORLD_MAP_PX_PER_NM = WorldMapAnchorsData.pxPerNm;
 const WORLD_MAP_WIDTH = WorldMapAnchorsData.imageWidth;
 const WORLD_MAP_HEIGHT = WorldMapAnchorsData.imageHeight;
 
+// The Ground View panel draws GROUND.svg in 24radar's own frame, where one unit is 100 studs - NOT in
+// world-map pixels like everything else here. A position in world-map pixels becomes ground-chart units
+// through the stud <-> world fit below (nm = stud * 0.000304886 + origin; ~3280 studs/nm; residual
+// well under 0.3 nm, and much less than that across one airport). The chart can still sit a little off
+// the fit at a given airport, so each airport can carry a nudge (in chart units, ~30 m each): hold Alt and
+// press the arrow keys over the Ground View to move aircraft the other way (Alt+0 resets). It is
+// remembered in this browser.
+const GROUND_UNITS_PER_NM = 1 / (0.000304886 * 100);
+const GROUND_ORIGIN_NM = { x: 22.0615, y: 15.0392 };
+const GROUND_NUDGE_DEFAULT = {}; // per-airport {dx, dy}, measured corrections can be committed here
+function groundNudge(icao) {
+    try {
+        const saved = JSON.parse(localStorage.getItem(`groundNudge:${icao}`) || 'null');
+        if (saved && Number.isFinite(saved.dx) && Number.isFinite(saved.dy)) return saved;
+    } catch { /* storage blocked - use the default */ }
+    return GROUND_NUDGE_DEFAULT[icao] || { dx: 0, dy: 0 };
+}
+// worldX/worldY: the adapter's world-map pixel position x100 (see adaptPositionsToAircraftData).
+function worldToGround(worldX, worldY, icao) {
+    const n = groundNudge(icao);
+    return {
+        x: (worldX / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.x) * GROUND_UNITS_PER_NM + n.dx,
+        y: (worldY / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.y) * GROUND_UNITS_PER_NM + n.dy,
+    };
+}
+
 const STUDS_PER_NM = 3307.14286; // derived from updateMeasuringTool() below - do not change independently of it
 
 // AutoATC callsigns (e.g. "DAL123") aren't PTFS's "Carrier-Number" flavor
@@ -778,6 +804,34 @@ groundAircraftButton.addEventListener('click', () => {
     });
     groundAircraftButton.style.background = !groundAircraftHidden ? '#3e3e3e' : '#303030';
     groundAircraftButton.style.border = !groundAircraftHidden ? '3px solid #4B5DA3' : 'none';
+});
+
+// Alt+arrows nudge where aircraft are drawn on the Ground View (see worldToGround); Alt+0 resets.
+document.addEventListener('keydown', (e) => {
+    if (!e.altKey || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '0'].includes(e.key)) return;
+    const icao = airportSelector.value;
+    const step = e.shiftKey ? 3 : 0.5; // chart units (~100 studs each)
+    const n = { ...groundNudge(icao) };
+    if (e.key === '0') { n.dx = 0; n.dy = 0; }
+    else if (e.key === 'ArrowUp') n.dy -= step;
+    else if (e.key === 'ArrowDown') n.dy += step;
+    else if (e.key === 'ArrowLeft') n.dx -= step;
+    else if (e.key === 'ArrowRight') n.dx += step;
+    try { localStorage.setItem(`groundNudge:${icao}`, JSON.stringify(n)); } catch { /* not remembered */ }
+    console.log(`Ground nudge ${icao}: dx ${n.dx}, dy ${n.dy}`);
+    let toast = document.getElementById('ground-nudge-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'ground-nudge-toast';
+        toast.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;color:#fff;font:14px monospace;padding:6px 12px;border-radius:6px;z-index:99999;pointer-events:none';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = `Ground nudge ${icao}: dx ${n.dx}, dy ${n.dy}  (Alt+arrows, Shift = bigger, Alt+0 reset)`;
+    toast.style.display = 'block';
+    clearTimeout(toast.hideTimer);
+    toast.hideTimer = setTimeout(() => { toast.style.display = 'none'; }, 6000);
+    e.preventDefault();
+    if (aircraftData) document.querySelectorAll('#ground-container').forEach((cont) => updateGroundAircraftLayer(aircraftData, cont));
 });
 
 groundButton.addEventListener('click', () => {
@@ -2114,7 +2168,8 @@ function updateGroundAircraftLayer(data, cont) {
 
         if (isOnGround || altitude < 150 || info.isTaxiing) {
             //update position
-            group.setAttribute('transform', `translate(${x / 100}, ${y / 100})`);
+            const g = worldToGround(x, y, airportSelector.value);
+            group.setAttribute('transform', `translate(${g.x}, ${g.y})`);
 
             //label stuff
             updateGroundLabel(group, info, id)
