@@ -39,6 +39,10 @@
     // Speed: throttle taps proportional to the speed error.
     speedDeadbandKt: 4,
     throttleMsPerKt: 15,
+    // Slowing down: aircraft shed speed slowly, so when over the target the
+    // throttle comes back harder (longer taps, and a bigger cap) than when adding thrust.
+    decelBoost: 2,
+    maxDecelPulseMs: 900,
     // Never tap shorter (the game may not register it) or longer (one bad
     // reading shouldn't throw the aircraft around) than these.
     minPulseMs: 40,
@@ -64,8 +68,8 @@
     };
   }
 
-  function pulse(axis, direction, ms, t) {
-    return { axis, direction, ms: Math.round(clamp(ms, t.minPulseMs, t.maxPulseMs)) };
+  function pulse(axis, direction, ms, t, maxMs = t.maxPulseMs) {
+    return { axis, direction, ms: Math.round(clamp(ms, t.minPulseMs, maxMs)) };
   }
 
   /** The targets this update should fly, from the active modes. */
@@ -148,7 +152,9 @@
       // right way quickly enough.
       const closing = rates.accelKtS !== null && Math.sign(rates.accelKtS) === Math.sign(speedErr) && Math.abs(rates.accelKtS) > 1;
       if (Math.abs(speedErr) > t.speedDeadbandKt && !closing) {
-        result.commands.push(pulse('throttle', Math.sign(speedErr), Math.abs(speedErr) * t.throttleMsPerKt, t));
+        const slowing = speedErr < 0;
+        const ms = Math.abs(speedErr) * t.throttleMsPerKt * (slowing ? t.decelBoost : 1);
+        result.commands.push(pulse('throttle', Math.sign(speedErr), ms, t, slowing ? t.maxDecelPulseMs : t.maxPulseMs));
       }
     }
 

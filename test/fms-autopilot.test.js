@@ -274,3 +274,20 @@ test('aircraft already slower than 250 are unaffected', () => {
   assert.equal(g.speedKt, plan.profile.climbKt);
   assert.equal(g.speedLimited, false);
 });
+
+test('auto-throttle pulls back harder when too fast than it adds thrust when too slow', () => {
+  const ap = Autopilot.create();
+  ap.engaged = false; ap.autothrottle = true; ap.speedMode = 'SEL'; ap.selected.speedKt = 250;
+  const feed = (speed) => {
+    ap.last = null;
+    Autopilot.update(ap, { headingDeg: 90, altFt: 5000, speedKt: speed, atMs: 1000 }, null, 1000);
+    return Autopilot.update(ap, { headingDeg: 90, altFt: 5000, speedKt: speed, atMs: 4000 }, null, 4000).commands.find((c) => c.axis === 'throttle');
+  };
+  const slow = feed(230); // 20 kt under: more thrust
+  const fast = feed(270); // 20 kt over: less thrust
+  assert.equal(slow.direction, 1);
+  assert.equal(fast.direction, -1);
+  assert.ok(fast.ms > slow.ms, `${fast.ms} ms vs ${slow.ms} ms`);
+  assert.ok(feed(330).ms <= Autopilot.DEFAULT_TUNING.maxDecelPulseMs);
+  assert.ok(slow.ms <= Autopilot.DEFAULT_TUNING.maxPulseMs);
+});

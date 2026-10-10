@@ -925,7 +925,8 @@ the phase (climb / cruise / descent / approach) or the FCU speed in SEL mode.
 Each update it compares the HUD speed to the target and taps **W** (more) or
 **S** (less) for a time proportional to the error - nothing inside a 4 kt
 deadband, no extra thrust while the speed is already closing the gap, and
-every tap clamped to 40-450 ms. The target is also held to **250 kt or less
+every tap clamped to 40-450 ms (slowing down uses taps twice as long, up to
+900 ms, because aircraft shed speed slowly). The target is also held to **250 kt or less
 below 3000 ft** (released at 3100 ft so it doesn't flip at the line); aircraft
 that are already slower are unaffected. So when the autopilot levels off or starts a
 descent and the speed drifts, throttle taps follow it; it cannot see engine
