@@ -23,6 +23,8 @@ MONITOR_POST_MIN_INTERVAL_SECONDS = 2
 MIN_MATCH_CONFIDENCE = 0.35   # try 0.45+ if you see jumps
 MINIMAP_REGION = {...}        # the box on your screen with the minimap
 ```
+**Setting the minimap box:** with the venv active, run `python tools\pick_region.py` from the repo root, drag a box around the minimap, and paste the `MINIMAP_REGION` it prints into `src\config.py`. It also saves `region_check.png` (what the tracker sees) and tells you the marker colour it found.
+
 Assumes the minimap is a north-up crop of the same game map (as the original does) and that the marker is the only large bright-green shape in `MINIMAP_REGION`.
 
 ---
