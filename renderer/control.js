@@ -74,6 +74,12 @@ async function saveSettingsFromForm() {
 
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettingsFromForm);
 document.getElementById('openFmsBtn').addEventListener('click', () => window.companion.openFms());
+// The FMS / autopilot lives in the separate AutoATC Pilot app (npm run pilot); the plain companion doesn't offer it.
+window.companion.isPilot().then((pilot) => {
+  const btn = document.getElementById('openFmsBtn');
+  if (pilot) btn.textContent = 'FMS / Autopilot / ATC COM';
+  else btn.hidden = true;
+});
 
 // ---------- Display picker + overlay ----------
 
