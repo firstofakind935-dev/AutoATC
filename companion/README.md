@@ -386,3 +386,12 @@ the radar's ground charts (`data/stands.json`, rebuilt with `scripts/build-stand
    fixes and over open sea, where a coastline match is impossible. A match that jumps somewhere unlikely on a weak score is ignored (the log says so).
 3. **Save minimap picture** writes minimap-region.png so you can check the box and the marker; **Fix from minimap now** forces one.
 The idea of matching the minimap against a reference map comes from PimPlaying's vptfstrack (MIT), see `test-pim-vpilot`.
+
+## Two map frames, and calibrating an airport
+
+Minimap and big-map fixes are matched on the world-map *picture*; the radar, the ground charts and the stand positions use the game's own
+(24SPY) frame. They differ near each airport - up to about half a nautical mile at Tokyo - which is how an aircraft parked at stand 22 could
+show up at the other end of the terminal. Fixes are now shifted by a per-airport offset (`data/pictureOffsets.json`, only the ones that are
+small enough to trust; the bigger ones need a calibration). To calibrate an airport yourself: park on a stand, press **Set position from stand**,
+take a map or minimap fix (F8 or *Fix from minimap now*), then press **Calibrate airport from this stand**. The gap is saved and used for every
+later fix near that airport.
