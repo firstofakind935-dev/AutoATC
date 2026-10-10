@@ -370,3 +370,10 @@ like an app (no browser bars), and the page itself is cached so it starts instan
 
 Keep some coastline in view - a map zoomed in on the middle of an island, with only land, can't be matched. Rebuild the mask with
 `python3 scripts/build-world-mask.py` if the radar's world map image changes.
+
+## Position from a stand number
+
+Parked at a stand at Rockford (IRFD), Tokyo (ITKO) or Perth (IPPH): in the Position fix card pick the airport, type your stand number and press
+**Set position from stand**. You are put on that stand's line on the ground chart (a fix good to a few metres, no map or minimap needed),
+and your heading is read and checked against the line's direction - it warns if it doesn't fit ("right stand?"). The stand data comes from
+the radar's ground charts (`data/stands.json`, rebuilt with `scripts/build-stands.js`); other airports' charts have no stand numbers yet.

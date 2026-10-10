@@ -139,6 +139,18 @@
             <button class="btn btn-primary" id="mapFixBtn">Fix from big map (F8)</button>
             <span class="status-pill" id="mapFixStatus">No map fix yet</span>
           </div>
+          <p class="hint">
+            <b>On a stand?</b> Pick the airport, type your stand number and press the button. You're put exactly on that
+            stand's line on the ground chart, and your heading is checked against the line so a wrong number is caught.
+          </p>
+          <div class="field-grid">
+            <label>Airport <select id="standAirport"></select></label>
+            <label>Stand <input id="standInput" type="text" inputmode="numeric" maxlength="3" placeholder="12" autocomplete="off"></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="standFixBtn">Set position from stand</button>
+            <span class="status-pill" id="standStatus">No stand fix yet</span>
+          </div>
           <p class="hint">Or the old way with the minimap:</p>
           <p class="hint">
             Pick two airports you can currently see on your minimap, then click each one's exact
