@@ -1,0 +1,117 @@
+{
+ "note": "Airport positions on the radar world grid (nautical miles, x east, y south, origin north-west). Generated from monitor/public/365radar/src/data/worldMapAnchors.js by scripts/build-world-anchors.js - the companion measures position on this same grid so its numbers match the radar.",
+ "airports": {
+  "IRFD": {
+   "xNm": 20.958,
+   "yNm": 21.375
+  },
+  "IMLR": {
+   "xNm": 15.708,
+   "yNm": 18.667
+  },
+  "IPPH": {
+   "xNm": 28.5,
+   "yNm": 9.5
+  },
+  "IZOL": {
+   "xNm": 34.375,
+   "yNm": 15.083
+  },
+  "IBTH": {
+   "xNm": 23.792,
+   "yNm": 13.542
+  },
+  "ISAU": {
+   "xNm": 7.083,
+   "yNm": 21.667
+  },
+  "ISKP": {
+   "xNm": 29.583,
+   "yNm": 19.167
+  },
+  "ILAR": {
+   "xNm": 28.25,
+   "yNm": 24.792
+  },
+  "IPAP": {
+   "xNm": 31.417,
+   "yNm": 25.25
+  },
+  "IKFL": {
+   "xNm": 8.5,
+   "yNm": 14.25
+  },
+  "ITEY": {
+   "xNm": 9.208,
+   "yNm": 13.875
+  },
+  "IGCG": {
+   "xNm": 9.5,
+   "yNm": 13.125
+  },
+  "TVO": {
+   "xNm": 9.458,
+   "yNm": 13.417
+  },
+  "IUFO": {
+   "xNm": 25.125,
+   "yNm": 12.458
+  },
+  "IGRV": {
+   "xNm": 8.583,
+   "yNm": 13.208
+  },
+  "IBLT": {
+   "xNm": 18.042,
+   "yNm": 19.958
+  },
+  "IDCS": {
+   "xNm": 21.375,
+   "yNm": 1.042
+  },
+  "IGAR": {
+   "xNm": 16.542,
+   "yNm": 21.958
+  },
+  "IHEN": {
+   "xNm": 26.333,
+   "yNm": 27.708
+  },
+  "IIAB": {
+   "xNm": 27.75,
+   "yNm": 27.042
+  },
+  "IJAF": {
+   "xNm": 35.833,
+   "yNm": 15.833
+  },
+  "ILKL": {
+   "xNm": 29.292,
+   "yNm": 10.292
+  },
+  "ISCM": {
+   "xNm": 33,
+   "yNm": 13.75
+  },
+  "ITKO": {
+   "xNm": 19,
+   "yNm": 4.792
+  },
+  "ITRC": {
+   "xNm": 20.625,
+   "yNm": 23.875
+  },
+  "IBAR": {
+   "xNm": 29.417,
+   "yNm": 23.917
+  },
+  "IBRD": {
+   "xNm": 19.167,
+   "yNm": 6.292
+  },
+  "SHV": {
+   "xNm": 29.5,
+   "yNm": 9.333
+  }
+ }
+}

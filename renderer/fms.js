@@ -157,7 +157,7 @@ async function loadNavdata() {
     const res = await fetch(`${settings.plannerUrl.replace(/\/$/, '')}/api/navdata`);
     if (res.ok) {
       const nav = await res.json();
-      ui.navdata = settings.source === 'feed' ? World.navdataToWorld(nav) : nav;
+      ui.navdata = World.navdataToWorld(nav);
     }
   } catch {
     // DIR TO a fix outside the plan just won't find it.
@@ -166,12 +166,10 @@ async function loadNavdata() {
 
 function activatePlan(plan) {
   ui.rawPlan = plan;
-  // With the live feed, positions are on the world grid, so the route is flown there.
-  if (settings.source === 'feed') {
-    const world = World.planToWorld(plan);
-    if (!world) { ui.message = 'MAKE THE PLAN AGAIN'; return; } // an old plan without world positions
-    plan = world;
-  }
+  // Positions (tracked or from the live feed) are on the radar's world grid, so the route is flown there.
+  const world = World.planToWorld(plan);
+  if (!world) { ui.message = 'MAKE THE PLAN AGAIN'; return; } // an old plan without world positions
+  plan = world;
   ui.plan = plan;
   ui.fms = Fms.load(plan);
   ui.scroll = 0;
@@ -1178,7 +1176,7 @@ function buildFlight() {
   const tg = Autopilot.targets(ap, g);
   const r1 = (n) => (typeof n === 'number' ? Math.round(n * 10) / 10 : null);
   return {
-    frame: settings.source === 'feed' ? 'world' : 'geo', // world: 1 deg of lon = 60 nm everywhere
+    frame: 'world', // 1 deg of lon = 60 nm everywhere
     t: t && typeof t.lat === 'number' ? {
       lat: t.lat, lon: t.lon, headingDeg: t.headingDeg ?? null, altFt: t.altFt ?? null, speedKt: t.speedKt ?? null,
       onGround: Boolean(t.onGround), ageMs: Math.max(0, Date.now() - (t.atMs || Date.now())),
