@@ -95,6 +95,7 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
   }
   const points = [from, ...routeFixes, to].map((p) => {
     const point = { ident: p.ident, type: p.type, lat: p.lat, lon: p.lon };
+    if (p.xNm != null && p.yNm != null) { point.xNm = p.xNm; point.yNm = p.yNm; }
     for (const k of ['altMinFt', 'altMaxFt', 'altAtFt']) if (p[k] != null) point[k] = p[k];
     return point;
   });
@@ -214,6 +215,8 @@ function buildPlan({ callsign, aircraftType, origin, destination, cruiseAltFt, r
     origin: { icao: from.icao, name: from.name, lat: from.lat, lon: from.lon, elevationFt: from.elevationFt, runways: from.runways },
     destination: { icao: to.icao, name: to.name, lat: to.lat, lon: to.lon, elevationFt: to.elevationFt, runways: to.runways },
     route: routeText,
+    // true when every waypoint also has xNm/yNm on the world grid (what the autopilot flies with live aircraft positions)
+    worldGrid: waypoints.every((w) => typeof w.xNm === 'number' && typeof w.yNm === 'number'),
     procedures: anyProcedure ? Object.fromEntries(Object.entries(procedures).map(([k, v]) => [k, { name: v.name, runway: v.runway, unplaced: v.unplaced, vectors: v.vectors, initial: v.initial || null, missed: v.missed || null }])) : undefined,
     distanceNm: round(totalNm, 0.1),
     waypoints,

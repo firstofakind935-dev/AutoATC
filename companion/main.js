@@ -8,6 +8,7 @@ const { createInputSender, KEY_NAMES } = require('./lib/inputSender');
 const { createMouseSteer } = require('./lib/mouseSteer');
 const { createRemoteServer, newPairingCode } = require('./lib/remoteServer');
 const { createRelayClient, newRelayCredentials } = require('./lib/relayClient');
+const { createFeed, DEFAULT_URL: DEFAULT_FEED_URL } = require('./lib/acftFeed');
 
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 // The FMS window keeps its own settings file, so it and the control window
@@ -54,6 +55,7 @@ let inputSender = null; // created on the first autopilot input
 let mouseSteer = null;
 let remoteServer = null; // phone/tablet control on this Wi-Fi - see lib/remoteServer.js
 let relayClient = null; // phone/tablet control from anywhere - see lib/relayClient.js
+let feed = null; // live aircraft feed (true positions) - see lib/acftFeed.js
 
 function sendToFms(channel, payload) {
   if (fmsWindow) fmsWindow.webContents.send(channel, payload);
@@ -241,6 +243,29 @@ ipcMain.handle('save-fms-settings', (event, settings) => {
   saveSettings(settings, FMS_SETTINGS_PATH);
   return true;
 });
+
+// Live aircraft feed: true position, heading, altitude and speed for your callsign.
+ipcMain.handle('feed-start', (event, { url, callsign }) => {
+  if (feed) feed.stop();
+  let WebSocketImpl;
+  try {
+    WebSocketImpl = require('ws'); // loaded here so the app still starts if `npm install` hasn't fetched it
+  } catch {
+    sendToFms('feed-status', { state: 'error', detail: 'the "ws" package is missing - run npm install' });
+    return false;
+  }
+  feed = createFeed({
+    url: url || DEFAULT_FEED_URL,
+    callsign,
+    WebSocketImpl,
+    onSample: (sample) => sendToFms('feed-sample', sample),
+    onStatus: (status) => sendToFms('feed-status', status),
+  });
+  feed.start();
+  return true;
+});
+ipcMain.handle('feed-stop', () => { if (feed) feed.stop(); feed = null; return true; });
+ipcMain.handle('feed-set-callsign', (event, callsign) => { if (feed) feed.setCallsign(callsign); return true; });
 
 ipcMain.handle('open-fms', () => openFmsWindow());
 // Each tracking update from the control window, for the FMS/autopilot.

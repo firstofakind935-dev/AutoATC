@@ -327,3 +327,9 @@ skips such ticks rather than uploading garbage). ATC bots are told to treat
 a stale fix (5+ minutes since the last minimap correction) as unreliable
 and confirm with the pilot before vectoring off of it - see
 `stalenessNote()` in `src/atc/positions.js`.
+
+## Live feed + A/D yoke steering
+
+In FMS Settings choose **Position source -> Live feed**, enter your callsign, and set **Steering -> Yoke (A/D)**. Position and heading come
+from the game's data feed (no screen reading); lateral steering pulses A/D by heading error (adapted from 24Flight, see THIRD_PARTY.md).
+Regenerate planner plans once so they carry world positions, and run `npm install` for the `ws` dependency.

@@ -23,7 +23,11 @@ const derived = new Map();
 for (const data of files.values()) {
   for (const d of data.derivedFixes || []) {
     const from = findFix(d.from);
-    if (from) derived.set(d.ident, { ident: d.ident, type: 'WPT', ...project(from, d.radialDeg, d.distNm) });
+    if (from) {
+      const rad = (d.radialDeg * Math.PI) / 180;
+      const world = from.xNm != null ? { xNm: Math.round((from.xNm + d.distNm * Math.sin(rad)) * 1000) / 1000, yNm: Math.round((from.yNm - d.distNm * Math.cos(rad)) * 1000) / 1000 } : {};
+      derived.set(d.ident, { ident: d.ident, type: 'WPT', ...project(from, d.radialDeg, d.distNm), ...world });
+    }
   }
 }
 const lookup = (ident) => findFix(ident) || derived.get(ident) || null;
@@ -51,7 +55,7 @@ function resolveLegs(legs) {
     const fix = lookup(leg.fix);
     if (!fix) { unplaced.push(leg.fix); continue; }
     const constraint = leg.min != null ? { altMinFt: leg.min } : leg.max != null ? { altMaxFt: leg.max } : leg.at != null ? { altAtFt: leg.at } : {};
-    fixes.push({ ident: fix.ident, type: fix.type, lat: fix.lat, lon: fix.lon, ...constraint });
+    fixes.push({ ident: fix.ident, type: fix.type, lat: fix.lat, lon: fix.lon, ...(fix.xNm != null ? { xNm: fix.xNm, yNm: fix.yNm } : {}), ...constraint });
   }
   return { fixes, unplaced, vectors };
 }
@@ -95,7 +99,7 @@ function expandStar(icao, name, runway, entry) {
   if (wanted && !(star.entries || []).includes(wanted)) throw procedureError(`STAR ${star.name} is entered from ${(star.entries || []).join(', ')}, not ${wanted}`);
   const first = wanted || (star.entries || [])[0];
   const entryFix = first && !resolved.fixes.some((f) => f.ident === first) ? lookup(first) : null;
-  if (entryFix) resolved.fixes.unshift({ ident: entryFix.ident, type: entryFix.type, lat: entryFix.lat, lon: entryFix.lon });
+  if (entryFix) resolved.fixes.unshift({ ident: entryFix.ident, type: entryFix.type, lat: entryFix.lat, lon: entryFix.lon, ...(entryFix.xNm != null ? { xNm: entryFix.xNm, yNm: entryFix.yNm } : {}) });
   else if (first && !resolved.fixes.some((f) => f.ident === first) && !resolved.unplaced.includes(first)) resolved.unplaced.unshift(first);
   return { name: star.name, runway: normRunway(runway), entry: first || null, ...resolved };
 }

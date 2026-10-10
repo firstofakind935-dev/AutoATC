@@ -84,7 +84,9 @@ function main() {
 
   const fixes = spy.waypoints.map((w) => {
     const { lat, lon } = placeFix(w.x, w.y);
-    return { ident: w.id, type: w.type === 'vor' ? 'VOR' : 'WPT', lat: round(lat, 5), lon: round(lon, 5) };
+    // xNm / yNm: the same point on the world grid (nautical miles, x east, y south) that 24SPY's own
+    // positions and the live aircraft feed share - what the autopilot flies when it has true positions.
+    return { ident: w.id, type: w.type === 'vor' ? 'VOR' : 'WPT', lat: round(lat, 5), lon: round(lon, 5), xNm: round(w.x / PX_PER_NM, 3), yNm: round(w.y / PX_PER_NM, 3) };
   });
 
   // How far apart the charts and 24SPY put each shared airport, relative to the
@@ -97,6 +99,13 @@ function main() {
     disagreementNm[a.icao] = round(Math.hypot(east, north), 2);
   }
   const errors = Object.values(disagreementNm).sort((x, y) => x - y);
+
+  // Airports 24SPY also knows get world-grid positions too.
+  const spyAirports = new Map(spy.airports.map((a) => [a.icao, a]));
+  for (const a of airports) {
+    const sp = spyAirports.get(a.icao);
+    if (sp) { a.xNm = round(sp.x / PX_PER_NM, 3); a.yNm = round(sp.y / PX_PER_NM, 3); }
+  }
 
   const navdata = {
     generatedBy: 'scripts/build-navdata.js',

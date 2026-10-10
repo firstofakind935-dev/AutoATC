@@ -39,7 +39,9 @@
    "lat": 41.63333,
    "lon": 0.18,
    "elevationFt": 0,
-   "runways": []
+   "runways": [],
+   "xNm": 30.225,
+   "yNm": 26.446
   },
   {
    "icao": "IBLT",
@@ -56,7 +58,9 @@
      "id": "19",
      "headingDeg": 194
     }
-   ]
+   ],
+   "xNm": 18.433,
+   "yNm": 20.129
   },
   {
    "icao": "IBRD",
@@ -90,7 +94,9 @@
      "id": "09",
      "headingDeg": 90
     }
-   ]
+   ],
+   "xNm": 23.583,
+   "yNm": 13.45
   },
   {
    "icao": "IDCS",
@@ -107,7 +113,9 @@
      "id": "7",
      "headingDeg": 71
     }
-   ]
+   ],
+   "xNm": 20.371,
+   "yNm": 1.188
   },
   {
    "icao": "IGAR",
@@ -124,7 +132,9 @@
      "id": "22",
      "headingDeg": 222
     }
-   ]
+   ],
+   "xNm": 16.888,
+   "yNm": 22.029
   },
   {
    "icao": "IGCG",
@@ -149,7 +159,9 @@
      "id": "17",
      "headingDeg": 172
     }
-   ]
+   ],
+   "xNm": 27.054,
+   "yNm": 27.346
   },
   {
    "icao": "IIAB",
@@ -174,7 +186,9 @@
      "id": "27L",
      "headingDeg": 275
     }
-   ]
+   ],
+   "xNm": 28.821,
+   "yNm": 27.108
   },
   {
    "icao": "IJAF",
@@ -191,7 +205,9 @@
      "id": "25",
      "headingDeg": 251
     }
-   ]
+   ],
+   "xNm": 35.804,
+   "yNm": 14.842
   },
   {
    "icao": "IKFL",
@@ -233,7 +249,9 @@
      "id": "24",
      "headingDeg": 244
     }
-   ]
+   ],
+   "xNm": 28.321,
+   "yNm": 24.679
   },
   {
    "icao": "ILKL",
@@ -250,7 +268,9 @@
      "id": "27",
      "headingDeg": 269
     }
-   ]
+   ],
+   "xNm": 28.629,
+   "yNm": 9.808
   },
   {
    "icao": "IMLR",
@@ -267,7 +287,9 @@
      "id": "7",
      "headingDeg": 66
     }
-   ]
+   ],
+   "xNm": 15.921,
+   "yNm": 19.321
   },
   {
    "icao": "IPAP",
@@ -284,7 +306,9 @@
      "id": "17",
      "headingDeg": 174
     }
-   ]
+   ],
+   "xNm": 31.492,
+   "yNm": 25.213
   },
   {
    "icao": "IPPH",
@@ -309,7 +333,9 @@
      "id": "15",
      "headingDeg": 151
     }
-   ]
+   ],
+   "xNm": 27.271,
+   "yNm": 8.567
   },
   {
    "icao": "IRFD",
@@ -342,7 +368,9 @@
      "id": "7R",
      "headingDeg": 67
     }
-   ]
+   ],
+   "xNm": 20.917,
+   "yNm": 21.179
   },
   {
    "icao": "ISAU",
@@ -359,7 +387,9 @@
      "id": "26",
      "headingDeg": 261
     }
-   ]
+   ],
+   "xNm": 7.821,
+   "yNm": 23.217
   },
   {
    "icao": "ISCM",
@@ -376,7 +406,9 @@
      "id": "31",
      "headingDeg": 306
     }
-   ]
+   ],
+   "xNm": 32.883,
+   "yNm": 13.333
   },
   {
    "icao": "ISKP",
@@ -393,7 +425,9 @@
      "id": "5",
      "headingDeg": 51
     }
-   ]
+   ],
+   "xNm": 29.583,
+   "yNm": 18.825
   },
   {
    "icao": "ITEY",
@@ -435,7 +469,9 @@
      "id": "13",
      "headingDeg": 127
     }
-   ]
+   ],
+   "xNm": 19.433,
+   "yNm": 5.058
   },
   {
    "icao": "ITRC",
@@ -486,7 +522,9 @@
      "id": "28",
      "headingDeg": 286
     }
-   ]
+   ],
+   "xNm": 35.4,
+   "yNm": 15.85
   },
   {
    "icao": "SHV",
@@ -499,7 +537,9 @@
      "id": "4",
      "headingDeg": 43
     }
-   ]
+   ],
+   "xNm": 29.067,
+   "yNm": 8.463
   },
   {
    "icao": "TVO",
@@ -507,7 +547,9 @@
    "lat": 41.83667,
    "lon": -0.17667,
    "elevationFt": 0,
-   "runways": []
+   "runways": [],
+   "xNm": 8.983,
+   "yNm": 14.592
   }
  ],
  "fixes": [
@@ -515,1177 +557,1569 @@
    "ident": "ENDER",
    "type": "WPT",
    "lat": 41.74185,
-   "lon": -0.08467
+   "lon": -0.08467,
+   "xNm": 15.737,
+   "yNm": 15.329
   },
   {
    "ident": "KENED",
    "type": "WPT",
    "lat": 41.72296,
-   "lon": -0.03557
+   "lon": -0.03557,
+   "xNm": 18.404,
+   "yNm": 16.2
   },
   {
    "ident": "SETHR",
    "type": "WPT",
    "lat": 41.73581,
-   "lon": 0.05071
+   "lon": 0.05071,
+   "xNm": 23.058,
+   "yNm": 17.375
   },
   {
    "ident": "SUNST",
    "type": "WPT",
    "lat": 41.71693,
-   "lon": -0.11626
+   "lon": -0.11626,
+   "xNm": 14.083,
+   "yNm": 16.633
   },
   {
    "ident": "BUCFA",
    "type": "WPT",
    "lat": 41.68666,
-   "lon": -0.09192
+   "lon": -0.09192,
+   "xNm": 15.9,
+   "yNm": 17.667
   },
   {
    "ident": "KUNAV",
    "type": "WPT",
    "lat": 41.68164,
-   "lon": -0.03972
+   "lon": -0.03972,
+   "xNm": 18.425,
+   "yNm": 17.917
   },
   {
    "ident": "HAWFA",
    "type": "WPT",
    "lat": 41.67261,
-   "lon": -0.0213
+   "lon": -0.0213,
+   "xNm": 19.542,
+   "yNm": 18.492
   },
   {
    "ident": "QUEEN",
    "type": "WPT",
    "lat": 41.65571,
-   "lon": 0.00074
+   "lon": 0.00074,
+   "xNm": 21.188,
+   "yNm": 19.608
   },
   {
    "ident": "LAVNO",
    "type": "WPT",
    "lat": 41.64951,
-   "lon": 0.03353
+   "lon": 0.03353,
+   "xNm": 22.704,
+   "yNm": 20.292
   },
   {
    "ident": "ATPEV",
    "type": "WPT",
    "lat": 41.67157,
-   "lon": 0.05731
+   "lon": 0.05731,
+   "xNm": 23.675,
+   "yNm": 19.921
   },
   {
    "ident": "SAWPE",
    "type": "WPT",
    "lat": 41.68213,
-   "lon": -0.13111
+   "lon": -0.13111,
+   "xNm": 13.358,
+   "yNm": 18.287
   },
   {
    "ident": "ICTAM",
    "type": "WPT",
    "lat": 41.66539,
-   "lon": -0.05563
+   "lon": -0.05563,
+   "xNm": 17.825,
+   "yNm": 18.763
   },
   {
    "ident": "BEANS",
    "type": "WPT",
    "lat": 41.62701,
-   "lon": -0.10386
+   "lon": -0.10386,
+   "xNm": 13.525,
+   "yNm": 20.667
   },
   {
    "ident": "LOGAN",
    "type": "WPT",
    "lat": 41.58343,
-   "lon": 0.00516
+   "lon": 0.00516,
+   "xNm": 15.696,
+   "yNm": 21.121
   },
   {
    "ident": "MOGTA",
    "type": "WPT",
    "lat": 41.57546,
-   "lon": 0.046
+   "lon": 0.046,
+   "xNm": 18.467,
+   "yNm": 21.946
   },
   {
    "ident": "JAMSI",
    "type": "WPT",
    "lat": 41.66326,
-   "lon": 0.07535
+   "lon": 0.07535,
+   "xNm": 24.733,
+   "yNm": 21.679
   },
   {
    "ident": "EXMOR",
    "type": "WPT",
    "lat": 41.52479,
-   "lon": 0.07923
+   "lon": 0.07923,
+   "xNm": 16.088,
+   "yNm": 22.942
   },
   {
    "ident": "PEPUL",
    "type": "WPT",
    "lat": 41.56658,
-   "lon": 0.02939
+   "lon": 0.02939,
+   "xNm": 19.333,
+   "yNm": 23.537
   },
   {
    "ident": "GODLU",
    "type": "WPT",
    "lat": 41.61554,
-   "lon": 0.0449
+   "lon": 0.0449,
+   "xNm": 23.058,
+   "yNm": 23.104
   },
   {
    "ident": "LAZER",
    "type": "WPT",
    "lat": 41.64052,
-   "lon": 0.06785
+   "lon": 0.06785,
+   "xNm": 24.525,
+   "yNm": 23.704
   },
   {
    "ident": "EMJAY",
    "type": "WPT",
    "lat": 41.5252,
-   "lon": 0.02128
+   "lon": 0.02128,
+   "xNm": 17.371,
+   "yNm": 25.671
   },
   {
    "ident": "ODOKU",
    "type": "WPT",
    "lat": 41.56569,
-   "lon": 0.02371
+   "lon": 0.02371,
+   "xNm": 20.804,
+   "yNm": 25.671
   },
   {
    "ident": "DEATH",
    "type": "WPT",
    "lat": 41.50771,
-   "lon": -0.0524
+   "lon": -0.0524,
+   "xNm": 16.046,
+   "yNm": 29.079
   },
   {
    "ident": "TRELN",
    "type": "WPT",
    "lat": 41.52334,
-   "lon": -0.00916
+   "lon": -0.00916,
+   "xNm": 18.796,
+   "yNm": 28.442
   },
   {
    "ident": "REAPR",
    "type": "WPT",
    "lat": 41.5566,
-   "lon": 0.01923
+   "lon": 0.01923,
+   "xNm": 21.567,
+   "yNm": 27.988
   },
   {
    "ident": "MLR",
    "type": "VOR",
    "lat": 41.65749,
-   "lon": -0.09637
+   "lon": -0.09637,
+   "xNm": 15.963,
+   "yNm": 19.446
   },
   {
    "ident": "BLA",
    "type": "VOR",
    "lat": 41.65392,
-   "lon": -0.02589
+   "lon": -0.02589,
+   "xNm": 19.583,
+   "yNm": 19.529
   },
   {
    "ident": "RFD",
    "type": "VOR",
    "lat": 41.63134,
-   "lon": -0.01568
+   "lon": -0.01568,
+   "xNm": 20.787,
+   "yNm": 20.996
   },
   {
    "ident": "GRY",
    "type": "VOR",
    "lat": 41.53461,
-   "lon": 0.11376
+   "lon": 0.11376,
+   "xNm": 16.996,
+   "yNm": 21.946
   },
   {
    "ident": "TRN",
    "type": "VOR",
    "lat": 41.5867,
-   "lon": 0.02028
+   "lon": 0.02028,
+   "xNm": 21.279,
+   "yNm": 23.933
   },
   {
    "ident": "SHELL",
    "type": "WPT",
    "lat": 42.01656,
-   "lon": -0.13094
+   "lon": -0.13094,
+   "xNm": 13.963,
+   "yNm": 2.7
   },
   {
    "ident": "NIKON",
    "type": "WPT",
    "lat": 42.03331,
-   "lon": -0.02755
+   "lon": -0.02755,
+   "xNm": 18.438,
+   "yNm": 2.146
   },
   {
    "ident": "CHILY",
    "type": "WPT",
    "lat": 42.01925,
-   "lon": 0.07301
+   "lon": 0.07301,
+   "xNm": 23.338,
+   "yNm": 2.629
   },
   {
    "ident": "SHIBA",
    "type": "WPT",
    "lat": 42.00935,
-   "lon": -0.07225
+   "lon": -0.07225,
+   "xNm": 16.492,
+   "yNm": 3.475
   },
   {
    "ident": "LETSE",
    "type": "WPT",
    "lat": 41.99926,
-   "lon": 0.02477
+   "lon": 0.02477,
+   "xNm": 20.746,
+   "yNm": 4.238
   },
   {
    "ident": "HONDA",
    "type": "WPT",
    "lat": 41.97845,
-   "lon": 0.0729
+   "lon": 0.0729,
+   "xNm": 24.229,
+   "yNm": 4.238
   },
   {
    "ident": "ASTRO",
    "type": "WPT",
    "lat": 41.97676,
-   "lon": -0.05177
+   "lon": -0.05177,
+   "xNm": 17.342,
+   "yNm": 5.538
   },
   {
    "ident": "GULEG",
    "type": "WPT",
    "lat": 41.94333,
-   "lon": -0.09985
+   "lon": -0.09985,
+   "xNm": 15.308,
+   "yNm": 6.971
   },
   {
    "ident": "PIPER",
    "type": "WPT",
    "lat": 41.94725,
-   "lon": -0.0388
+   "lon": -0.0388,
+   "xNm": 18,
+   "yNm": 7.175
   },
   {
    "ident": "ONDER",
    "type": "WPT",
    "lat": 41.93306,
-   "lon": 0.00883
+   "lon": 0.00883,
+   "xNm": 20.412,
+   "yNm": 7.775
   },
   {
    "ident": "KNIFE",
    "type": "WPT",
    "lat": 41.92716,
-   "lon": 0.03805
+   "lon": 0.03805,
+   "xNm": 22.621,
+   "yNm": 7.263
   },
   {
    "ident": "TUDEP",
    "type": "WPT",
    "lat": 41.90003,
-   "lon": -0.06337
+   "lon": -0.06337,
+   "xNm": 17.138,
+   "yNm": 9.179
   },
   {
    "ident": "ALLRY",
    "type": "WPT",
    "lat": 41.87391,
-   "lon": 0.04648
+   "lon": 0.04648,
+   "xNm": 24.171,
+   "yNm": 9.196
   },
   {
    "ident": "HME",
    "type": "VOR",
    "lat": 41.98448,
-   "lon": 0.00055
+   "lon": 0.00055,
+   "xNm": 19.608,
+   "yNm": 5.188
   },
   {
    "ident": "CRAZY",
    "type": "WPT",
    "lat": 41.9635,
-   "lon": 0.1232
+   "lon": 0.1232,
+   "xNm": 27.742,
+   "yNm": 4.371
   },
   {
    "ident": "WOTAN",
    "type": "WPT",
    "lat": 41.96973,
-   "lon": 0.2325
+   "lon": 0.2325,
+   "xNm": 32.642,
+   "yNm": 4.908
   },
   {
    "ident": "WAGON",
    "type": "WPT",
    "lat": 41.95839,
-   "lon": 0.29697
+   "lon": 0.29697,
+   "xNm": 35.658,
+   "yNm": 5.858
   },
   {
    "ident": "WELLS",
    "type": "WPT",
    "lat": 41.94112,
-   "lon": 0.16639
+   "lon": 0.16639,
+   "xNm": 29.733,
+   "yNm": 6.971
   },
   {
    "ident": "SQUID",
    "type": "WPT",
    "lat": 41.93889,
-   "lon": 0.24595
+   "lon": 0.24595,
+   "xNm": 33.342,
+   "yNm": 7.025
   },
   {
    "ident": "ZESTA",
    "type": "WPT",
    "lat": 41.93013,
-   "lon": 0.31087
+   "lon": 0.31087,
+   "xNm": 36.5,
+   "yNm": 7.8
   },
   {
    "ident": "TINDR",
    "type": "WPT",
    "lat": 41.86962,
-   "lon": 0.05439
+   "lon": 0.05439,
+   "xNm": 25.229,
+   "yNm": 8.088
   },
   {
    "ident": "NOONU",
    "type": "WPT",
    "lat": 41.91021,
-   "lon": 0.19919
+   "lon": 0.19919,
+   "xNm": 31.117,
+   "yNm": 9.054
   },
   {
    "ident": "KELLA",
    "type": "WPT",
    "lat": 41.90759,
-   "lon": 0.22955
+   "lon": 0.22955,
+   "xNm": 32.679,
+   "yNm": 9.163
   },
   {
    "ident": "STRAX",
    "type": "WPT",
    "lat": 41.8469,
-   "lon": 0.06641
+   "lon": 0.06641,
+   "xNm": 25.767,
+   "yNm": 9.575
   },
   {
    "ident": "SISTA",
    "type": "WPT",
    "lat": 41.88383,
-   "lon": 0.21111
+   "lon": 0.21111,
+   "xNm": 32.067,
+   "yNm": 10.921
   },
   {
    "ident": "TALIS",
    "type": "WPT",
    "lat": 41.8746,
-   "lon": 0.17717
+   "lon": 0.17717,
+   "xNm": 30.037,
+   "yNm": 11.246
   },
   {
    "ident": "COC",
    "type": "VOR",
    "lat": 41.89572,
-   "lon": 0.08705
+   "lon": 0.08705,
+   "xNm": 26.754,
+   "yNm": 6.688
   },
   {
    "ident": "PER",
    "type": "VOR",
    "lat": 41.83416,
-   "lon": 0.08168
+   "lon": 0.08168,
+   "xNm": 27.004,
+   "yNm": 8.588
   },
   {
    "ident": "BTM",
    "type": "VOR",
    "lat": 41.92008,
-   "lon": 0.16471
+   "lon": 0.16471,
+   "xNm": 29.554,
+   "yNm": 8.858
   },
   {
    "ident": "ORG",
    "type": "VOR",
    "lat": 41.88988,
-   "lon": 0.13157
+   "lon": 0.13157,
+   "xNm": 27.85,
+   "yNm": 10.204
   },
   {
    "ident": "FORIA",
    "type": "WPT",
    "lat": 41.59071,
-   "lon": 0.05325
+   "lon": 0.05325,
+   "xNm": 23.971,
+   "yNm": 27.537
   },
   {
    "ident": "AQWRT",
    "type": "WPT",
    "lat": 41.62829,
-   "lon": 0.10895
+   "lon": 0.10895,
+   "xNm": 26.688,
+   "yNm": 25.854
   },
   {
    "ident": "FORCE",
    "type": "WPT",
    "lat": 41.54676,
-   "lon": 0.12884
+   "lon": 0.12884,
+   "xNm": 28.117,
+   "yNm": 29.517
   },
   {
    "ident": "GRASS",
    "type": "WPT",
    "lat": 41.68216,
-   "lon": 0.1267
+   "lon": 0.1267,
+   "xNm": 27.546,
+   "yNm": 22.792
   },
   {
    "ident": "RENTS",
    "type": "WPT",
    "lat": 41.7011,
-   "lon": 0.17474
+   "lon": 0.17474,
+   "xNm": 29.888,
+   "yNm": 21.792
   },
   {
    "ident": "MASEV",
    "type": "WPT",
    "lat": 41.54551,
-   "lon": 0.12551
+   "lon": 0.12551,
+   "xNm": 28.458,
+   "yNm": 28.408
   },
   {
    "ident": "JACKI",
    "type": "WPT",
    "lat": 41.67296,
-   "lon": 0.22559
+   "lon": 0.22559,
+   "xNm": 32.508,
+   "yNm": 23.896
   },
   {
    "ident": "ALTRS",
    "type": "WPT",
    "lat": 41.55971,
-   "lon": 0.23565
+   "lon": 0.23565,
+   "xNm": 32.942,
+   "yNm": 29.579
   },
   {
    "ident": "MUONE",
    "type": "WPT",
    "lat": 41.60192,
-   "lon": 0.25713
+   "lon": 0.25713,
+   "xNm": 33.892,
+   "yNm": 27.571
   },
   {
    "ident": "BOBUX",
    "type": "WPT",
    "lat": 41.63907,
-   "lon": 0.26585
+   "lon": 0.26585,
+   "xNm": 34.288,
+   "yNm": 25.629
   },
   {
    "ident": "DEBUG",
    "type": "WPT",
    "lat": 41.66278,
-   "lon": 0.31617
+   "lon": 0.31617,
+   "xNm": 36.542,
+   "yNm": 23.933
   },
   {
    "ident": "JAZZR",
    "type": "WPT",
    "lat": 41.59887,
-   "lon": 0.3168
+   "lon": 0.3168,
+   "xNm": 36.5,
+   "yNm": 27.571
   },
   {
    "ident": "NUBER",
    "type": "WPT",
    "lat": 41.62383,
-   "lon": 0.37304
+   "lon": 0.37304,
+   "xNm": 39.021,
+   "yNm": 26.042
   },
   {
    "ident": "DIR",
    "type": "VOR",
    "lat": 41.59512,
-   "lon": 0.09468
+   "lon": 0.09468,
+   "xNm": 25.829,
+   "yNm": 28.138
   },
   {
    "ident": "CAN",
    "type": "VOR",
    "lat": 41.61259,
-   "lon": 0.07495
+   "lon": 0.07495,
+   "xNm": 25.017,
+   "yNm": 26.721
   },
   {
    "ident": "LCK",
    "type": "VOR",
    "lat": 41.65967,
-   "lon": 0.15055
+   "lon": 0.15055,
+   "xNm": 28.513,
+   "yNm": 24.563
   },
   {
    "ident": "KIN",
    "type": "VOR",
    "lat": 41.67923,
-   "lon": 0.19751
+   "lon": 0.19751,
+   "xNm": 31.175,
+   "yNm": 23.379
   },
   {
    "ident": "PFO",
    "type": "VOR",
    "lat": 41.65254,
-   "lon": 0.19935
+   "lon": 0.19935,
+   "xNm": 31.379,
+   "yNm": 25.333
   },
   {
    "ident": "HUT",
    "type": "VOR",
    "lat": 41.62187,
-   "lon": 0.19925
+   "lon": 0.19925,
+   "xNm": 31.217,
+   "yNm": 26.808
   },
   {
    "ident": "CAMEL",
    "type": "WPT",
    "lat": 41.8385,
-   "lon": 0.1401
+   "lon": 0.1401,
+   "xNm": 28.317,
+   "yNm": 13.058
   },
   {
    "ident": "DUNKS",
    "type": "WPT",
    "lat": 41.84777,
-   "lon": 0.1762
+   "lon": 0.1762,
+   "xNm": 30.542,
+   "yNm": 13.15
   },
   {
    "ident": "ROSMO",
    "type": "WPT",
    "lat": 41.86968,
-   "lon": 0.24958
+   "lon": 0.24958,
+   "xNm": 34.167,
+   "yNm": 12.108
   },
   {
    "ident": "UDMUG",
    "type": "WPT",
    "lat": 41.88654,
-   "lon": 0.3248
+   "lon": 0.3248,
+   "xNm": 37.563,
+   "yNm": 10.763
   },
   {
    "ident": "CYRIL",
    "type": "WPT",
    "lat": 41.81393,
-   "lon": 0.16927
+   "lon": 0.16927,
+   "xNm": 30.004,
+   "yNm": 15.071
   },
   {
    "ident": "MORRD",
    "type": "WPT",
    "lat": 41.83052,
-   "lon": 0.31529
+   "lon": 0.31529,
+   "xNm": 37.563,
+   "yNm": 14.317
   },
   {
    "ident": "LLIME",
    "type": "WPT",
    "lat": 41.85947,
-   "lon": 0.34263
+   "lon": 0.34263,
+   "xNm": 38.55,
+   "yNm": 12.467
   },
   {
    "ident": "DOGGO",
    "type": "WPT",
    "lat": 41.78277,
-   "lon": 0.22311
+   "lon": 0.22311,
+   "xNm": 32.963,
+   "yNm": 17.063
   },
   {
    "ident": "ABSRS",
    "type": "WPT",
    "lat": 41.78525,
-   "lon": 0.35253
+   "lon": 0.35253,
+   "xNm": 39.017,
+   "yNm": 16.883
   },
   {
    "ident": "BILLO",
    "type": "WPT",
    "lat": 41.76287,
-   "lon": 0.29524
+   "lon": 0.29524,
+   "xNm": 36.467,
+   "yNm": 18.213
   },
   {
    "ident": "JUSTY",
    "type": "WPT",
    "lat": 41.73775,
-   "lon": 0.24796
+   "lon": 0.24796,
+   "xNm": 33.717,
+   "yNm": 19.646
   },
   {
    "ident": "CHAIN",
    "type": "WPT",
    "lat": 41.72173,
-   "lon": 0.36181
+   "lon": 0.36181,
+   "xNm": 38.996,
+   "yNm": 20.475
   },
   {
    "ident": "HOT",
    "type": "VOR",
    "lat": 41.84721,
-   "lon": 0.22109
+   "lon": 0.22109,
+   "xNm": 32.858,
+   "yNm": 13.596
   },
   {
    "ident": "NJF",
    "type": "VOR",
    "lat": 41.81991,
-   "lon": 0.27856
+   "lon": 0.27856,
+   "xNm": 36.017,
+   "yNm": 15.017
   },
   {
    "ident": "IZO",
    "type": "VOR",
    "lat": 41.797,
-   "lon": 0.2747
+   "lon": 0.2747,
+   "xNm": 35.692,
+   "yNm": 16.146
   },
   {
    "ident": "DIZ",
    "type": "VOR",
    "lat": 41.79608,
-   "lon": 0.30233
+   "lon": 0.30233,
+   "xNm": 36.95,
+   "yNm": 16.292
   },
   {
    "ident": "TRE",
    "type": "VOR",
    "lat": 41.81804,
-   "lon": 0.21625
+   "lon": 0.21625,
+   "xNm": 32.696,
+   "yNm": 15.158
   },
   {
    "ident": "DET",
    "type": "VOR",
    "lat": 41.72719,
-   "lon": 0.30274
+   "lon": 0.30274,
+   "xNm": 36.392,
+   "yNm": 20.221
   },
   {
    "ident": "BULLY",
    "type": "WPT",
    "lat": 41.9513,
-   "lon": -0.16728
+   "lon": -0.16728,
+   "xNm": 11.996,
+   "yNm": 6.146
   },
   {
    "ident": "FROOT",
    "type": "WPT",
    "lat": 41.91641,
-   "lon": -0.18986
+   "lon": -0.18986,
+   "xNm": 10.021,
+   "yNm": 8.338
   },
   {
    "ident": "EURAD",
    "type": "WPT",
    "lat": 41.89997,
-   "lon": -0.12239
+   "lon": -0.12239,
+   "xNm": 13.954,
+   "yNm": 8.946
   },
   {
    "ident": "BOBOS",
    "type": "WPT",
    "lat": 41.89677,
-   "lon": -0.21536
+   "lon": -0.21536,
+   "xNm": 7.975,
+   "yNm": 10.133
   },
   {
    "ident": "BLANK",
    "type": "WPT",
    "lat": 41.86358,
-   "lon": -0.10334
+   "lon": -0.10334,
+   "xNm": 14.779,
+   "yNm": 10.654
   },
   {
    "ident": "THENR",
    "type": "WPT",
    "lat": 41.88279,
-   "lon": -0.16704
+   "lon": -0.16704,
+   "xNm": 9.967,
+   "yNm": 11.121
   },
   {
    "ident": "ACRES",
    "type": "WPT",
    "lat": 41.87559,
-   "lon": -0.24042
+   "lon": -0.24042,
+   "xNm": 6.521,
+   "yNm": 11.713
   },
   {
    "ident": "YOUTH",
    "type": "WPT",
    "lat": 41.85212,
-   "lon": -0.12576
+   "lon": -0.12576,
+   "xNm": 12.267,
+   "yNm": 12.25
   },
   {
    "ident": "UWAIS",
    "type": "WPT",
    "lat": 41.84971,
-   "lon": -0.27663
+   "lon": -0.27663,
+   "xNm": 4.942,
+   "yNm": 13.129
   },
   {
    "ident": "EZYDB",
    "type": "WPT",
    "lat": 41.79452,
-   "lon": -0.0953
+   "lon": -0.0953,
+   "xNm": 14.904,
+   "yNm": 13.579
   },
   {
    "ident": "FRANK",
    "type": "WPT",
    "lat": 41.81174,
-   "lon": -0.27037
+   "lon": -0.27037,
+   "xNm": 5.121,
+   "yNm": 15.413
   },
   {
    "ident": "CELAR",
    "type": "WPT",
    "lat": 41.79394,
-   "lon": -0.14546
+   "lon": -0.14546,
+   "xNm": 10.704,
+   "yNm": 16.363
   },
   {
    "ident": "THACC",
    "type": "WPT",
    "lat": 41.76184,
-   "lon": -0.27121
+   "lon": -0.27121,
+   "xNm": 5.104,
+   "yNm": 17.904
   },
   {
    "ident": "SHREK",
    "type": "WPT",
    "lat": 41.7597,
-   "lon": -0.2071
+   "lon": -0.2071,
+   "xNm": 7.904,
+   "yNm": 18.121
   },
   {
    "ident": "SPACE",
    "type": "WPT",
    "lat": 41.71731,
-   "lon": -0.15536
+   "lon": -0.15536,
+   "xNm": 10.846,
+   "yNm": 18.679
   },
   {
    "ident": "GOL",
    "type": "VOR",
    "lat": 41.84208,
-   "lon": -0.21568
+   "lon": -0.21568,
+   "xNm": 7.292,
+   "yNm": 14.171
   },
   {
    "ident": "GVK",
    "type": "VOR",
    "lat": 41.84796,
-   "lon": -0.18369
+   "lon": -0.18369,
+   "xNm": 8.675,
+   "yNm": 13.904
   },
   {
    "ident": "HAW",
    "type": "VOR",
    "lat": 41.85895,
-   "lon": -0.15698
+   "lon": -0.15698,
+   "xNm": 9.95,
+   "yNm": 13.112
   },
   {
    "ident": "HACKE",
    "type": "WPT",
    "lat": 41.71215,
-   "lon": -0.24851
+   "lon": -0.24851,
+   "xNm": 5.538,
+   "yNm": 21.113
   },
   {
    "ident": "GEORG",
    "type": "WPT",
    "lat": 41.70453,
-   "lon": -0.18477
+   "lon": -0.18477,
+   "xNm": 8.171,
+   "yNm": 21.858
   },
   {
    "ident": "SEEKS",
    "type": "WPT",
    "lat": 41.66084,
-   "lon": -0.1322
+   "lon": -0.1322,
+   "xNm": 10.921,
+   "yNm": 22.75
   },
   {
    "ident": "HECKS",
    "type": "WPT",
    "lat": 41.66482,
-   "lon": -0.26129
+   "lon": -0.26129,
+   "xNm": 4.896,
+   "yNm": 24.021
   },
   {
    "ident": "PACKT",
    "type": "WPT",
    "lat": 41.65866,
-   "lon": -0.20821
+   "lon": -0.20821,
+   "xNm": 7.117,
+   "yNm": 24.621
   },
   {
    "ident": "STACK",
    "type": "WPT",
    "lat": 41.62404,
-   "lon": -0.14947
+   "lon": -0.14947,
+   "xNm": 10.058,
+   "yNm": 25.646
   },
   {
    "ident": "ALDER",
    "type": "WPT",
    "lat": 41.55451,
-   "lon": -0.06207
+   "lon": -0.06207,
+   "xNm": 13.625,
+   "yNm": 24.958
   },
   {
    "ident": "WASTE",
    "type": "WPT",
    "lat": 41.6061,
-   "lon": -0.22041
+   "lon": -0.22041,
+   "xNm": 6.942,
+   "yNm": 27.092
   },
   {
    "ident": "HOGGS",
    "type": "WPT",
    "lat": 41.5454,
-   "lon": -0.08961
+   "lon": -0.08961,
+   "xNm": 13.188,
+   "yNm": 26.817
   },
   {
    "ident": "ROBUX",
    "type": "WPT",
    "lat": 41.52751,
-   "lon": -0.13364
+   "lon": -0.13364,
+   "xNm": 11.842,
+   "yNm": 29.2
   },
   {
    "ident": "KRT",
    "type": "VOR",
    "lat": 41.69606,
-   "lon": -0.22443
+   "lon": -0.22443,
+   "xNm": 6.4,
+   "yNm": 22.371
   },
   {
    "ident": "SAU",
    "type": "VOR",
    "lat": 41.68445,
-   "lon": -0.18808
+   "lon": -0.18808,
+   "xNm": 7.983,
+   "yNm": 23.146
   },
   {
    "ident": "BAR",
    "type": "VOR",
    "lat": 41.65149,
-   "lon": -0.13802
+   "lon": -0.13802,
+   "xNm": 10.496,
+   "yNm": 24.05
   },
   {
    "ident": "GERLD",
    "type": "WPT",
    "lat": 41.87212,
-   "lon": -0.06766
+   "lon": -0.06766,
+   "xNm": 16.958,
+   "yNm": 10.333
   },
   {
    "ident": "RENDR",
    "type": "WPT",
    "lat": 41.86839,
-   "lon": -0.04458
+   "lon": -0.04458,
+   "xNm": 18.233,
+   "yNm": 10.612
   },
   {
    "ident": "JOOPY",
    "type": "WPT",
    "lat": 41.88033,
-   "lon": 0.01011
+   "lon": 0.01011,
+   "xNm": 21.229,
+   "yNm": 10.304
   },
   {
    "ident": "PROBE",
    "type": "WPT",
    "lat": 41.84952,
-   "lon": -0.02164
+   "lon": -0.02164,
+   "xNm": 19.504,
+   "yNm": 11.754
   },
   {
    "ident": "DINER",
    "type": "WPT",
    "lat": 41.86832,
-   "lon": 0.0568
+   "lon": 0.0568,
+   "xNm": 23.117,
+   "yNm": 11.917
   },
   {
    "ident": "WELSH",
    "type": "WPT",
    "lat": 41.79834,
-   "lon": -0.04236
+   "lon": -0.04236,
+   "xNm": 18.217,
+   "yNm": 13.525
   },
   {
    "ident": "INDEX",
    "type": "WPT",
    "lat": 41.78775,
-   "lon": -0.00959
+   "lon": -0.00959,
+   "xNm": 19.942,
+   "yNm": 14.633
   },
   {
    "ident": "GAVIN",
    "type": "WPT",
    "lat": 41.81125,
-   "lon": 0.07327
+   "lon": 0.07327,
+   "xNm": 23.846,
+   "yNm": 15.233
   },
   {
    "ident": "SILVA",
    "type": "WPT",
    "lat": 41.80325,
-   "lon": 0.12635
+   "lon": 0.12635,
+   "xNm": 27.329,
+   "yNm": 15.292
   },
   {
    "ident": "OCEEN",
    "type": "WPT",
    "lat": 41.78092,
-   "lon": 0.09689
+   "lon": 0.09689,
+   "xNm": 25.483,
+   "yNm": 16.358
   },
   {
    "ident": "ROM",
    "type": "VOR",
    "lat": 41.86389,
-   "lon": 0.08431
+   "lon": 0.08431,
+   "xNm": 24.771,
+   "yNm": 11.679
   },
   {
    "ident": "RES",
    "type": "VOR",
    "lat": 41.83881,
-   "lon": 0.03088
+   "lon": 0.03088,
+   "xNm": 21.888,
+   "yNm": 13.642
   },
   {
    "ident": "VOX",
    "type": "VOR",
    "lat": 41.83867,
-   "lon": 0.10666
+   "lon": 0.10666,
+   "xNm": 25.558,
+   "yNm": 13.538
   },
   {
    "ident": "ANYMS",
    "type": "WPT",
    "lat": 41.71248,
-   "lon": 0.10569
+   "lon": 0.10569,
+   "xNm": 26.45,
+   "yNm": 20.338
   },
   {
    "ident": "CAWZE",
    "type": "WPT",
    "lat": 41.77812,
-   "lon": 0.13238
+   "lon": 0.13238,
+   "xNm": 27.842,
+   "yNm": 17.254
   },
   {
    "ident": "CLR",
    "type": "VOR",
    "lat": 41.74708,
-   "lon": 0.1406
+   "lon": 0.1406,
+   "xNm": 28.258,
+   "yNm": 19.379
   },
   {
    "ident": "DEL",
    "type": "VOR",
    "lat": 41.76564,
-   "lon": 0.19361
+   "lon": 0.19361,
+   "xNm": 30.667,
+   "yNm": 18.342
   },
   {
    "ident": "DLREY",
    "type": "WPT",
    "lat": 41.59695,
-   "lon": -0.00538
+   "lon": -0.00538,
+   "xNm": 19.738,
+   "yNm": 22.504
   },
   {
    "ident": "DOCKR",
    "type": "WPT",
    "lat": 41.59272,
-   "lon": -0.00157
+   "lon": -0.00157,
+   "xNm": 19.904,
+   "yNm": 22.8
   },
   {
    "ident": "ALOHA",
    "type": "WPT",
    "lat": 41.52662,
-   "lon": 0.112
+   "lon": 0.112,
+   "xNm": 16.863,
+   "yNm": 22.396
   },
   {
    "ident": "QURAN",
    "type": "WPT",
    "lat": 41.52226,
-   "lon": 0.09357
+   "lon": 0.09357,
+   "xNm": 17.333,
+   "yNm": 23.442
   },
   {
    "ident": "DARRK",
    "type": "WPT",
    "lat": 41.56249,
-   "lon": 0.01993
+   "lon": 0.01993,
+   "xNm": 15.246,
+   "yNm": 21.787
   },
   {
    "ident": "DINTY",
    "type": "WPT",
    "lat": 41.62308,
-   "lon": -0.10657
+   "lon": -0.10657,
+   "xNm": 12.704,
+   "yNm": 21.438
   },
   {
    "ident": "RIZIN",
    "type": "WPT",
    "lat": 41.65644,
-   "lon": -0.13095
+   "lon": -0.13095,
+   "xNm": 12.425,
+   "yNm": 19.975
   },
   {
    "ident": "NKITA",
    "type": "WPT",
    "lat": 41.84377,
-   "lon": 0.02556
+   "lon": 0.02556,
+   "xNm": 21.667,
+   "yNm": 13.258
   },
   {
    "ident": "DAALE",
    "type": "WPT",
    "lat": 41.53372,
-   "lon": 0.10574
+   "lon": 0.10574,
+   "xNm": 17.875,
+   "yNm": 22.704
   },
   {
    "ident": "SKYDV",
    "type": "WPT",
    "lat": 41.7462,
-   "lon": -0.05591
+   "lon": -0.05591,
+   "xNm": 17.317,
+   "yNm": 15.188
   },
   {
    "ident": "MDWAY",
    "type": "WPT",
    "lat": 41.83011,
-   "lon": -0.01063
+   "lon": -0.01063,
+   "xNm": 20.013,
+   "yNm": 12.983
   },
   {
    "ident": "FABRA",
    "type": "WPT",
    "lat": 41.5875,
-   "lon": 0.02329
+   "lon": 0.02329,
+   "xNm": 18.713,
+   "yNm": 21.892
   },
   {
    "ident": "HIIPR",
    "type": "WPT",
    "lat": 41.59237,
-   "lon": 0.01313
+   "lon": 0.01313,
+   "xNm": 18.929,
+   "yNm": 21.95
   },
   {
    "ident": "SHAEF",
    "type": "WPT",
    "lat": 41.52936,
-   "lon": 0.07898
+   "lon": 0.07898,
+   "xNm": 17.838,
+   "yNm": 23.713
   },
   {
    "ident": "PEVEE",
    "type": "WPT",
    "lat": 41.54175,
-   "lon": 0.02223
+   "lon": 0.02223,
+   "xNm": 19.071,
+   "yNm": 25.771
   },
   {
    "ident": "HOLTZ",
    "type": "WPT",
    "lat": 41.55514,
-   "lon": 0.02162
+   "lon": 0.02162,
+   "xNm": 20.083,
+   "yNm": 25.758
   },
   {
    "ident": "OSHNN",
    "type": "WPT",
    "lat": 41.56821,
-   "lon": 0.0245
+   "lon": 0.0245,
+   "xNm": 21.021,
+   "yNm": 25.75
   },
   {
    "ident": "CAHIL",
    "type": "WPT",
    "lat": 41.59732,
-   "lon": 0.02296
+   "lon": 0.02296,
+   "xNm": 21.838,
+   "yNm": 23.408
   },
   {
    "ident": "ZOOMM",
    "type": "WPT",
    "lat": 41.61065,
-   "lon": 0.02063
+   "lon": 0.02063,
+   "xNm": 22.121,
+   "yNm": 22.429
   },
   {
    "ident": "SEEBY",
    "type": "WPT",
    "lat": 41.63332,
-   "lon": 0.03635
+   "lon": 0.03635,
+   "xNm": 22.863,
+   "yNm": 21.267
   },
   {
    "ident": "ARCUS",
    "type": "WPT",
    "lat": 41.73141,
-   "lon": 0.07761
+   "lon": 0.07761,
+   "xNm": 24.638,
+   "yNm": 18.142
   },
   {
    "ident": "GOOSE",
    "type": "WPT",
    "lat": 41.8031,
-   "lon": 0.14242
+   "lon": 0.14242,
+   "xNm": 28.354,
+   "yNm": 15.487
   },
   {
    "ident": "WEILR",
    "type": "WPT",
    "lat": 41.58163,
-   "lon": 0.01102
+   "lon": 0.01102,
+   "xNm": 20.204,
+   "yNm": 23.546
   },
   {
    "ident": "HAYNK",
    "type": "WPT",
    "lat": 41.56887,
-   "lon": 0.02155
+   "lon": 0.02155,
+   "xNm": 19.971,
+   "yNm": 24.154
   },
   {
    "ident": "MDWST",
    "type": "WPT",
    "lat": 41.62245,
-   "lon": 0.03035
+   "lon": 0.03035,
+   "xNm": 22.604,
+   "yNm": 21.817
   },
   {
    "ident": "MJSTY",
    "type": "WPT",
    "lat": 41.6986,
-   "lon": 0.05377
+   "lon": 0.05377,
+   "xNm": 23.371,
+   "yNm": 18.667
   },
   {
    "ident": "WNNDY",
    "type": "WPT",
    "lat": 41.73843,
-   "lon": 0.0646
+   "lon": 0.0646,
+   "xNm": 23.821,
+   "yNm": 17.554
   },
   {
    "ident": "GREEK",
    "type": "WPT",
    "lat": 41.80208,
-   "lon": 0.08133
+   "lon": 0.08133,
+   "xNm": 24.317,
+   "yNm": 15.563
   },
   {
    "ident": "FISSK",
    "type": "WPT",
    "lat": 41.70905,
-   "lon": 0.08192
+   "lon": 0.08192,
+   "xNm": 24.988,
+   "yNm": 19.338
   },
   {
    "ident": "COTAF",
    "type": "WPT",
    "lat": 41.69697,
-   "lon": 0.07441
+   "lon": 0.07441,
+   "xNm": 24.55,
+   "yNm": 19.525
   },
   {
    "ident": "BACHE",
    "type": "WPT",
    "lat": 41.68254,
-   "lon": 0.06486
+   "lon": 0.06486,
+   "xNm": 24.037,
+   "yNm": 19.733
   },
   {
    "ident": "PAYNZ",
    "type": "WPT",
    "lat": 41.70338,
-   "lon": 0.07665
+   "lon": 0.07665,
+   "xNm": 24.671,
+   "yNm": 19.338
   },
   {
    "ident": "DUNES",
    "type": "WPT",
    "lat": 41.69186,
-   "lon": 0.06925
+   "lon": 0.06925,
+   "xNm": 24.258,
+   "yNm": 19.508
   },
   {
    "ident": "ROCKY",
    "type": "WPT",
    "lat": 41.71046,
-   "lon": 0.07981
+   "lon": 0.07981,
+   "xNm": 24.85,
+   "yNm": 19.162
   },
   {
    "ident": "TORUS",
    "type": "WPT",
    "lat": 41.69983,
-   "lon": 0.07322
+   "lon": 0.07322,
+   "xNm": 24.471,
+   "yNm": 19.333
   },
   {
    "ident": "BRISK",
    "type": "WPT",
    "lat": 41.68487,
-   "lon": 0.06334
+   "lon": 0.06334,
+   "xNm": 23.946,
+   "yNm": 19.558
   },
   {
    "ident": "TIMSE",
    "type": "WPT",
    "lat": 41.56453,
-   "lon": 0.06459
+   "lon": 0.06459,
+   "xNm": 18.367,
+   "yNm": 22.108
   },
   {
    "ident": "FUMBL",
    "type": "WPT",
    "lat": 41.62108,
-   "lon": -0.02657
+   "lon": -0.02657,
+   "xNm": 19.863,
+   "yNm": 21.471
   },
   {
    "ident": "TURKA",
    "type": "WPT",
    "lat": 41.62095,
-   "lon": -0.02581
+   "lon": -0.02581,
+   "xNm": 19.754,
+   "yNm": 21.429
   },
   {
    "ident": "DIGGY",
    "type": "WPT",
    "lat": 41.6244,
-   "lon": -0.02774
+   "lon": -0.02774,
+   "xNm": 19.983,
+   "yNm": 21.333
   },
   {
    "ident": "OTTES",
    "type": "WPT",
    "lat": 41.5865,
-   "lon": 0.02659
+   "lon": 0.02659,
+   "xNm": 18.571,
+   "yNm": 21.796
   },
   {
    "ident": "GUPPI",
    "type": "WPT",
    "lat": 41.61596,
-   "lon": -0.0195
+   "lon": -0.0195,
+   "xNm": 19.408,
+   "yNm": 21.479
   },
   {
    "ident": "REEBO",
    "type": "WPT",
    "lat": 41.62342,
-   "lon": -0.02697
+   "lon": -0.02697,
+   "xNm": 19.804,
+   "yNm": 21.321
   },
   {
    "ident": "LAAMP",
    "type": "WPT",
    "lat": 41.66835,
-   "lon": -0.1103
+   "lon": -0.1103,
+   "xNm": 15.292,
+   "yNm": 18.783
   },
   {
    "ident": "POPPY",
    "type": "WPT",
    "lat": 41.69752,
-   "lon": 0.03668
+   "lon": 0.03668,
+   "xNm": 22.467,
+   "yNm": 18.296
   },
   {
    "ident": "SWEET",
    "type": "WPT",
    "lat": 41.67316,
-   "lon": 0.00427
+   "lon": 0.00427,
+   "xNm": 20.963,
+   "yNm": 18.738
   },
   {
    "ident": "NARXX",
    "type": "WPT",
    "lat": 41.84014,
-   "lon": 0.09858
+   "lon": 0.09858,
+   "xNm": 24.975,
+   "yNm": 13.683
   },
   {
    "ident": "BRDGE",
    "type": "WPT",
    "lat": 41.66011,
-   "lon": -0.07706
+   "lon": -0.07706,
+   "xNm": 16.733,
+   "yNm": 19.217
   },
   {
    "ident": "ALISO",
    "type": "WPT",
    "lat": 41.55271,
-   "lon": 0.08933
+   "lon": 0.08933,
+   "xNm": 16.642,
+   "yNm": 21.283
   },
   {
    "ident": "SURGE",
    "type": "WPT",
    "lat": 41.83836,
-   "lon": 0.02951
+   "lon": 0.02951,
+   "xNm": 21.829,
+   "yNm": 13.642
   },
   {
    "ident": "PMPKN",
    "type": "WPT",
    "lat": 41.67989,
-   "lon": 0.09902
+   "lon": 0.09902,
+   "xNm": 26.171,
+   "yNm": 22.208
   }
  ]
 }
