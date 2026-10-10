@@ -25,8 +25,8 @@ async function uploadPosition({
     aircraftType: aircraftType || null,
     speed: typeof speed === 'number' ? speed : null,
     position: {
-      distanceNm: Math.round(distanceNm * 10) / 10,
-      bearingDeg: Math.round(bearingDeg),
+      distanceNm: Math.round(distanceNm * 100) / 100, // 0.01 nm: at 0.1 nm a taxiing aircraft jumped about 90 m between steps
+      bearingDeg: Math.round(bearingDeg * 10) / 10,
       referenceAirport,
       // altitudeFt/headingDeg come straight off the HUD each frame, so
       // they're as fresh as the report itself - only the distance/bearing
