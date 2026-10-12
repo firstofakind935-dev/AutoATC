@@ -89,8 +89,8 @@ class MonitorClientTest(unittest.TestCase):
         self.airports = monitor_client.load_airports()
 
     def test_airports_are_the_radar_points(self):
-        self.assertAlmostEqual(self.airports["IRFD"][0], 502 / 24, places=2)
-        self.assertAlmostEqual(self.airports["IRFD"][1], 508.3 / 24, places=2)
+        self.assertAlmostEqual(self.airports["IRFD"][0], 498.9 / 24, places=2)
+        self.assertAlmostEqual(self.airports["IRFD"][1], 509.1 / 24, places=2)
 
     def test_pixel_becomes_distance_and_bearing_from_the_nearest_airport(self):
         ax, ay = self.airports["IRFD"]
@@ -150,21 +150,22 @@ class MonitorClientTest(unittest.TestCase):
 
 
 class StandsAndFramesTest(unittest.TestCase):
-    def test_stand_data_and_the_tokyo_nudge(self):
+    def test_stand_data_and_nudges(self):
         self.assertEqual(sorted(stands.list_stands()), ["IPPH", "IRFD", "ITKO"])
         fix = stands.stand_fix("ITKO", "22")
-        self.assertAlmostEqual(fix["xNm"], 19.497, places=2)  # the same point the companion app computes
-        self.assertAlmostEqual(fix["yNm"], 5.209, places=2)
-        plain = stands.stand_fix("ITKO", "22", {"ITKO": {"dxNm": 0.0, "dyNm": 0.0}})
-        self.assertAlmostEqual(plain["xNm"] - fix["xNm"], 0.181, places=3)
+        self.assertAlmostEqual(fix["xNm"], 19.338, places=3)  # the same point the companion app computes
+        self.assertAlmostEqual(fix["yNm"], 5.034, places=3)
+        mine = stands.stand_fix("ITKO", "22", {"ITKO": {"dxNm": -0.05, "dyNm": 0.0}})
+        self.assertAlmostEqual(mine["xNm"] - fix["xNm"], -0.05, places=6)
         self.assertIn("error", stands.stand_fix("IRFD", "99"))
         self.assertIn("error", stands.stand_fix("IMLR", "1"))
 
     def test_picture_fix_is_carried_to_the_stand(self):
         x, y, dx, dy, icao = frames.picture_to_game(19.3, 5.05)  # what a picture-frame fix said at ITKO stand 22
         stand = stands.stand_fix("ITKO", "22")
-        self.assertLess(math.hypot(x - stand["xNm"], y - stand["yNm"]), 0.12)
-        self.assertEqual(icao, "ITKO")
+        # The picture is on the exact game frame now, so the raw fix already sits on the stand (0.04 nm away).
+        self.assertLess(math.hypot(x - stand["xNm"], y - stand["yNm"]), 0.06)
+        self.assertEqual((dx, dy), (0.0, 0.0))
         far = frames.picture_to_game(2.0, 2.0)
         self.assertEqual((far[2], far[3]), (0.0, 0.0))
 

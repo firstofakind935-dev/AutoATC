@@ -1,16 +1,24 @@
 """
 Position from a stand number (port of companion/lib/stands.js). Parked at a stand, the pilot picks the airport and
 types the stand number; we put them where that stand is on the radar's ground chart (src/stands.json, read off the
-charts), plus the airport's nudge where the chart sits a little off the real map.
+charts), plus the airport's nudge if the pilot set one.
 """
 
 import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-NM_PER_STUD = 0.00030488559747884637
-ORIGIN_X_NM = 22.061527459937743
-ORIGIN_Y_NM = 15.039210123446306
+# Chart unit (100 studs) -> radar grid nm: an exact similarity fitted on the island outlines (24RC's coast.svg is
+# drawn in chart units; 11 islands land within 3-60 m of the radar picture). Same numbers as AutoATC's
+# data/gameFrame.json and companion/lib/world.js.
+GRID_A = 0.030675641063886483
+GRID_B = 1.609052091551345e-05
+ORIGIN_X_NM = 21.731369781953834
+ORIGIN_Y_NM = 14.790667919876864
+
+
+def chart_to_grid(ux, uy):
+    return GRID_A * ux - GRID_B * uy + ORIGIN_X_NM, GRID_B * ux + GRID_A * uy + ORIGIN_Y_NM
 
 _cache = {}
 
@@ -48,7 +56,6 @@ def stand_fix(icao, stand, user_nudges=None):
         ux, uy = (line["a"][0] + line["b"][0]) / 2, (line["a"][1] + line["b"][1]) / 2
     else:
         ux, uy = s["x"], s["y"]
-    x_nm = ux * 100 * NM_PER_STUD + ORIGIN_X_NM
-    y_nm = uy * 100 * NM_PER_STUD + ORIGIN_Y_NM
+    x_nm, y_nm = chart_to_grid(ux, uy)
     nudge = (user_nudges or {}).get(icao.upper()) or shipped_nudge(icao)
     return {"xNm": x_nm + nudge["dxNm"], "yNm": y_nm + nudge["dyNm"], "stand": key, "nudge": nudge}
