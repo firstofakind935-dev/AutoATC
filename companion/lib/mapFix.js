@@ -39,13 +39,14 @@ function findMarker(image, { minPixels = 6 } = {}) {
     if (seen[start]) continue;
     const o = start * 4;
     if (!isMarkerGreen(data[o], data[o + 1], data[o + 2])) { seen[start] = 1; continue; }
-    let sx = 0, sy = 0, count = 0;
+    let sx = 0, sy = 0, count = 0, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     stack.push(start);
     seen[start] = 1;
     while (stack.length) {
       const p = stack.pop();
       const px = p % width, py = (p - px) / width;
       sx += px; sy += py; count += 1;
+      if (px < minX) minX = px; if (px > maxX) maxX = px; if (py < minY) minY = py; if (py > maxY) maxY = py;
       // 8-connected, with a one-pixel gap allowed (anti-aliasing breaks the marker into specks)
       for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
@@ -58,7 +59,10 @@ function findMarker(image, { minPixels = 6 } = {}) {
         }
       }
     }
-    if (count >= minPixels && (!best || count > best.pixelCount)) best = { x: sx / count, y: sy / count, pixelCount: count };
+    // The marker is a small, compact shape. Long thin green things (HUD text, lines) or big green areas are not it.
+    const w = maxX - minX + 1, h = maxY - minY + 1;
+    const compact = w <= 60 && h <= 60 && Math.max(w, h) / Math.min(w, h) <= 3 && count / (w * h) >= 0.2;
+    if (count >= minPixels && compact && (!best || count > best.pixelCount)) best = { x: sx / count, y: sy / count, pixelCount: count };
   }
   return best;
 }
