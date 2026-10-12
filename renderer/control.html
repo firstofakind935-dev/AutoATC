@@ -132,9 +132,11 @@
           <p class="hint">
             <b>Best:</b> open the big map in the game, select its region above once, then press
             <b>F8</b> (or the button). The companion finds your green aircraft marker and works out where the
-            map is looking by itself - no airports to click, any zoom or pan. While tracking it re-fixes
-            on its own whenever the big map is open.
+            map is looking by itself - no airports to click, any zoom or pan.
           </p>
+          <label class="checkbox-row">
+            <input type="checkbox" id="autoBigMapCheck"> Also re-fix automatically whenever the big map is open (off: only F8 / the button)
+          </label>
           <div class="card-actions">
             <button class="btn btn-primary" id="mapFixBtn">Fix from big map (F8)</button>
             <span class="status-pill" id="mapFixStatus">No map fix yet</span>

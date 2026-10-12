@@ -61,6 +61,7 @@ async function loadSettings() {
   document.getElementById('monitorApiKey').value = settings.monitorApiKey || '';
   document.getElementById('intervalSec').value = settings.intervalSec || 5;
   document.getElementById('autoMiniCheck').checked = Boolean(settings.autoMinimap);
+  document.getElementById('autoBigMapCheck').checked = Boolean(settings.autoBigMap);
 }
 
 async function saveSettingsFromForm() {
@@ -373,7 +374,7 @@ async function runMapFix(trigger, kind = 'big') {
     fix.xNm = adj.xNm;
     fix.yNm = adj.yNm;
     const world = { lat: -fix.yNm / 60, lon: fix.xNm / 60 };
-    if (mini && currentFix) {
+    if (trigger === 'auto' && currentFix) {
       // The minimap is matched on coastline alone, so a look-alike shore can fool it. A fix that agrees with where we
       // believe we are is taken. A jump is only believed when several fixes in a row agree with EACH OTHER (a wrong
       // match changes every time; a real one doesn't), and a parked aircraft cannot jump at all.
@@ -426,6 +427,11 @@ function manualMapFix() {
 }
 document.getElementById('mapFixBtn').addEventListener('click', manualMapFix);
 document.getElementById('miniFixBtn').addEventListener('click', () => runMapFix('manual', 'mini'));
+document.getElementById('autoBigMapCheck').addEventListener('change', async (e) => {
+  settings.autoBigMap = e.target.checked;
+  await window.companion.saveSettings(settings);
+  log(`Automatic big-map fixes ${settings.autoBigMap ? 'ON' : 'OFF'}.`);
+});
 document.getElementById('autoMiniCheck').addEventListener('change', async (e) => {
   settings.autoMinimap = e.target.checked;
   await window.companion.saveSettings(settings);
@@ -642,7 +648,9 @@ async function trackTick() {
     return;
   }
   // While the big map is open, re-fix on it (at most every few seconds) - no clicking, no drift.
-  if (settings.regions.bigmap && Date.now() - lastAutoMapFixAtMs > 4000 && !mapFixBusy) {
+  // Only when asked for: with the big map closed, that screen region is the 3D view, and anything bright green in it
+  // (HUD text, grass) was taken for the marker and matched somewhere random - e.g. Sea Haven while parked at Rockford.
+  if (settings.autoBigMap && settings.regions.bigmap && Date.now() - lastAutoMapFixAtMs > 4000 && !mapFixBusy) {
     lastAutoMapFixAtMs = Date.now();
     runMapFix('auto');
   }
