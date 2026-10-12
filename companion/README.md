@@ -408,3 +408,11 @@ across, so both ways of fixing agree.
 On the MCDU: **INIT REF** (Boeing) or **MENU → <POS INIT** (any FMS). Enter the **REF AIRPORT** (L1) and the **STAND** (L2) from the scratchpad, then
 **SET POS>** (R5). The tracking window puts the aircraft on that stand (it reads your heading and warns if it doesn't fit the stand), and the next good
 map or minimap fix within a minute calibrates that airport automatically. Airports with stand data: IRFD, ITKO, IPPH (the page lists them).
+
+## Position from ATC (stand, taxi, line-up)
+
+The controller bots now note on your flight strip where you are at the moments that matter: your **stand** when they approve pushback/startup (they ask
+"say stand number" if you didn't give it), your **taxi route and runway**, and the **runway** when Tower says "line up and wait" or "cleared for takeoff".
+The monitor passes these to the companion (polled with the datalink messages), which sets your position: on the stand (as POS INIT does), or just past
+the runway threshold pointing down the runway (`data/runways.json`, read off the ground charts by `scripts/build-runways.js`: 13 airports). The taxi
+route is logged for now; following it on the ground comes next.

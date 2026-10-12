@@ -16,4 +16,15 @@ async function pollCpdlc({ monitorUrl, apiKey, callsign, sinceId }) {
   return response.json();
 }
 
-module.exports = { pollCpdlc };
+// Position anchors from ATC (stand / runway line-up / taxi route), see monitor/server.js's /api/anchors.
+async function pollAnchors({ monitorUrl, apiKey, callsign, sinceId }) {
+  const headers = {};
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+  const query = `callsign=${encodeURIComponent(callsign)}&since=${encodeURIComponent(sinceId || 0)}`;
+  const response = await fetch(`${monitorUrl.replace(/\/+$/, '')}/api/anchors?${query}`, { headers });
+  if (response.status === 404) return []; // an older monitor without anchors
+  if (!response.ok) throw new Error(`Anchor poll failed (${response.status})`);
+  return response.json();
+}
+
+module.exports = { pollCpdlc, pollAnchors };

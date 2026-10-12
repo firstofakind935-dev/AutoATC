@@ -25,7 +25,8 @@ const { findMarkerCentroid } = tryRequire('marker', './lib/marker');
 // preload's V8 context can't create the worker_threads Worker it needs.
 const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
-const { pollCpdlc } = tryRequire('datalink', './lib/datalink');
+const { pollCpdlc, pollAnchors } = tryRequire('datalink', './lib/datalink');
+const { runwayFix, listRunways } = tryRequire('runways', './lib/runways');
 const { fixFromMap } = tryRequire('mapFix', './lib/mapFix');
 const { standFix, listStands, shippedOffsets } = tryRequire('stands', './lib/stands');
 const { pictureToGame } = tryRequire('frames', './lib/frames');
@@ -127,4 +128,7 @@ contextBridge.exposeInMainWorld('companion', {
   uploadPosition,
   tuneFrequency,
   pollCpdlc,
+  pollAnchors,
+  runwayFix,
+  listRunways,
 });
