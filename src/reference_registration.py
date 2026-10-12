@@ -44,6 +44,6 @@ def prepare_tracking_reference(bundled_path, user_path):
     def to_radar_px(x, y):
         return x0 + scale * x, y0 + scale * y
 
-    return MapLocator(user_path), to_radar_px, (
+    return MapLocator(user_path, use_tiles=False), to_radar_px, (
         f"Using your reference map (lined up with the radar map, {confidence * 100:.0f}% match)."
     )

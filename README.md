@@ -97,3 +97,18 @@ Discord signed on message sent.
 - **Which fixes to believe** (`src/position_filter.py`): the first fix must be a strong match (or start from a stand); a parked aircraft can't jump;
   a bigger jump needs 3 agreeing strong fixes, and for a parked aircraft the same answer must hold for a minute at 85%+. Views with no coastline are refused.
 - The tracker keeps reporting the stand position to the monitor until fixes agree with it.
+
+
+## Airport tiles: precise fixes on the ground (added on this branch)
+
+The shipped world map is only 48 px per nm - an airport is about 50 px across - so a minimap of an apron (no coastline, little detail at that size)
+could not be placed reliably. The tracker now matches on **features** (corners of runways, taxiways, buildings, with a RANSAC fit that most of them must
+agree on), and first against **airport tiles**: the game's own big map zoomed in on one airport, lined up once with the world map.
+
+- Make a tile: open the big map zoomed in on an airport, then `python tools\capture_tile.py ITKO` (or `... ITKO screenshot.png`), drag a box around
+  the map picture. It is lined up automatically and saved in `src\tiles\`. **Rockford (IRFD) ships with one.**
+- In tests on Rockford, minimap-sized views of the tile (zoomed 0.6x-1.6x, blurred, JPEG'd), including apron-only views, are placed within a few metres in
+  a few milliseconds; a view it can't place is refused, never guessed.
+- Order of matching: tiles (nearest first) -> world-map features -> coastline mask. The coastline fallback can confirm a position but never move you.
+- Caveat: tested against views cut from the big-map capture itself. If the in-game minimap is drawn differently from the big map, that needs checking
+  with a real minimap screenshot.

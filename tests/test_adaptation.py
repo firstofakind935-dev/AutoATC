@@ -234,5 +234,34 @@ class NoCoastlineTest(unittest.TestCase):
         self.assertIn("coastline", loc.last_reason)
 
 
+class TileTest(unittest.TestCase):
+    """The Rockford tile (src/tiles/IRFD.png): a minimap-like view of it is placed to a few metres, at several zooms."""
+
+    def test_minimap_views_of_rockford_are_placed_precisely(self):
+        import json as _json
+        here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "tiles")
+        tile = cv2.imread(os.path.join(here, "IRFD.png"))
+        to_world = np.array(_json.load(open(os.path.join(here, "IRFD.json")))["toWorld"])
+        loc = MapLocator(REFERENCE)
+        for (x0, y0, w) in [(400, 430, 300), (480, 500, 200), (420, 470, 180), (250, 600, 300)]:  # incl. apron-only views
+            for zoom in (0.6, 1.0, 1.6):
+                crop = cv2.resize(tile[y0:y0 + w, x0:x0 + w], None, fx=zoom, fy=zoom,
+                                  interpolation=cv2.INTER_AREA if zoom < 1 else cv2.INTER_CUBIC)
+                crop = cv2.GaussianBlur(crop, (3, 3), 0.8)
+                r = loc.locate_crop(crop)
+                self.assertIsNotNone(r, (x0, y0, zoom))
+                self.assertTrue(loc.last_method.startswith("tile"), loc.last_method)
+                got = loc.last_transform @ np.array([crop.shape[1] / 2, crop.shape[0] / 2, 1.0])
+                want = to_world @ np.array([x0 + w / 2, y0 + w / 2, 1.0])
+                err_m = float(np.hypot(*(got - want))) / 48 * 1852
+                self.assertLess(err_m, 30, (x0, y0, zoom, err_m))
+
+    def test_a_view_it_cannot_place_is_refused_not_guessed(self):
+        loc = MapLocator(REFERENCE)
+        noise = np.random.default_rng(3).integers(0, 255, (200, 200, 3), dtype=np.uint8)
+        r = loc.locate_crop(noise)
+        self.assertTrue(r is None or r[3] <= MapLocator.MASK_CONFIDENCE_CAP)
+
+
 if __name__ == "__main__":
     unittest.main()
