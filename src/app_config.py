@@ -66,6 +66,9 @@ else:
     REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map.png"  # the radar world map shipped in src/
     USER_REFERENCE_MAP_PATH = CONFIG_DIR / "reference_map_user.png"  # your own capture (Set Reference Map), if any
     USER_STATE_PATH = CONFIG_DIR / "user_state.json"  # stand nudges and airport calibrations
+    if not SETTINGS_PATH.exists():  # a fresh clone: config.py is git-ignored, start from the example
+        import shutil
+        shutil.copyfile(CONFIG_DIR / "config.example.py", SETTINGS_PATH)
     settings = runpy.run_path(str(SETTINGS_PATH))
 
 
