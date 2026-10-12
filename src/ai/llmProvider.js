@@ -81,7 +81,7 @@ function stripThinkingBlocks(text) {
 // re-transmitting it, which otherwise gets read back again and loops.
 const NO_RESPONSE_SENTINEL = 'NO_RESPONSE_NEEDED';
 
-async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt, history, position }) {
+async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt, history, position, airport }) {
   const impl = PROVIDERS[provider];
   if (!impl) {
     throw new Error(`Unknown AI provider "${provider}". Expected one of: ${Object.keys(PROVIDERS).join(', ')}`);
@@ -92,7 +92,7 @@ async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt
   // clean remainder for applyStripDirective. The no-response sentinel check
   // has to come last, after both directives are already removed.
   const afterDatalink = applyDatalinkDirective(stripThinkingBlocks(reply), position);
-  const spoken = applyStripDirective(afterDatalink);
+  const spoken = applyStripDirective(afterDatalink, { airport });
   return spoken.toUpperCase().includes(NO_RESPONSE_SENTINEL) ? '' : spoken;
 }
 
@@ -104,7 +104,7 @@ async function generateAtcReply({ provider, apiKey, baseUrl, model, systemPrompt
  * falling back from a paid Anthropic model to a self-hosted Ollama model
  * once the API key's balance runs out.
  */
-async function generateAtcReplyWithFallback({ provider, model, fallback, systemPrompt, history, position }, logger) {
+async function generateAtcReplyWithFallback({ provider, model, fallback, systemPrompt, history, position, airport }, logger) {
   try {
     return await generateAtcReply({
       provider,
@@ -114,6 +114,7 @@ async function generateAtcReplyWithFallback({ provider, model, fallback, systemP
       systemPrompt,
       history,
       position,
+      airport,
     });
   } catch (err) {
     if (!fallback) throw err;
@@ -129,6 +130,7 @@ async function generateAtcReplyWithFallback({ provider, model, fallback, systemP
       systemPrompt,
       history,
       position,
+      airport,
     });
   }
 }

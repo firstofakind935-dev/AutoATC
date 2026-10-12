@@ -50,6 +50,11 @@ const logs = []; // ring buffer, oldest first
 const botStatus = new Map(); // bot name -> { lastSeen, lastLevel, lastMessage }
 const positions = new Map(); // normalized callsign -> { callsign, aircraftType, speed, position, receivedAt }
 const cpdlcMessages = new Map(); // normalized callsign -> array of messages, oldest first
+// Position anchors from ATC (stand at pushback, runway at line-up, taxi route) - see /api/anchors below.
+const anchorEvents = new Map(); // normalized callsign -> array of events, oldest first
+let nextAnchorId = 1;
+const ANCHOR_TTL_MS = 10 * 60_000;
+const ANCHOR_MAX_PER_CALLSIGN = 10;
 const broadcastMessages = []; // fleet-wide announcements, oldest first - see POST /api/cpdlc/broadcast
 let nextCpdlcId = 1; // shared across per-callsign and broadcast messages, so a single "since" cursor covers both
 const flightStrips = new Map(); // normalized callsign -> latest strip snapshot (see src/atc/flightStrips.js)
@@ -303,6 +308,15 @@ app.post('/api/cpdlc/broadcast', requireIngestAuth, (req, res) => {
 // re-displaying the same messages every poll. Merges that callsign's direct
 // messages with fleet-wide broadcasts - both share one id sequence, so a
 // single "since" cursor and a sort by id keeps them in order together.
+// The pilot's companion app polls this (same key as /api/cpdlc) for position anchors newer than `since`.
+app.get('/api/anchors', requireIngestAuth, (req, res) => {
+  const key = normalizeCallsign(req.query.callsign);
+  if (!key) return res.status(400).json({ error: '"callsign" is required' });
+  const since = Number(req.query.since) || 0;
+  const now = Date.now();
+  res.json((anchorEvents.get(key) || []).filter((e) => e.id > since && now - e.createdAt < ANCHOR_TTL_MS));
+});
+
 app.get('/api/cpdlc', requireIngestAuth, (req, res) => {
   const { callsign, since } = req.query;
   if (!callsign || typeof callsign !== 'string') return res.status(400).json({ error: '"callsign" query param is required' });
@@ -328,6 +342,25 @@ app.post('/api/flightstrip', requireIngestAuth, (req, res) => {
 
   const key = normalizeCallsign(callsign);
   if (!key) return res.status(400).json({ error: '"callsign" has no usable characters' });
+
+  // A new position anchor on the strip (stand / line-up / taxi, set by a controller bot) is queued for the pilot's
+  // companion app, which fixes the aircraft's position on it.
+  const anchor = clearance && typeof clearance === 'object' ? clearance.anchor : null;
+  const previous = flightStrips.get(key);
+  if (anchor && typeof anchor === 'object' && ['stand', 'lineup', 'taxi'].includes(anchor.kind) && anchor.at !== previous?.clearance?.anchor?.at) {
+    const queue = anchorEvents.get(key) || [];
+    queue.push({
+      id: nextAnchorId++,
+      kind: anchor.kind,
+      airport: typeof anchor.airport === 'string' ? anchor.airport : null,
+      stand: typeof anchor.stand === 'string' ? anchor.stand : null,
+      runway: typeof anchor.runway === 'string' ? anchor.runway : null,
+      route: typeof anchor.route === 'string' ? anchor.route : null,
+      createdAt: Date.now(),
+    });
+    while (queue.length > ANCHOR_MAX_PER_CALLSIGN) queue.shift();
+    anchorEvents.set(key, queue);
+  }
 
   flightStrips.set(key, {
     callsign,

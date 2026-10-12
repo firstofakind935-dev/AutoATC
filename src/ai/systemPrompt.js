@@ -403,7 +403,21 @@ function buildAtcSystemPrompt(persona) {
       `"5000", "squawk": "4253", "departureFreq": "124.3"}}". Example, ` +
       `Ground sending a taxied aircraft to Tower: "Cessna 42Yankee, contact ` +
       `Tower, one one eight point seven.\\nSTRIP: {"callsign": "N42Y", ` +
-      `"handoffTo": "tower"}".`,
+      `"handoffTo": "tower"}". ` +
+      `Position notes: the pilot's companion app sets the aircraft's position ` +
+      `from three clearance fields, so record them whenever they apply. ` +
+      `"stand": the stand/gate number the aircraft is parked at - when a pilot ` +
+      `requests pushback or startup they normally say it ("stand 12, request ` +
+      `push"); if they don't, ask "say stand number" before approving, then ` +
+      `record it. "taxiRoute" and "departureRunway": the taxiways you cleared ` +
+      `them via, as letters separated by spaces, and the runway (e.g. ` +
+      `"taxiRoute": "A K", "departureRunway": "25L"). "lineUpRunway": the ` +
+      `runway, the moment Tower says "line up and wait" or "cleared for ` +
+      `takeoff". Example, Ground approving pushback: "Cessna 42Yankee, push ` +
+      `and start approved.\\nSTRIP: {"callsign": "N42Y", "clearance": ` +
+      `{"stand": "12"}}". Example, Tower: "Cessna 42Yankee, runway 25L, line ` +
+      `up and wait.\\nSTRIP: {"callsign": "N42Y", "clearance": ` +
+      `{"lineUpRunway": "25L"}}".`,
     ``,
     `Squawk codes: a pilot's companion app defaults to 2000 (VFR ` +
       `conspicuity, unassigned) until a controlling facility gives them a ` +

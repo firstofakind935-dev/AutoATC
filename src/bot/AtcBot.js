@@ -278,6 +278,7 @@ class AtcBot {
           systemPrompt,
           history: history.toArray({ contextForLastTurn: turnContext }),
           position: this.activePersona.position,
+          airport: this.activePersona.airport,
         },
         this.logger
       );
