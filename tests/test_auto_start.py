@@ -137,3 +137,31 @@ class FlightTest(unittest.TestCase):
         for t in range(1, 6):
             self.assertTrue(f.accept(20.84, 21.35, 0.9, float(t))[0])
         self.assertFalse(f.accept(20.0, 21.0, 0.95, 6.0)[0])  # 0.9 nm away a second later: a look-alike, refused
+
+
+class ShortFinalTest(unittest.TestCase):
+
+    def test_keeps_moving_through_the_gap_and_refuses_a_far_look_alike(self):
+        from position_filter import PositionFilter
+        f = PositionFilter()
+        t, x, y = 0.0, 10.0, 23.2
+        f.anchor(x, y, t)
+        for _ in range(60):  # cruising in at 140 kt, a fix a second
+            t += 1.0
+            x -= 140 / 3600.0
+            self.assertTrue(f.accept(x, y, 0.9, t)[0])
+        last = f.pos
+        # 20 s with no fix: the reported position keeps moving along the track (it used to freeze)
+        moved = f.position_at(t + 20)
+        self.assertAlmostEqual(last[0] - moved[0], 140 / 3600.0 * 20, places=3)
+        # ...and stops after COAST_SECONDS instead of flying on for ever
+        self.assertAlmostEqual(f.position_at(t + 300)[0], f.position_at(t + 30)[0], places=6)
+        # 60 s later, rolled out and slowed down: about 1.3 nm further west
+        t += 60
+        true_x = x - 1.3
+        # a look-alike 3 nm off the track is refused (it used to be believed: anything within ~7 nm was)
+        ok, why = f.accept(true_x + 0.5, y + 3.0, 0.95, t)
+        self.assertFalse(ok, why)
+        # the real position, short of where the old track would have put us, is taken straight away
+        ok, why = f.accept(true_x, y, 0.9, t + 1)
+        self.assertTrue(ok, why)

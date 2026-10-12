@@ -19,6 +19,9 @@ PARKED_KT = 5.0
 PARKED_TRUST_SCORE = 0.85
 PARKED_HOLD_SECONDS = 60.0
 SPEED_WINDOW_S = 10.0
+COAST_SECONDS = 30.0   # with no fix (open sea, a small island on final), keep moving along the track this long
+MOVING_KT = 30.0       # below this there is no track worth coasting along
+SPEED_CHANGE_KT = 60.0  # how far off the straight-line track an aircraft can get per hour of gap (turns, speed changes)
 
 
 class PositionFilter:
@@ -30,6 +33,7 @@ class PositionFilter:
         self.speed_kt = None
         self._pending = None  # [(x, y), count]
         self._track = []  # recent accepted fixes [(t, x, y)], for the ground speed
+        self.velocity = None  # (vx, vy) in nm per hour, from the same window
 
     @property
     def has_position(self):
@@ -39,6 +43,7 @@ class PositionFilter:
         """A known position (the stand): trusted outright, and we are parked."""
         self.pos, self.t, self.speed_kt, self._pending = (x_nm, y_nm), now, 0.0, None
         self._track = [(now, x_nm, y_nm)]
+        self.velocity = (0.0, 0.0)
 
     def _take(self, x, y, now):
         # Ground speed over the last few seconds of accepted fixes. (It used to be measured only between two fixes
@@ -47,8 +52,38 @@ class PositionFilter:
         self._track = [p for p in self._track if now - p[0] <= SPEED_WINDOW_S] + [(now, x, y)]
         t0, x0, y0 = self._track[0]
         if now - t0 >= 3.0:
-            self.speed_kt = math.hypot(x - x0, y - y0) / ((now - t0) / 3600.0)
+            dt_h = (now - t0) / 3600.0
+            self.velocity = ((x - x0) / dt_h, (y - y0) / dt_h)
+            self.speed_kt = math.hypot(*self.velocity)
         self.pos, self.t, self._pending = (x, y), now, None
+
+    def _moving(self):
+        return self.velocity is not None and self.speed_kt is not None and self.speed_kt >= MOVING_KT
+
+    def position_at(self, now):
+        """
+        Where we believe the aircraft is now: the last fix, carried along the track for up to COAST_SECONDS while
+        no fix comes in (so the radar doesn't freeze over open sea or on final), then held.
+        """
+        if self.pos is None:
+            return None
+        if not self._moving():
+            return self.pos
+        dt_h = min(max(0.0, now - self.t), COAST_SECONDS) / 3600.0
+        return (self.pos[0] + self.velocity[0] * dt_h, self.pos[1] + self.velocity[1] * dt_h)
+
+    def _distance_from_path(self, x, y, now):
+        """How far a fix is from anywhere we could have got to: the stretch between the last fix and where the last
+        track would put us now (an aircraft that slowed down - say it landed - is somewhere along it)."""
+        ax, ay = self.pos
+        if not self._moving():
+            return math.hypot(x - ax, y - ay)
+        dt_h = max(0.0, now - self.t) / 3600.0
+        bx, by = ax + self.velocity[0] * dt_h, ay + self.velocity[1] * dt_h
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        u = 0.0 if L2 == 0 else max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / L2))
+        return math.hypot(x - (ax + u * dx), y - (ay + u * dy))
 
     def accept(self, x_nm, y_nm, score, now):
         """-> (ok, reason). ok means: use this fix as the position."""
@@ -60,9 +95,16 @@ class PositionFilter:
         moved = math.hypot(x_nm - self.pos[0], y_nm - self.pos[1])
         parked = self.speed_kt is not None and self.speed_kt < PARKED_KT
         since_h = max(0.0, now - self.t) / 3600.0
-        # parked: it can only have started taxiing since (~40 kt); moving: up to ~400 kt since the last fix
-        allowed = 0.25 + since_h * 40.0 if parked else 0.4 + since_h * 400.0
-        if moved <= allowed:
+        if parked:
+            off, allowed = moved, 0.25 + since_h * 40.0  # it can only have started taxiing since (~40 kt)
+        elif self._moving():
+            # Along the track we were flying, with room for turns and speed changes that grows with the gap. (It used
+            # to be anywhere within 400 kt of the last fix - after a minute without fixes on final, ~7 nm, so the
+            # first match after landing was believed even when it was a look-alike far away.)
+            off, allowed = self._distance_from_path(x_nm, y_nm, now), 0.4 + since_h * SPEED_CHANGE_KT
+        else:
+            off, allowed = moved, 0.4 + since_h * 150.0  # slow or unknown: taxiing, or just started
+        if off <= allowed:
             self._take(x_nm, y_nm, now)
             return True, "agrees"
         same = self._pending is not None and math.hypot(x_nm - self._pending[0][0], y_nm - self._pending[0][1]) < 0.3

@@ -223,9 +223,8 @@ class TrackerWorker(QThread):
 
                     # Report whatever we believe our position is (a stand entry holds you there until fixes agree).
                     if filt.has_position:
-                        monitor_result = reporter.report_game(
-                            self.callsign, self.aircraft_type, filt.pos[0], filt.pos[1]
-                        )
+                        bx, by = filt.position_at(now)  # carried along the track through short gaps in fixes
+                        monitor_result = reporter.report_game(self.callsign, self.aircraft_type, bx, by)
                         if monitor_result:
                             self.log.emit(monitor_result)
 
