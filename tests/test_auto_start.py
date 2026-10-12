@@ -69,3 +69,27 @@ class FirstFixTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StaleCalibrationTest(unittest.TestCase):
+    def test_old_frame_corrections_are_dropped(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        import app_config
+        import user_state
+        saved = app_config.USER_STATE_PATH
+        with tempfile.TemporaryDirectory() as d:
+            app_config.USER_STATE_PATH = Path(d) / "user_state.json"
+            try:
+                app_config.USER_STATE_PATH.write_text(json.dumps({"airportOffsets": {"IRFD": {"dxNm": -0.05, "dyNm": -0.06}}}))
+                st = user_state.load()
+                self.assertEqual(st["airportOffsets"], {})
+                self.assertTrue(st["dropped"])
+                st["airportOffsets"]["IRFD"] = {"dxNm": 0.01, "dyNm": 0.0}
+                user_state.save(st)
+                again = user_state.load()
+                self.assertEqual(again["airportOffsets"]["IRFD"]["dxNm"], 0.01)  # saved under the new frame: kept
+                self.assertNotIn("dropped", again)
+            finally:
+                app_config.USER_STATE_PATH = saved

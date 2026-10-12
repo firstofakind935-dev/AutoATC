@@ -47,6 +47,13 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._log(f"PTFS Tracker version {CURRENT_VERSION}")
+        if self.user_state.pop("dropped", False):
+            self._log("Cleared your saved POS INIT calibrations and nudges: they were measured on the old map frame "
+                      "and would now push you off.")
+            try:
+                user_state.save(self.user_state)
+            except OSError:
+                pass
         from backend_worker import config
         if not config.DISCORD_WEBHOOK_URL:
             self._log(
