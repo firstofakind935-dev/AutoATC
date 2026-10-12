@@ -26,6 +26,7 @@ if SRC_DIR not in sys.path:
 
 import config  # noqa: E402
 from geometry import CoordinateTransform  # noqa: E402
+import minimap_finder  # noqa: E402
 
 CALIBRATION_PATH = os.path.join(SRC_DIR, "calibration.json")
 
@@ -95,7 +96,10 @@ class CalibrationDialog(QDialog):
     def recapture(self):
         """Grabs a fresh screenshot of config.MINIMAP_REGION and resets points."""
         with mss.mss() as sct:
-            shot = sct.grab(config.MINIMAP_REGION)
+            region = minimap_finder.resolve_region(sct, config.MINIMAP_REGION)
+            if region is None:
+                raise RuntimeError("Could not find the PTFS minimap on screen - open the game with the minimap visible.")
+            shot = sct.grab(region)
         # mss returns BGRA bytes; Format_RGB32 expects that same byte order
         # in memory (0xffRRGGBB little-endian == B,G,R,0xff per pixel).
         image = QImage(shot.bgra, shot.width, shot.height, QImage.Format.Format_RGB32)

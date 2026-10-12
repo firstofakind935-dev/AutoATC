@@ -17,13 +17,17 @@ import numpy as np
 
 import config
 from geometry import CoordinateTransform
+import minimap_finder
 
 clicked_points = []
 
 
 def capture_minimap():
     with mss.mss() as sct:
-        shot = sct.grab(config.MINIMAP_REGION)
+        region = minimap_finder.resolve_region(sct, config.MINIMAP_REGION)
+        if region is None:
+            sys.exit("Could not find the PTFS minimap on screen - open the game with the minimap visible.")
+        shot = sct.grab(region)
         img = np.array(shot)  # BGRA
         return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
 

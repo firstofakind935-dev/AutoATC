@@ -8,12 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 DEFAULT_SETTINGS = {
-    "MINIMAP_REGION": {
-        "left": 20,
-        "top": 20,
-        "width": 300,
-        "height": 300,
-    },
+    "MINIMAP_REGION": "auto",  # found on screen by its corner buttons (src/minimap_finder.py); or a {left, top, width, height} box
     "MARKER_COLOR_RGB": [161, 233, 93],  # the bright green aircraft marker (the map's own greens are much darker)
     "MARKER_COLOR_TOLERANCE": 45,
     "MARKER_MIN_PIXEL_AREA": 4,

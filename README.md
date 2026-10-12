@@ -21,9 +21,16 @@ MONITOR_URL = "https://cpdlc.up.railway.app"
 MONITOR_API_KEY = ""          # only if the monitor has INGEST_API_KEY set
 MONITOR_POST_MIN_INTERVAL_SECONDS = 2
 MIN_MATCH_CONFIDENCE = 0.35   # try 0.45+ if you see jumps
-MINIMAP_REGION = {...}        # the box on your screen with the minimap
+MINIMAP_REGION = "auto"       # found on screen automatically; or a {left, top, width, height} box
 ```
-**Setting the minimap box:** with the venv active, run `python tools\pick_region.py` from the repo root, drag a box around the minimap, and paste the `MINIMAP_REGION` it prints into `src\config.py`. It also saves `region_check.png` (what the tracker sees) and tells you the marker colour it found.
+**No setup needed:** run it, click Connect, fly. The tracker finds the PTFS minimap on screen by its corner buttons (any
+resolution, any monitor; it looks again if the window moves), and the first fix comes from matching the minimap
+against the whole world map - no POS INIT. In a test on a real 2000x1125 screenshot parked at Rockford stand 14 it
+found the minimap and placed the aircraft 0.03 nm from the stand. POS INIT and the nudge buttons are still there as
+optional fine-tuning. Keep the minimap at the game's default zoom: the start-up fix needs some coastline in view.
+
+Only if the minimap is not found: run `python tools\pick_region.py` from the repo root, drag a box around the minimap,
+and paste the `MINIMAP_REGION` it prints into `src\config.py`.
 
 Assumes the minimap is a north-up crop of the same game map (as the original does) and that the marker is the only large bright-green shape in `MINIMAP_REGION`.
 

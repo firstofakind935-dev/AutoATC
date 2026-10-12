@@ -30,6 +30,7 @@ import user_state as user_state_store  # noqa: E402
 from position_filter import PositionFilter  # noqa: E402
 from marker_finder import find_marker_pixel  # noqa: E402
 from map_locator import MapLocator  # noqa: E402
+import minimap_finder  # noqa: E402
 from reference_registration import prepare_tracking_reference  # noqa: E402
 
 REFERENCE_MAP_PATH = str(config.REFERENCE_MAP_PATH)  # the radar world map shipped with the app
@@ -90,6 +91,11 @@ class TrackerWorker(QThread):
         filt = PositionFilter()
         pending_init = None
         last_ignored_log = 0.0
+        auto_region = minimap_finder.wants_auto(config.MINIMAP_REGION)
+        region = None if auto_region else config.MINIMAP_REGION
+        next_region_search = 0.0
+        region_logged = False
+        misses = 0
 
         session_started = False
         try:
@@ -113,9 +119,28 @@ class TrackerWorker(QThread):
                         self.log.emit(f"POS INIT: on your stand ({ax:.2f}, {ay:.2f})"
                                       + (" - lining up the minimap with it..." if icao else "."))
 
-                    shot = sct.grab(config.MINIMAP_REGION)
+                    if region is None:
+                        # "auto": find the minimap on screen (and again whenever it goes missing)
+                        if now >= next_region_search:
+                            next_region_search = now + 3
+                            region = minimap_finder.locate_on_screen(sct)
+                            if region:
+                                self.log.emit(f"Found the minimap at {region['left']},{region['top']} "
+                                              f"({region['width']}x{region['height']}).")
+                                region_logged = False
+                            elif not region_logged:
+                                region_logged = True
+                                self.log.emit("Looking for the PTFS minimap - keep the game visible with the minimap open...")
+                        if region is None:
+                            time.sleep(0.5)
+                            continue
+
+                    shot = sct.grab(region)
                     frame = cv2.cvtColor(np.array(shot), cv2.COLOR_BGRA2BGR)
                     marker_px = find_marker_pixel(frame)
+                    misses = 0 if marker_px is not None else misses + 1
+                    if auto_region and misses >= 10:
+                        region, misses = None, 0  # the window moved or the minimap closed: look again
 
                     if marker_px is None:
                         if not filt.has_position:

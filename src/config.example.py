@@ -4,14 +4,10 @@ config.py is git-ignored so your webhook URL never gets committed.
 """
 
 # --- Screen capture ---
-# The pixel box on YOUR screen where the PTFS minimap is drawn.
-# (left, top, width, height). Use a screenshot tool to find these values.
-MINIMAP_REGION = {
-    "left": 20,
-    "top": 20,
-    "width": 300,
-    "height": 300,
-}
+# "auto": the tracker finds the PTFS minimap on screen by itself (by its corner buttons).
+# Only if that fails, put the box here instead: {"left": .., "top": .., "width": .., "height": ..}
+# (tools\pick_region.py prints one).
+MINIMAP_REGION = "auto"
 
 # --- Marker detection ---
 # Simplest approach: your player marker is a distinct solid color (many

@@ -19,11 +19,15 @@ import config
 import webhook
 import broadcast_server
 from geometry import CoordinateTransform
+import minimap_finder
 from marker_finder import find_marker_pixel
 
 
 def capture_minimap(sct):
-    shot = sct.grab(config.MINIMAP_REGION)
+    region = minimap_finder.resolve_region(sct, config.MINIMAP_REGION)
+    if region is None:
+        raise RuntimeError("Could not find the PTFS minimap on screen - open the game with the minimap visible.")
+    shot = sct.grab(region)
     img = np.array(shot)  # BGRA
     return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
 
