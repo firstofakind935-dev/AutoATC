@@ -1,0 +1,27 @@
+{
+ "note": "Exact PTFS coordinate frames. 'game' is the ground-chart unit of 24RC / 24Radar (1 unit = 100 studs, x east, y south), in which 24RC's coast.svg is drawn. gridFromGame: [[a,-b,tx],[b,a,ty]] -> radar world grid nm, fitted on 11 island centroids against the radar's world-map picture (residuals 3-60 m). spyFromGame: same form -> 24SPY map units (1200 x 1200), fitted on 7 island centroids against 24SPY's map tiles (residuals ~1 unit = 0.03 nm). Built from the fits described in scripts/import-24spy.js.",
+ "gridFromGame": [
+  [
+   0.030675641063886483,
+   -1.609052091551345e-05,
+   21.731369781953834
+  ],
+  [
+   1.609052091551345e-05,
+   0.030675641063886483,
+   14.790667919876864
+  ]
+ ],
+ "spyFromGame": [
+  [
+   1.0377724153008663,
+   0.001413798184362036,
+   610.290702874971
+  ],
+  [
+   -0.001413798184362036,
+   1.0377724153008663,
+   575.9733676074744
+  ]
+ ]
+}

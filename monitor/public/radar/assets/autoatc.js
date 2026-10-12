@@ -5,7 +5,11 @@
 // Original site: 24SPY by Tiago Murteira (tiaguinho_2009), see LICENSE.md.
 
 (function () {
-  const UNITS_PER_NM = 34.19; // 24SPY map units per nautical mile (fitted to the PTFS world map)
+  // 24SPY map units per nautical mile, and the 0.11 degree turn between 24SPY's map and the radar grid the
+  // positions are measured on - both exact, from island-shape fits through the game frame (data/gameFrame.json).
+  // (It was 34.19 from airport points: 1% long, ~0.1 nm off at 10 nm.)
+  const UNITS_PER_NM = 33.8305;
+  const L = [[33.83047109, 0.06383397], [-0.06383397, 33.83047109]]; // grid nm (x east, y south) -> 24SPY units
   const POLL_MS = 3000;
   let aircraft = [];
 
@@ -35,7 +39,8 @@
     const ref = airportByIcao(p.referenceAirport);
     if (!ref || typeof p.distanceNm !== 'number' || typeof p.bearingDeg !== 'number') return null;
     const rad = (p.bearingDeg * Math.PI) / 180;
-    return [ref.coordinates[0] + p.distanceNm * UNITS_PER_NM * Math.sin(rad), ref.coordinates[1] - p.distanceNm * UNITS_PER_NM * Math.cos(rad)];
+    const dx = p.distanceNm * Math.sin(rad), dy = -p.distanceNm * Math.cos(rad);
+    return [ref.coordinates[0] + L[0][0] * dx + L[0][1] * dy, ref.coordinates[1] + L[1][0] * dx + L[1][1] * dy];
   }
   const nmBetween = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) / UNITS_PER_NM;
   const bearingTo = (a, b) => (((Math.atan2(b[0] - a[0], -(b[1] - a[1])) * 180) / Math.PI) + 360) % 360;

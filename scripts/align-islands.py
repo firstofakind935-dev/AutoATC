@@ -24,7 +24,6 @@ from PIL import Image
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 ASSETS = os.path.join(ROOT, 'monitor/public/365radar/public/assets')
 TILES = os.path.join(ROOT, 'monitor/public/radar/tiles/tilesOP')  # the most detailed set: the coarser ones leave Grindavik out
-PAIRS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'island-fit-pairs.json')
 SPY_PX = 7 / 3  # working resolution: pixels per 24SPY map unit (each 560 px tile = 240 units)
 
 orig = os.path.join(ASSETS, 'world-map-original.png')
@@ -70,11 +69,12 @@ label_zone = cv2.dilate(label.astype(np.uint8), np.ones((11, 11), np.uint8)) > 0
 land[label_zone] = 0
 land = cv2.morphologyEx(land, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
-# global similarity: 24SPY units -> world-map px (1874 wide), from shared airports
-pairs = json.load(open(PAIRS))
-src = np.float32([p['spy'] for p in pairs])
-# G: 24SPY units -> the NEW image's pixels (north-up; same positions import-24spy.js writes)
-G = cv2.estimateAffinePartial2D(src, np.float32([p['newWm'] for p in pairs]) * 2, method=cv2.LMEDS)[0]
+# global similarity: 24SPY units -> world-map px (1874 wide = 48 px per nm), exact, through the game frame
+# (data/gameFrame.json: island-shape fits of 24RC's coast.svg against 24SPY's tiles and the world-map picture -
+# the same chain import-24spy.js uses). It used to be fitted on airport pairs, which put islands up to 0.28 nm off.
+frame = json.load(open(os.path.join(ROOT, 'data/gameFrame.json')))
+def _h3(m): return np.vstack([np.float64(m), [0, 0, 1]])
+G = (np.diag([48.0, 48.0, 1.0]) @ _h3(frame['gridFromGame']) @ np.linalg.inv(_h3(frame['spyFromGame'])))[:2]
 def h(m): return np.vstack([m, [0, 0, 1]])
 S = np.diag([SPY_PX, SPY_PX, 1.0])
 W2S = (S @ h(cv2.invertAffineTransform(G)))[:2]          # old image px -> spy px (the image itself is north-up)

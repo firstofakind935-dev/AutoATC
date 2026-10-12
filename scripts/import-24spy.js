@@ -4,13 +4,13 @@
 // into 365Radar's own map space, as monitor/public/365radar/src/data/spy24Data.js.
 //
 // 24SPY positions things in its own 1200 x 1200 map units. 365Radar draws on
-// public/assets/world-map.png (937 x 706 px, see worldMapAnchors.js). The two
-// are the same PTFS map at different scales and offsets, so this fits a
-// similarity transform (scale + rotation + shift - no skew, no stretching)
-// from 24SPY units to world-map pixels using the airports both know, drops
-// any airport that fits badly, refits, and applies the result to everything.
-// The fit's per-airport error is written into the output file's header, so
-// how far off the placement may be is visible rather than hidden.
+// public/assets/world-map.png (937 x 706 px, see worldMapAnchors.js). Both
+// are tied to the exact game frame of 24RC's coast.svg by island-shape fits
+// (data/gameFrame.json: world-map picture within 3-60 m, 24SPY's tiles within
+// ~0.03 nm), so 24SPY units -> game -> world-map pixels is exact. (This used
+// to fit 24SPY's airport points to 24Radar's airport anchors, which left a
+// ~1% scale error: up to 0.28 nm at the map edges.) How far each airport now
+// sits from 24Radar's anchor is written into the output header.
 //
 // 24SPY is under a non-commercial, attribution-required licence (see
 // 24SPY-NOTICE.md next to the output). This script's output is the "changed"
@@ -51,42 +51,21 @@ function grabArray(source, name) {
   throw new Error(`Could not find the end of the "${name}" array`);
 }
 
-/** Least-squares similarity transform: pairs of [[sx, sy], [tx, ty]] -> function mapping source to target. */
-function fitSimilarity(pairs) {
-  const n = pairs.length;
-  let sx = 0, sy = 0, tx = 0, ty = 0;
-  for (const [[a, b], [c, d]] of pairs) { sx += a; sy += b; tx += c; ty += d; }
-  sx /= n; sy /= n; tx /= n; ty /= n;
-  let dot = 0, cross = 0, norm = 0;
-  for (const [[a, b], [c, d]] of pairs) {
-    const x = a - sx, y = b - sy, u = c - tx, v = d - ty;
-    dot += x * u + y * v;
-    cross += x * v - y * u;
-    norm += x * x + y * y;
-  }
-  const A = dot / norm;
-  const B = cross / norm;
-  return (p) => [A * (p[0] - sx) - B * (p[1] - sy) + tx, B * (p[0] - sx) + A * (p[1] - sy) + ty];
+/** 24SPY units -> world-map pixels through the exact game frame: spy -> game (inverse of spyFromGame) -> nm -> px. */
+function spyToWorldPx(frame, pxPerNm) {
+  const [[a, , tx], [b, , ty]] = frame.spyFromGame;
+  const [[c, , ux], [d, , uy]] = frame.gridFromGame;
+  const det = a * a + b * b;
+  return (p) => {
+    const x = p[0] - tx, y = p[1] - ty;
+    const g = [(a * x + b * y) / det, (a * y - b * x) / det];
+    return [(c * g[0] - d * g[1] + ux) * pxPerNm, (d * g[0] + c * g[1] + uy) * pxPerNm];
+  };
 }
 
-/**
- * Scale + shift only (no rotation), fitted to pairs. 24SPY's grid is aligned
- * to north (checked against IRFD's runway heading), while the old world-map.png
- * the anchors were measured on is rotated about 3.6 degrees, so the airport
- * pairs are used only to find the scale and where the map sits, not a tilt.
- */
-function fitScaleShift(pairs) {
-  const n = pairs.length;
-  let sx = 0, sy = 0, tx = 0, ty = 0;
-  for (const [[a, b], [c, d]] of pairs) { sx += a; sy += b; tx += c; ty += d; }
-  sx /= n; sy /= n; tx /= n; ty /= n;
-  let dot = 0, cross = 0, norm = 0;
-  for (const [[a, b], [c, d]] of pairs) {
-    const x = a - sx, y = b - sy, u = c - tx, v = d - ty;
-    dot += x * u + y * v; cross += x * v - y * u; norm += x * x + y * y;
-  }
-  const k = Math.hypot(dot, cross) / norm;
-  return (p) => [k * (p[0] - sx) + tx, k * (p[1] - sy) + ty];
+function loadWorldMapPxPerNm() {
+  const text = fs.readFileSync(path.join(RADAR_DATA, 'worldMapAnchors.js'), 'utf8');
+  return JSON.parse(text.trim().replace(/^export default/, '').trim().replace(/;$/, '')).pxPerNm;
 }
 
 function loadWorldMapAnchors() {
@@ -105,19 +84,14 @@ function main() {
   // ---- fit 24SPY units -> world-map pixels on the airports both know
   const anchors = loadWorldMapAnchors();
   const spyAirports = Object.fromEntries(controlAreas.filter((a) => a.type === 'Airport' && Array.isArray(a.coordinates)).map((a) => [a.name, a.coordinates]));
-  let shared = Object.keys(spyAirports).filter((icao) => anchors[icao]);
+  const frame = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'gameFrame.json'), 'utf8'));
+  const transform = spyToWorldPx(frame, loadWorldMapPxPerNm());
+  const shared = Object.keys(spyAirports).filter((icao) => anchors[icao]);
   const dist = (f, icao) => {
     const p = f(spyAirports[icao]);
     return Math.hypot(p[0] - anchors[icao].x, p[1] - anchors[icao].y);
   };
-  let transform = fitSimilarity(shared.map((icao) => [spyAirports[icao], [anchors[icao].x, anchors[icao].y]]));
-  // One robust pass: an airport that fits far worse than the rest is more
-  // likely a placement error in one dataset than a real offset.
-  const errs = shared.map((icao) => dist(transform, icao)).sort((a, b) => a - b);
-  const cutoff = Math.max(25, errs[Math.floor(errs.length / 2)] * 2.5);
-  const dropped = shared.filter((icao) => dist(transform, icao) > cutoff);
-  shared = shared.filter((icao) => !dropped.includes(icao));
-  transform = fitScaleShift(shared.map((icao) => [spyAirports[icao], [anchors[icao].x, anchors[icao].y]]));
+  const dropped = [];
   const residualsPx = Object.fromEntries(shared.map((icao) => [icao, round1(dist(transform, icao))]));
   const sorted = Object.values(residualsPx).sort((a, b) => a - b);
   const apply = (p) => transform(p).map(round1);
@@ -174,8 +148,9 @@ function main() {
     author: 'Tiago Murteira (tiaguinho_2009)',
     licence: 'See 24SPY-NOTICE.md - attribution required, non-commercial use only',
     sourceCommit: commit,
-    changes: 'Positions converted from 24SPY map units to world-map.png pixels by a fitted scale-and-shift transform (north-up, no rotation); airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.',
+    changes: 'Positions converted from 24SPY map units to world-map.png pixels through the exact game frame (island-shape fits, see data/gameFrame.json); airways resolved to coordinates; airports, FIR/TMA outlines and waypoints selected from areas.js. No other changes.',
     fit: {
+      method: 'island-shape fits through the game frame (data/gameFrame.json); the numbers below are distances from 24Radar airport anchors, not fit errors',
       airports: shared.length,
       droppedAirports: dropped,
       medianErrorPx: sorted[Math.floor(sorted.length / 2)],
@@ -200,8 +175,8 @@ function main() {
   fs.writeFileSync(OUT, `${header}export default ${JSON.stringify({ meta, airports, waypoints, airways, areas }, null, 1)};\n`);
   console.log(
     `Wrote ${path.relative(ROOT, OUT)}: ${airports.length} airports, ${waypoints.length} waypoints, ${airways.length} airways, ${areas.length} areas ` +
-      `(fit on ${shared.length} airports${dropped.length ? `, dropped ${dropped.join(' ')}` : ''}; ` +
-      `median error ${meta.fit.medianErrorPx}px = ${round1(meta.fit.medianErrorPx / 24)} nm, max ${meta.fit.maxErrorPx}px)`
+      `(${shared.length} airports vs 24Radar anchors: ` +
+      `median distance ${meta.fit.medianErrorPx}px = ${round1(meta.fit.medianErrorPx / 24)} nm, max ${meta.fit.maxErrorPx}px)`
   );
 }
 
