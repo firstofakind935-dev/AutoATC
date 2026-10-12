@@ -142,13 +142,14 @@
             <span class="status-pill" id="mapFixStatus">No map fix yet</span>
           </div>
           <p class="hint">
-            <b>Minimap (automatic):</b> select the minimap region above. When you tick the box below, the companion matches the minimap
-            against the world map every few seconds and keeps your position right, using your marker. A match that jumps
-            somewhere unlikely is ignored unless it is very strong, so dead reckoning (heading + speed) and your stand fix
-            carry you over open sea.
+            <b>Minimap (automatic, nothing to set up):</b> while tracking, the companion finds the PTFS minimap on screen by
+            itself (by its corner buttons), and every 1.5 s matches what it shows - runways, taxiways, buildings, coastline -
+            against the world map and the airport pictures, so it starts you in the right place with no stand entry. A match
+            that jumps somewhere you couldn't have got to is ignored unless several strong ones agree; over open sea your
+            position carries on along your track. (Only draw a minimap region above if it isn't found.)
           </p>
           <label class="checkbox-row">
-            <input type="checkbox" id="autoMiniCheck"> Fix from the minimap automatically while tracking (off until you've checked it places you right)
+            <input type="checkbox" id="autoMiniCheck" checked> Fix from the minimap automatically while tracking
           </label>
           <div class="card-actions">
             <button class="btn btn-secondary" id="miniFixBtn">Fix from minimap now</button>

@@ -27,7 +27,10 @@ const { parseFlightInfo, parseHeadingTape } = tryRequire('ocr', './lib/ocr');
 const { uploadPosition, tuneFrequency } = tryRequire('uploader', './lib/uploader');
 const { pollCpdlc, pollAnchors } = tryRequire('datalink', './lib/datalink');
 const { runwayFix, listRunways } = tryRequire('runways', './lib/runways');
-const { fixFromMap } = tryRequire('mapFix', './lib/mapFix');
+const { fixFromMap, fixFromMinimap } = tryRequire('mapFix', './lib/mapFix');
+const { findMinimap, blankButtons } = tryRequire('minimapFinder', './lib/minimapFinder');
+const { createLocator } = tryRequire('featureLocator', './lib/featureLocator');
+const { createPositionFilter } = tryRequire('positionFilter', './lib/positionFilter');
 const { standFix, listStands, shippedOffsets } = tryRequire('stands', './lib/stands');
 const { pictureToGame } = tryRequire('frames', './lib/frames');
 
@@ -35,6 +38,11 @@ const { pictureToGame } = tryRequire('frames', './lib/frames');
 // renderer - not functions/class instances - so calibration.project() gets
 // wrapped as a plain (refPoints, pixel) -> {lat, lon} call instead of
 // exposing the calibration object itself.
+// One feature locator (it remembers the last place and scale) and one position filter for the tracking window.
+// contextBridge can't hand objects with state across, so they live here behind plain calls.
+const minimapLocator = createLocator ? createLocator() : null;
+const positionFilter = createPositionFilter ? createPositionFilter() : null;
+
 function projectPixel(refPoints, pixel) {
   return buildCalibration(refPoints).project(pixel);
 }
@@ -107,6 +115,15 @@ contextBridge.exposeInMainWorld('companion', {
   findMarkerCentroid,
   // Position from a screenshot of the in-game big map (lib/mapFix.js).
   fixFromMap: (image, options) => fixFromMap(image, options),
+  // The minimap: found on screen by its corner buttons; a fix by features (lib/minimapFinder.js, featureLocator.js).
+  findMinimap: (image) => findMinimap(image),
+  fixFromMinimap: (image, hint) => fixFromMinimap(blankButtons(image), { locator: minimapLocator, hint }),
+  // Which fixes to believe, and where we are between them (lib/positionFilter.js). Times in seconds.
+  filterAccept: (xNm, yNm, score, nowS) => positionFilter.accept(xNm, yNm, score, nowS),
+  filterAnchor: (xNm, yNm, nowS) => positionFilter.anchor(xNm, yNm, nowS),
+  filterSet: (xNm, yNm, nowS) => positionFilter.set(xNm, yNm, nowS),
+  filterPositionAt: (nowS) => positionFilter.positionAt(nowS),
+  filterState: () => ({ hasPosition: positionFilter.hasPosition, speedKt: positionFilter.speedKt, trackDeg: positionFilter.trackDeg() }),
   // Position from a stand number (lib/stands.js).
   standFix,
   listStands,

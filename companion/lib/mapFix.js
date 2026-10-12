@@ -19,33 +19,43 @@ const isWater = (r, g, b) => Math.abs(r - 59) < 18 && Math.abs(g - 90) < 18 && M
 const isTrackLine = (r, g, b) => r > 185 && g > 185 && b > 185 && Math.max(r, g, b) - Math.min(r, g, b) < 40; // white dashes
 const isLabel = (r, g, b) => r > 170 && g > 130 && b < 110 && r - b > 80;
 
-// The aircraft marker: a light, bright green (161,233,93 in a real capture), well above the map's own
-// darker greens (67,137,68).
+// The aircraft marker: a light yellow-green. 161,233,93 in one capture and 171,209,98 in another - screens, colour
+// profiles and compression all shift it - so a pixel counts as a candidate if it is near that colour OR is a bright,
+// saturated yellow-green; the blob that is most marker-like then wins (see findMarker). Same rules as the tracker's
+// src/marker_finder.py.
 function isMarkerGreen(r, g, b) {
-  return g >= 190 && g - r >= 45 && g - b >= 90;
+  if (Math.abs(r - 161) <= 45 && Math.abs(g - 233) <= 45 && Math.abs(b - 93) <= 45) return true;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  if (max < 150 || max === 0 || (max - min) / max < 100 / 255 || max !== g) return false;
+  const hue = 60 * ((b - r) / (max - min)) + 120; // degrees, green sector
+  return hue >= 60 && hue <= 110;
 }
 
 /**
- * The aircraft marker: the biggest blob of bright green. Returns {x, y, pixelCount} (centre, in the
- * image's own pixels) or null. Blobs are grown with a flood fill so a stray green UI pixel or a
- * second small marker doesn't pull the centre away.
+ * The aircraft marker: among small, compact blobs of candidate pixels, the one that is most light-yellow-green
+ * (high red AND green, low blue: min(R, G) - B) - unlike grass (low red) and fields or roads (more blue). The old
+ * rule took the biggest blob, which on a screen whose greens drift can be a patch of land. Returns {x, y,
+ * pixelCount} (centre, in the image's own pixels) or null.
  */
-function findMarker(image, { minPixels = 6 } = {}) {
+function findMarker(image, { minPixels = 3 } = {}) {
   const { width, height, data } = image;
   const seen = new Uint8Array(width * height);
+  const maxPixels = width * height * 0.02;
   let best = null;
   const stack = [];
   for (let start = 0; start < width * height; start++) {
     if (seen[start]) continue;
     const o = start * 4;
     if (!isMarkerGreen(data[o], data[o + 1], data[o + 2])) { seen[start] = 1; continue; }
-    let sx = 0, sy = 0, count = 0, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let sx = 0, sy = 0, count = 0, score = 0, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     stack.push(start);
     seen[start] = 1;
     while (stack.length) {
       const p = stack.pop();
       const px = p % width, py = (p - px) / width;
+      const op = p * 4;
       sx += px; sy += py; count += 1;
+      score += Math.min(data[op], data[op + 1]) - data[op + 2];
       if (px < minX) minX = px; if (px > maxX) maxX = px; if (py < minY) minY = py; if (py > maxY) maxY = py;
       // 8-connected, with a one-pixel gap allowed (anti-aliasing breaks the marker into specks)
       for (let dy = -2; dy <= 2; dy++) {
@@ -62,9 +72,10 @@ function findMarker(image, { minPixels = 6 } = {}) {
     // The marker is a small, compact shape. Long thin green things (HUD text, lines) or big green areas are not it.
     const w = maxX - minX + 1, h = maxY - minY + 1;
     const compact = w <= 60 && h <= 60 && Math.max(w, h) / Math.min(w, h) <= 3 && count / (w * h) >= 0.2;
-    if (count >= minPixels && compact && (!best || count > best.pixelCount)) best = { x: sx / count, y: sy / count, pixelCount: count };
+    const mean = score / count;
+    if (count >= minPixels && count <= maxPixels && compact && (!best || mean > best.score)) best = { x: sx / count, y: sy / count, pixelCount: count, score: mean };
   }
-  return best;
+  return best && { x: best.x, y: best.y, pixelCount: best.pixelCount };
 }
 
 // --- land/sea masks ---------------------------------------------------------------------------
@@ -248,4 +259,23 @@ async function fixFromMap(image, options = {}) {
   return { xNm: wx / world.pxPerNm, yNm: wy / world.pxPerNm, score: reg.score, zoom: reg.zoom, x0: reg.x0, y0: reg.y0, markerPixels: marker.pixelCount };
 }
 
-module.exports = { findMarker, landMask, registerToWorld, fixFromMap, loadWorldMask, isMarkerGreen };
+/**
+ * A fix from the MINIMAP (its corner buttons already painted over - minimapFinder.blankButtons): the marker, then
+ * where the view sits by features (featureLocator.js - airport tiles first, then the world map). Only if no features
+ * agree, the coastline shape - its score capped below the position filter's trust level, so it can confirm where
+ * you are but never move you (on a zoomed-out minimap it is ambiguous: it placed Rockford near Tokyo).
+ * -> {xNm, yNm, score, method} or {error}.
+ */
+async function fixFromMinimap(image, { locator, hint = null } = {}) {
+  const marker = findMarker(image);
+  if (!marker) return { error: 'no green aircraft marker found on the minimap', noMarker: true };
+  if (locator) {
+    const f = await locator.locate(image, marker);
+    if (f) return { xNm: f.xNm, yNm: f.yNm, score: f.score, method: f.method, markerPixels: marker.pixelCount };
+  }
+  const m = await fixFromMap(image, { hint, minScore: 0.6 });
+  if (m.error) return m;
+  return { ...m, score: Math.min(m.score, 0.7), method: 'coastline' };
+}
+
+module.exports = { findMarker, landMask, registerToWorld, fixFromMap, fixFromMinimap, loadWorldMask, isMarkerGreen };

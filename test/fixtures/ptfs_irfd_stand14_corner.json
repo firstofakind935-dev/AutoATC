@@ -1,0 +1,11 @@
+{
+ "note": "Bottom-right corner of a real 2000x1125 PTFS screenshot, parked at Rockford (IRFD) stand 14: raw RGBA, gzip.",
+ "screen": [
+  2000,
+  1125
+ ],
+ "x": 1500,
+ "y": 700,
+ "width": 500,
+ "height": 425
+}
