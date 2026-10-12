@@ -378,14 +378,25 @@ Parked at a stand at Rockford (IRFD), Tokyo (ITKO) or Perth (IPPH): in the Posit
 and your heading is read and checked against the line's direction - it warns if it doesn't fit ("right stand?"). The stand data comes from
 the radar's ground charts (`data/stands.json`, rebuilt with `scripts/build-stands.js`); other airports' charts have no stand numbers yet.
 
-## Stand + minimap tracking
+## Automatic tracking (nothing to set up)
 
-1. Parked: enter your airport and stand and press **Set position from stand** (an exact start).
-2. Select the **minimap region** (step 3) and start tracking. Every few seconds the companion finds your green marker in the minimap and matches
-   the minimap against the world map's coastline (any zoom). A good match re-fixes you; the speed and heading read off the HUD carry you between
-   fixes and over open sea, where a coastline match is impossible. A match that jumps somewhere unlikely on a weak score is ignored (the log says so).
-3. **Save minimap picture** writes minimap-region.png so you can check the box and the marker; **Fix from minimap now** forces one.
-The idea of matching the minimap against a reference map comes from PimPlaying's vptfstrack (MIT), see `test-pim-vpilot`.
+Start tracking and fly. Ported from the tracker (`test-pim-vpilot`), where it was tested in flight:
+
+1. **The minimap is found by itself** - by the dark buttons in its corners (expand, X, "/", +/-), at any resolution and on any monitor;
+   it is looked for again if the marker goes missing. Drawing a minimap region is only needed if it isn't found.
+2. **Every 1.5 s the minimap is matched by features** - corners of runways, taxiways, buildings, coastline (ORB keypoints, OpenCV's
+   WebAssembly build) - against the radar world map and the airport pictures in `data/featureRefs` (rebuilt with
+   `scripts/build-feature-refs.py`). That places you with no stand entry: a real screenshot parked at Rockford stand 14 came out 0.03 nm
+   from the stand. The old shape-only match is kept as a fallback that can confirm where you are but never move you.
+3. **Fixes are filtered** (`lib/positionFilter.js`): a fix near where you could be is taken; a jump needs three strong fixes in a row
+   that agree; parked, you cannot jump. With no fix (open sea, a small island on final) your position carries on along your track for
+   30 s, and after a gap only a fix near the path you flew is taken straight away.
+4. **HUD regions are optional**: with them, heading, speed and altitude are read and reported (and carry you between fixes); without
+   them, heading and speed come from the track.
+
+A stand entry (POS INIT) or an ATC clearance (stand, line-up) still sets your position outright. **Save minimap picture** writes what the
+companion sees; **Fix from minimap now** forces a fix. The idea of matching the minimap against a reference map comes from PimPlaying's
+vptfstrack (MIT), see `test-pim-vpilot`.
 
 ## Two map frames, and calibrating an airport
 
