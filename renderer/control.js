@@ -301,6 +301,65 @@ async function pollCpdlcTick() {
 
 setInterval(pollCpdlcTick, CPDLC_POLL_MS);
 
+// ---------- Position anchors from ATC ----------
+// When a controller approves pushback (with your stand), clears you to taxi, or lines you up, the controller bot notes
+// it on your flight strip and the monitor passes it here: the stand or the runway threshold becomes your position.
+
+let lastAnchorId = 0;
+let lastTaxiClearance = null; // {airport, route, runway} - shown for now; route following comes later
+
+async function applyAnchor(a) {
+  if (!a || !a.airport) { log(`ATC position note without an airport (${a && a.kind}) - ignored.`); return; }
+  if (a.kind === 'stand' && a.stand) {
+    const select = document.getElementById('standAirport');
+    select.value = a.airport;
+    if (select.value !== a.airport) { log(`ATC says stand ${a.stand} at ${a.airport}, but there is no stand data for ${a.airport}.`); return; }
+    document.getElementById('standInput').value = a.stand;
+    const r = await setPositionFromStand();
+    log(`ATC: stand ${a.stand} at ${a.airport} - ${r && r.ok ? 'position set' : `not set (${r && r.message})`}.`);
+    return;
+  }
+  if (a.kind === 'lineup' && a.runway) {
+    const fix = window.companion.runwayFix(a.airport, a.runway, settings.standOffsets || {});
+    if (fix.error) { log(`ATC lined you up on ${a.runway} at ${a.airport}, but: ${fix.error}.`); return; }
+    currentFix = { world: fix.world, atMs: Date.now() };
+    lastCorrectionAtMs = Date.now();
+    lastHeadingDeg = fix.headingDeg;
+    miniPending = null;
+    const summary = `lined up runway ${fix.runway} at ${a.airport}`;
+    lastFixSummary = summary;
+    setSidebar('dotFix', 'sidebarFixText', summary, 'good');
+    syncBar();
+    log(`ATC: ${summary} - position set at the threshold, heading ${fix.headingDeg}°.`);
+    return;
+  }
+  if (a.kind === 'taxi') {
+    lastTaxiClearance = { airport: a.airport, route: a.route, runway: a.runway };
+    log(`ATC: taxi via ${a.route || '?'}${a.runway ? ` to runway ${a.runway}` : ''} at ${a.airport}.`);
+  }
+}
+
+async function pollAnchorsTick() {
+  if (!settings.callsign || !settings.monitorUrl) return;
+  let events;
+  try {
+    events = await window.companion.pollAnchors({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      sinceId: lastAnchorId,
+    });
+  } catch (err) {
+    return; // the CPDLC poll already reports connection trouble
+  }
+  for (const e of events || []) {
+    if (e.id > lastAnchorId) lastAnchorId = e.id;
+    // eslint-disable-next-line no-await-in-loop
+    await applyAnchor(e);
+  }
+}
+setInterval(pollAnchorsTick, CPDLC_POLL_MS);
+
 // ---------- Airports dropdowns ----------
 
 async function populateAirportDropdowns() {
