@@ -4,8 +4,11 @@ const { standFix, listStands } = require('../companion/lib/stands');
 const { loadAirports, nearestAirport } = require('../companion/lib/airports');
 
 // The radar's ground view converts world pixels back to chart units with exactly this (monitor/public/365radar/src/main.js worldToGround).
-const GROUND_UNITS_PER_NM = 1 / (0.000304886 * 100);
-const radarGround = (worldPx) => ({ x: (worldPx.x / 24 - 22.0615) * GROUND_UNITS_PER_NM, y: (worldPx.y / 24 - 15.0392) * GROUND_UNITS_PER_NM });
+const World = require('../companion/lib/world');
+const radarGround = (worldPx) => {
+  const s = World.worldToStuds(worldPx.x / 24, worldPx.y / 24);
+  return { x: s.x / 100, y: s.y / 100 };
+};
 
 test('stand data covers the airports whose chart has stand numbers', () => {
   const stands = listStands();
@@ -42,12 +45,12 @@ test('bad stand numbers and airports say so', () => {
   assert.strictEqual(standFix('IRFD', '012').stand, '12');
 });
 
-test('airport nudges move the stand fix; the pilot\'s own beats the shipped one', () => {
+test('airport nudges move the stand fix', () => {
   const plain = standFix('IRFD', '12');
   const nudged = standFix('IRFD', '12', null, { IRFD: { dxNm: 0.1, dyNm: -0.05 } });
   assert.ok(Math.abs(nudged.xNm - plain.xNm - 0.1) < 1e-9 && Math.abs(nudged.yNm - plain.yNm + 0.05) < 1e-9);
-  // ITKO ships a measured nudge (the chart sits ~0.22 nm off the real map there)
+  // No shipped nudges since the exact game frame; a pilot's own still applies
   const itko = standFix('ITKO', '22');
-  const raw = standFix('ITKO', '22', null, { ITKO: { dxNm: 0, dyNm: 0 } });
-  assert.ok(Math.abs(itko.xNm - raw.xNm + 0.181) < 1e-6 && Math.abs(itko.yNm - raw.yNm + 0.134) < 1e-6);
+  const mine = standFix('ITKO', '22', null, { ITKO: { dxNm: -0.05, dyNm: 0 } });
+  assert.ok(Math.abs(mine.xNm - itko.xNm + 0.05) < 1e-9);
 });

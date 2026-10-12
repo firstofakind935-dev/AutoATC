@@ -4,13 +4,22 @@ const World = require('../companion/lib/world');
 const { navdata } = require('../planner/lib/navdata');
 const offsets = require('../src/flightradar365/groundOffsets');
 
-test('the 16 measured airports land within 0.4 nm of their 24SPY positions', () => {
+test('the stud conversion is the exact game frame in data/gameFrame.json', () => {
+  const [[a, mb, tx], [b, , ty]] = require('../data/gameFrame.json').gridFromGame; // per chart unit = 100 studs
+  for (const [x, y] of [[0, 0], [-43900, -3530], [45450, -440], [-17220, 22884]]) {
+    const w = World.studsToWorld(x, y);
+    assert.ok(Math.abs(w.xNm - (a * x / 100 + mb * y / 100 + tx)) < 1e-9 && Math.abs(w.yNm - (b * x / 100 + a * y / 100 + ty)) < 1e-9);
+  }
+});
+
+test('the 16 airports\' ground-view centres land within 0.7 nm of their 24SPY airport points', () => {
+  // Not the same point (a camera centre vs 24SPY's airport marker), so this only catches a broken frame.
   const measured = ['IBLT', 'IBTH', 'IDCS', 'IGAR', 'IHEN', 'IIAB', 'IJAF', 'ILAR', 'ILKL', 'IMLR', 'IPAP', 'IPPH', 'IRFD', 'ISAU', 'ISCM', 'ISKP'];
   for (const icao of measured) {
     const airport = navdata.airports.find((a) => a.icao === icao);
     const w = World.studsToWorld(offsets[icao].x * 100, offsets[icao].y * 100);
     const err = Math.hypot(w.xNm - airport.xNm, w.yNm - airport.yNm);
-    assert.ok(err < 0.4, `${icao} is ${err.toFixed(2)} nm off`);
+    assert.ok(err < 0.7, `${icao} is ${err.toFixed(2)} nm off`);
   }
 });
 

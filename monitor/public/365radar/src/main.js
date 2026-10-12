@@ -37,14 +37,15 @@ const WORLD_MAP_WIDTH = WorldMapAnchorsData.imageWidth;
 const WORLD_MAP_HEIGHT = WorldMapAnchorsData.imageHeight;
 
 // The Ground View panel draws GROUND.svg in 24radar's own frame, where one unit is 100 studs - NOT in
-// world-map pixels like everything else here. A position in world-map pixels becomes ground-chart units
-// through the stud <-> world fit below (nm = stud * 0.000304886 + origin; ~3280 studs/nm; residual
-// well under 0.3 nm, and much less than that across one airport). The chart can still sit a little off
-// the fit at a given airport, so each airport can carry a nudge (in chart units, ~30 m each): hold Alt and
+// world-map pixels like everything else here. Chart units and world-map nm are tied by an exact similarity
+// fitted on the island outlines (24RC's coast.svg is drawn in chart units; 11 islands match world-map.png
+// within 3-60 m): nm = [[A, -B], [B, A]] * unit + origin. Keep in step with data/gameFrame.json and
+// companion/lib/world.js. Each airport can still carry a nudge (in chart units, ~30 m each): hold Alt and
 // press the arrow keys over the Ground View to move aircraft the other way (Alt+0 resets). It is
 // remembered in this browser.
-const GROUND_UNITS_PER_NM = 1 / (0.000304886 * 100);
-const GROUND_ORIGIN_NM = { x: 22.0615, y: 15.0392 };
+const GROUND_A = 0.030675641063886483;
+const GROUND_B = 1.609052091551345e-05;
+const GROUND_ORIGIN_NM = { x: 21.731369781953834, y: 14.790667919876864 };
 const GROUND_NUDGE_DEFAULT = {}; // per-airport {dx, dy}, measured corrections can be committed here
 function groundNudge(icao) {
     try {
@@ -56,9 +57,12 @@ function groundNudge(icao) {
 // worldX/worldY: the adapter's world-map pixel position x100 (see adaptPositionsToAircraftData).
 function worldToGround(worldX, worldY, icao) {
     const n = groundNudge(icao);
+    const dx = worldX / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.x;
+    const dy = worldY / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.y;
+    const d = GROUND_A * GROUND_A + GROUND_B * GROUND_B;
     return {
-        x: (worldX / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.x) * GROUND_UNITS_PER_NM + n.dx,
-        y: (worldY / 100 / WORLD_MAP_PX_PER_NM - GROUND_ORIGIN_NM.y) * GROUND_UNITS_PER_NM + n.dy,
+        x: (GROUND_A * dx + GROUND_B * dy) / d + n.dx,
+        y: (GROUND_A * dy - GROUND_B * dx) / d + n.dy,
     };
 }
 

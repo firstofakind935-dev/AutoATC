@@ -142,7 +142,9 @@ for (const [origin, destination, type] of [['IRFD', 'ITKO', 'A320'], ['ISAU', 'I
     const plan = buildPlan({ callsign: 'SIM1', aircraftType: type, origin, destination, cruiseAltFt: 5000 });
     const result = simulateFlight(plan);
     assert.ok(result.arrived, `did not reach ${destination} (ended at ${JSON.stringify(result.sim)})`);
-    assert.ok(result.maxXtk < 1.5, `wandered ${result.maxXtk.toFixed(2)} nm off the route`);
+    // IRFD -> ITKO has an 85 degree turn at GULEG onto a 3.7 nm leg, flown at ~270 kt: a standard-rate turn
+    // there is 1.4 nm in radius, so this simple sim swings ~2 nm out before settling on the leg.
+    assert.ok(result.maxXtk < 2.5, `wandered ${result.maxXtk.toFixed(2)} nm off the route`);
     assert.ok(result.maxAltOverCruise < 600, `overshot cruise by ${Math.round(result.maxAltOverCruise)} ft`);
   });
 }

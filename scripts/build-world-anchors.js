@@ -12,19 +12,11 @@ const wm = JSON.parse(src.trim().replace(/^export default/, '').trim().replace(/
 const spySrc = fs.readFileSync(path.join(ROOT, 'monitor/public/365radar/src/data/spy24Data.js'), 'utf8');
 const spy = JSON.parse(spySrc.replace(/^\s*\/\/.*\n/gm, '').trim().replace(/^export default/, '').trim().replace(/;$/, ''));
 for (const ap of spy.airports || []) wm.anchors[ap.icao] = { ...(wm.anchors[ap.icao] || {}), x: ap.x, y: ap.y };
-// Where the world-map picture puts each airport, kept only where it was measured directly on the picture. The
-// picture is what the minimap and big-map fixes are matched on; the 24SPY points are what the radar, the ground
-// charts and the stands use. The gap (24SPY minus picture) is the correction for fixes taken near that airport.
-const pictureOffsets = {};
-const rawAnchors = JSON.parse(fs.readFileSync(path.join(ROOT, 'monitor/public/365radar/src/data/worldMapAnchors.js'), 'utf8').trim().replace(/^export default/, '').trim().replace(/;$/, '')).anchors;
-for (const ap of spy.airports || []) {
-  const pic = rawAnchors[ap.icao];
-  if (!pic || !/^direct\b/.test(pic.confidence || '') || /approx/.test(pic.confidence || '')) continue;
-  pictureOffsets[ap.icao] = { dxNm: Math.round(((ap.x - pic.x) / wm.pxPerNm) * 1000) / 1000, dyNm: Math.round(((ap.y - pic.y) / wm.pxPerNm) * 1000) / 1000 };
-}
+// The world-map picture's islands sit on the exact game frame (data/gameFrame.json), so a fix matched on the
+// picture needs no per-airport correction any more. The file is kept (empty) for user-measured corrections.
 fs.writeFileSync(path.join(ROOT, 'data/pictureOffsets.json'), `${JSON.stringify({
-  note: 'Per airport: how far (nm, x east, y south) the radar/ground-chart position of the airport (24SPY) is from where the world-map picture shows it. Added to fixes matched on the picture. Built by scripts/build-world-anchors.js.',
-  airports: pictureOffsets,
+  note: 'Per airport: nm (x east, y south) added to fixes matched on the world-map picture. Empty: the picture is on the exact game frame (data/gameFrame.json). Built by scripts/build-world-anchors.js.',
+  airports: {},
 }, null, 1)}\n`);
 
 const out = {
