@@ -364,6 +364,11 @@ async function runMapFix(trigger, kind = 'big') {
     // The fix is on the world-map picture; the radar, ground charts and stands are in the game frame. Carry it across
     // with the offset for the airport it is near (or the pilot's own calibration of that airport).
     lastRawFix = { xNm: fix.xNm, yNm: fix.yNm, at: Date.now() };
+    // POS INIT: the first good fix within a minute of a stand entry calibrates that airport automatically.
+    if (lastStandFix && lastStandFix.autoPending && Date.now() - lastStandFix.at < 60_000 && fix.score >= 0.8) {
+      lastStandFix.autoPending = false;
+      await calibrateAirportFromStand(0.6);
+    }
     const adj = window.companion.pictureToGame(fix.xNm, fix.yNm, settings.airportOffsets || {}, settings.standOffsets || {});
     fix.xNm = adj.xNm;
     fix.yNm = adj.yNm;
@@ -478,7 +483,7 @@ async function setPositionFromStand() {
   const heading = await currentHeading();
   const fix = window.companion.standFix(icao, stand, heading, settings.standOffsets || {});
   if (fix.error) { setStatus('standStatus', fix.error, 'bad'); return; }
-  lastStandFix = { icao, xNm: fix.xNm, yNm: fix.yNm };
+  lastStandFix = { icao, xNm: fix.xNm, yNm: fix.yNm, at: Date.now(), autoPending: true };
   const nearest = await window.companion.nearestAirport(airports, fix.world);
   currentFix = { world: fix.world, atMs: Date.now() };
   lastCorrectionAtMs = Date.now();
@@ -521,7 +526,7 @@ for (const [id, dx, dy] of [['nudgeW', -0.01, 0], ['nudgeE', 0.01, 0], ['nudgeN'
 }
 // Park on a stand, press the stand button, take a map or minimap fix, then press this: the gap between the two is
 // remembered for that airport and applied to every later fix near it.
-async function calibrateAirportFromStand() {
+async function calibrateAirportFromStand(maxGapNm = 2.5) {
   const fresh = lastRawFix && Date.now() - lastRawFix.at < 10 * 60_000;
   if (!lastStandFix || !fresh) {
     setStatus('standStatus', 'First press "Set position from stand", then take a big-map (F8) or minimap fix, then press this.', 'bad');
@@ -529,7 +534,7 @@ async function calibrateAirportFromStand() {
   }
   const dxNm = lastStandFix.xNm - lastRawFix.xNm;
   const dyNm = lastStandFix.yNm - lastRawFix.yNm;
-  if (Math.hypot(dxNm, dyNm) > 2.5) {
+  if (Math.hypot(dxNm, dyNm) > (typeof maxGapNm === 'number' ? maxGapNm : 2.5)) {
     setStatus('standStatus', `The map fix is ${Math.hypot(dxNm, dyNm).toFixed(1)} nm from the stand - too far apart, probably a bad match. Not saved.`, 'bad');
     return;
   }
@@ -538,7 +543,7 @@ async function calibrateAirportFromStand() {
   setStatus('standStatus', `${lastStandFix.icao} calibrated: map fixes there are shifted ${Math.abs(dxNm).toFixed(2)} nm ${dxNm >= 0 ? 'east' : 'west'} and ${Math.abs(dyNm).toFixed(2)} nm ${dyNm >= 0 ? 'south' : 'north'}.`, 'ok');
   log(`Calibrated ${lastStandFix.icao} from stand: dx ${dxNm.toFixed(3)} nm, dy ${dyNm.toFixed(3)} nm.`);
 }
-document.getElementById('standCalBtn').addEventListener('click', calibrateAirportFromStand);
+document.getElementById('standCalBtn').addEventListener('click', () => calibrateAirportFromStand());
 document.getElementById('standInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') setPositionFromStand(); });
 
 // ---------- Tracking loop ----------

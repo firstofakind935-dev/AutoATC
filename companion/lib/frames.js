@@ -12,6 +12,7 @@ const path = require('path');
 const { shippedOffsets } = require('./stands');
 
 const FADE_NM = 6;
+const FULL_NM = 2; // within this of the airport the offset applies in full; it fades out by FADE_NM
 // A shipped offset bigger than this is more likely a bad hand-measured anchor on the picture than a real gap, so only
 // a pilot's own calibration may apply one.
 const MAX_SHIPPED_OFFSET_NM = 0.8;
@@ -47,7 +48,7 @@ function pictureToGame(xNm, yNm, userOffsets = {}, standNudges = {}) {
     if (!p || !Number.isFinite(o.dxNm) || !Number.isFinite(o.dyNm)) continue;
     // distance to where the PICTURE shows the airport (the game point minus the gap)
     const d = Math.hypot(xNm - (p.xNm - o.dxNm), yNm - (p.yNm - o.dyNm));
-    const w = Math.max(0, 1 - d / FADE_NM);
+    const w = d <= FULL_NM ? 1 : Math.max(0, 1 - (d - FULL_NM) / (FADE_NM - FULL_NM));
     if (w === 0) continue;
     sum += w; sx += w * o.dxNm; sy += w * o.dyNm;
     if (w > bestW) { bestW = w; bestIcao = icao; }
