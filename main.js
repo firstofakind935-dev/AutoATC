@@ -289,6 +289,24 @@ ipcMain.handle('is-pilot', () => PILOT);
 // both of which the control window owns. Cached here so a window opened later still has them.
 ipcMain.handle('get-atc-state', () => atcState);
 // A pilot action on those pages (tune, swap, squawk, ident) - handled by the control window like the overlay's own radio panel.
+// POS INIT from the FMS: the tracking (control) window owns the position, so it does the stand fix and answers.
+const posInitPending = new Map();
+let posInitId = 0;
+ipcMain.handle('pos-init', (event, { icao, stand }) => new Promise((resolve) => {
+  if (!controlWindow) return resolve({ ok: false, message: 'the tracking window is closed' });
+  const id = ++posInitId;
+  posInitPending.set(id, resolve);
+  controlWindow.webContents.send('pos-init-request', { id, icao, stand });
+  setTimeout(() => { if (posInitPending.delete(id)) resolve({ ok: false, message: 'no answer from the tracking window' }); }, 8000);
+  return null;
+}));
+ipcMain.on('pos-init-reply', (event, result) => {
+  const resolve = posInitPending.get(result && result.id);
+  if (!resolve) return;
+  posInitPending.delete(result.id);
+  resolve(result);
+});
+
 ipcMain.on('atc-action', (event, action) => {
   if (controlWindow) controlWindow.webContents.send('overlay-result', { tag: 'radio-action', ...action });
 });

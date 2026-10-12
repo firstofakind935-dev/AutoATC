@@ -110,6 +110,10 @@ contextBridge.exposeInMainWorld('companion', {
   standFix,
   listStands,
   shippedStandOffsets: () => shippedOffsets(),
+  // POS INIT: the FMS asks the tracking window to put the aircraft on a stand (see main.js 'pos-init').
+  posInit: (icao, stand) => ipcRenderer.invoke('pos-init', { icao, stand }),
+  onPosInitRequest: (callback) => ipcRenderer.on('pos-init-request', (event, request) => callback(request)),
+  posInitReply: (result) => ipcRenderer.send('pos-init-reply', result),
   // Picture-frame fix -> the radar / ground-chart frame (lib/frames.js).
   pictureToGame,
   onMapFixHotkey: (callback) => ipcRenderer.on('map-fix-hotkey', () => callback()),

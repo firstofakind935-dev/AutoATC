@@ -402,3 +402,9 @@ If, after **Set position from stand**, the radar blip is not on your stand, use 
 that airport are put by about 18 m (Shift = 5x) and re-applies the fix, so you can watch the blip walk onto the stand. The nudge is saved per airport.
 Tokyo ships with a measured nudge (the ground chart sits about 0.22 nm off the real map there). The same nudge is added when a map or minimap fix is carried
 across, so both ways of fixing agree.
+
+## POS INIT in the FMS
+
+On the MCDU: **INIT REF** (Boeing) or **MENU → <POS INIT** (any FMS). Enter the **REF AIRPORT** (L1) and the **STAND** (L2) from the scratchpad, then
+**SET POS>** (R5). The tracking window puts the aircraft on that stand (it reads your heading and warns if it doesn't fit the stand), and the next good
+map or minimap fix within a minute calibrates that airport automatically. Airports with stand data: IRFD, ITKO, IPPH (the page lists them).
