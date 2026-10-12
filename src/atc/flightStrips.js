@@ -98,6 +98,9 @@ function formatStripsContext(position) {
     if (c.initialClimbAltitude) parts.push(`initial climb ${c.initialClimbAltitude}`);
     if (c.squawk) parts.push(`squawk ${c.squawk}`);
     if (c.departureFreq) parts.push(`departure freq ${c.departureFreq}`);
+    if (c.stand) parts.push(`parked at stand ${c.stand}`);
+    if (c.taxiRoute) parts.push(`taxiing via ${c.taxiRoute}${c.departureRunway ? ` to runway ${c.departureRunway}` : ''}`);
+    if (c.lineUpRunway) parts.push(`lined up runway ${c.lineUpRunway}`);
     if (typeof c.assignedHeadingDeg === 'number') {
       parts.push(`currently on an assigned vector, heading ${c.assignedHeadingDeg}${c.vectorReason ? ` (${c.vectorReason})` : ''} - clear it (STRIP "assignedHeadingDeg": null) once it no longer applies`);
     }
@@ -119,7 +122,20 @@ function formatStripsContext(position) {
  * the next controller, never spoken aloud. Malformed JSON is logged and
  * dropped rather than breaking the reply.
  */
-function applyStripDirective(replyText) {
+// Clearance fields that say exactly where an aircraft is at that moment - the pilot's companion app uses them to set
+// its position (see monitor/server.js's /api/anchors): the stand at pushback/startup, and the runway when lined up.
+// A taxi clearance is passed on too (route following comes later).
+function anchorFrom(clearance, airport) {
+  if (!clearance || typeof clearance !== 'object') return null;
+  const at = new Date().toISOString();
+  const apt = (clearance.airport || airport || '').toUpperCase() || null;
+  if (clearance.lineUpRunway) return { kind: 'lineup', airport: apt, runway: String(clearance.lineUpRunway).toUpperCase(), at };
+  if (clearance.stand) return { kind: 'stand', airport: apt, stand: String(clearance.stand).replace(/^stand\s*/i, ''), at };
+  if (clearance.taxiRoute) return { kind: 'taxi', airport: apt, route: String(clearance.taxiRoute), runway: clearance.departureRunway ? String(clearance.departureRunway).toUpperCase() : null, at };
+  return null;
+}
+
+function applyStripDirective(replyText, { airport } = {}) {
   // Matches on the literal "STRIP:" marker alone, not on well-formed JSON
   // following it - a malformed directive should still never end up spoken
   // aloud, it should just fail to apply.
@@ -130,9 +146,15 @@ function applyStripDirective(replyText) {
   try {
     const directive = JSON.parse(match[1].trim());
     if (directive.callsign) {
+      const clearance = directive.clearance && typeof directive.clearance === 'object' ? { ...directive.clearance } : directive.clearance;
+      const anchor = anchorFrom(clearance, airport);
+      if (anchor) {
+        clearance.anchor = anchor;
+        if (!clearance.airport && anchor.airport) clearance.airport = anchor.airport;
+      }
       upsertStrip(directive.callsign, {
         currentPosition: directive.handoffTo,
-        clearance: directive.clearance,
+        clearance,
       });
     }
   } catch (err) {
@@ -141,4 +163,4 @@ function applyStripDirective(replyText) {
   return spoken;
 }
 
-module.exports = { getStrip, upsertStrip, stripsForPosition, formatStripsContext, applyStripDirective };
+module.exports = { getStrip, upsertStrip, stripsForPosition, formatStripsContext, applyStripDirective, anchorFrom };
