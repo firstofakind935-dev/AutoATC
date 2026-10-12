@@ -56,6 +56,16 @@ function syncBar() {
 async function loadSettings() {
   const saved = await window.companion.loadSettings();
   settings = { ...settings, ...saved };
+  // Corrections saved on an older map frame were measured against positions that have since moved (frame 2: the
+  // exact game frame), so they would push every fix off by the old error - drop them.
+  if (settings.frame !== 2) {
+    const had = Object.keys(settings.airportOffsets || {}).length + Object.keys(settings.standOffsets || {}).length;
+    settings.airportOffsets = {};
+    settings.standOffsets = {};
+    settings.frame = 2;
+    await window.companion.saveSettings(settings);
+    if (had) setTimeout(() => log('Cleared saved POS INIT calibrations and stand nudges: they were measured on the old map frame.'), 0);
+  }
   document.getElementById('callsign').value = settings.callsign || '';
   document.getElementById('monitorUrl').value = settings.monitorUrl || '';
   document.getElementById('monitorApiKey').value = settings.monitorApiKey || '';
