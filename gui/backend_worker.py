@@ -25,6 +25,8 @@ import webhook         # noqa: E402
 import broadcast_server  # noqa: E402
 import monitor_client  # noqa: E402
 import frames  # noqa: E402
+import posinit  # noqa: E402
+import user_state as user_state_store  # noqa: E402
 from position_filter import PositionFilter  # noqa: E402
 from marker_finder import find_marker_pixel  # noqa: E402
 from map_locator import MapLocator  # noqa: E402
@@ -53,9 +55,10 @@ class TrackerWorker(QThread):
         self._anchor = anchor  # (x_nm, y_nm) on the radar grid from a stand entry, applied at the next tick
         self.user_state = user_state or {"standOffsets": {}, "airportOffsets": {}}
 
-    def set_anchor(self, x_nm: float, y_nm: float):
-        """A known position (a stand): trusted outright. Safe to call from the GUI thread."""
-        self._anchor = (x_nm, y_nm)
+    def set_anchor(self, x_nm: float, y_nm: float, icao: str = None):
+        """POS INIT: a known position (a stand), trusted outright; with the airport, the next good minimap match
+        calibrates that airport. Safe to call from the GUI thread."""
+        self._anchor = (x_nm, y_nm, icao)
 
     def run(self):
         import mss
@@ -85,6 +88,7 @@ class TrackerWorker(QThread):
         reporter.user_offsets = self.user_state.get("airportOffsets", {})
         reporter.user_stand_nudges = self.user_state.get("standOffsets", {})
         filt = PositionFilter()
+        pending_init = None
         last_ignored_log = 0.0
 
         session_started = False
@@ -99,10 +103,15 @@ class TrackerWorker(QThread):
                 while self._running:
                     now = time.time()
                     if self._anchor is not None:
-                        ax, ay = self._anchor
+                        ax, ay, *rest = self._anchor
+                        icao = rest[0] if rest else None
                         self._anchor = None
                         filt.anchor(ax, ay, now)
-                        self.log.emit(f"Position set from your stand ({ax:.2f}, {ay:.2f}).")
+                        # look at that airport's tile first
+                        locator.last_world_px = (ax * monitor_client.PX_PER_NM, ay * monitor_client.PX_PER_NM)
+                        pending_init = {"icao": icao, "xy": (ax, ay), "until": now + posinit.WINDOW_SECONDS} if icao else None
+                        self.log.emit(f"POS INIT: on your stand ({ax:.2f}, {ay:.2f})"
+                                      + (" - lining up the minimap with it..." if icao else "."))
 
                     shot = sct.grab(config.MINIMAP_REGION)
                     frame = cv2.cvtColor(np.array(shot), cv2.COLOR_BGRA2BGR)
@@ -128,6 +137,20 @@ class TrackerWorker(QThread):
                                 # Matched on the world-map picture; carry it into the radar's frame before judging it.
                                 radar_x, radar_y = to_radar_px(abs_x, abs_y)
                                 px_nm, py_nm = monitor_client.pixel_to_nm(radar_x, radar_y)
+                                if pending_init and now <= pending_init["until"]:
+                                    ok_cal, offset, message = posinit.calibrate(pending_init["xy"], (px_nm, py_nm), confidence)
+                                    if ok_cal or confidence >= posinit.MIN_SCORE:
+                                        self.log.emit(f"POS INIT {pending_init['icao']}: {message}")
+                                        if ok_cal:
+                                            self.user_state.setdefault("airportOffsets", {})[pending_init["icao"]] = offset
+                                            try:
+                                                user_state_store.save(self.user_state)
+                                            except OSError as e:
+                                                self.log.emit(f"Could not save the calibration: {e}")
+                                        pending_init = None
+                                elif pending_init:
+                                    self.log.emit("POS INIT: no good minimap match within a minute - keeping the stand position.")
+                                    pending_init = None
                                 gx, gy, *_ = frames.picture_to_game(
                                     px_nm, py_nm,
                                     self.user_state.get("airportOffsets", {}),

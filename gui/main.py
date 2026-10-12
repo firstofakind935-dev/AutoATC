@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
 
     def _build_stand_bar(self):
         bar = QHBoxLayout()
-        bar.addWidget(QLabel("Start from a stand:"))
+        bar.addWidget(QLabel("POS INIT - airport / stand:"))
 
         self.stand_airport = QComboBox()
         for icao, names in stands.list_stands().items():
@@ -137,7 +137,8 @@ class MainWindow(QMainWindow):
         self.stand_input.returnPressed.connect(self.set_from_stand)
         bar.addWidget(self.stand_input)
 
-        self.stand_btn = QPushButton("Set position from stand")
+        self.stand_btn = QPushButton("POS INIT")
+        self.stand_btn.setToolTip("Puts you on that stand and lines the minimap up with it (calibrates the airport)")
         self.stand_btn.clicked.connect(self.set_from_stand)
         bar.addWidget(self.stand_btn)
 
@@ -241,12 +242,12 @@ class MainWindow(QMainWindow):
             self.stand_status.setText(fix["error"])
             self._log(f"Stand: {fix['error']}")
             return
-        self.anchor = (fix["xNm"], fix["yNm"])
-        self.stand_status.setText(f"On stand {fix['stand']} at {icao}.")
+        self.anchor = (fix["xNm"], fix["yNm"], icao)
+        self.stand_status.setText(f"POS INIT: stand {fix['stand']} at {icao}.")
         if self.worker is not None:
             self.worker.set_anchor(*self.anchor)
         else:
-            self._log(f"Stand {fix['stand']} at {icao} set - it is used when you press Connect.")
+            self._log(f"POS INIT stand {fix['stand']} at {icao} - applied when you press Connect.")
 
     def nudge_stand(self, dx, dy):
         icao = self.stand_airport.currentData()
@@ -255,6 +256,8 @@ class MainWindow(QMainWindow):
             "dxNm": round(current["dxNm"] + dx, 3),
             "dyNm": round(current["dyNm"] + dy, 3),
         }
+        # a manual nudge means the pilot is overriding: drop this airport's automatic calibration
+        self.user_state.get("airportOffsets", {}).pop(icao, None)
         user_state.save(self.user_state)
         if self.worker is not None:
             self.worker.user_state = self.user_state

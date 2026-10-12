@@ -112,3 +112,14 @@ agree on), and first against **airport tiles**: the game's own big map zoomed in
 - Order of matching: tiles (nearest first) -> world-map features -> coastline mask. The coastline fallback can confirm a position but never move you.
 - Caveat: tested against views cut from the big-map capture itself. If the in-game minimap is drawn differently from the big map, that needs checking
   with a real minimap screenshot.
+
+
+## POS INIT (airport + stand)
+
+Row under the top bar: pick the airport, type the stand, press **POS INIT** (before or after Connect).
+1. You are put on that stand (the stand on the radar's ground chart, plus the airport's nudge).
+2. The next good minimap match (80%+, within a minute) is compared with the stand. Their difference is how the map picture lines up with the radar
+   at that airport in your game, so it is saved (`src/user_state.json`) and every later fix near that airport is corrected by it - no nudging.
+   If the minimap puts you more than 0.6 nm from that stand, nothing is learnt and the stand position is kept (wrong stand number, or a bad match).
+3. From then on the minimap tracks you; a parked aircraft is never moved by a doubtful fix.
+A manual nudge replaces the automatic calibration for that airport.

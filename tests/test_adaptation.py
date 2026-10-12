@@ -263,5 +263,22 @@ class TileTest(unittest.TestCase):
         self.assertTrue(r is None or r[3] <= MapLocator.MASK_CONFIDENCE_CAP)
 
 
+class PosInitTest(unittest.TestCase):
+    def test_a_good_match_at_the_stand_calibrates_the_airport(self):
+        import posinit
+        stand = stands.stand_fix("IRFD", "12")
+        raw = (stand["xNm"] - 0.05, stand["yNm"] + 0.12)  # where the picture says the same spot is
+        ok, offset, msg = posinit.calibrate((stand["xNm"], stand["yNm"]), raw, 0.95)
+        self.assertTrue(ok, msg)
+        # with that calibration, a later fix at the same picture spot lands on the stand
+        x, y, *_ = frames.picture_to_game(raw[0], raw[1], {"IRFD": offset})
+        self.assertLess(math.hypot(x - stand["xNm"], y - stand["yNm"]), 0.01)
+
+    def test_a_far_or_weak_match_teaches_nothing(self):
+        import posinit
+        self.assertFalse(posinit.calibrate((20.0, 20.0), (21.0, 20.0), 0.95)[0])  # 1 nm: wrong stand or wrong match
+        self.assertFalse(posinit.calibrate((20.0, 20.0), (20.05, 20.0), 0.5)[0])  # too weak
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 FADE_NM = 6.0
+FULL_NM = 2.0  # within this of the airport the offset applies in full; it fades out by FADE_NM
 # A shipped offset bigger than this is more likely a bad hand-measured anchor than a real gap.
 MAX_SHIPPED_OFFSET_NM = 0.8
 
@@ -54,7 +55,7 @@ def picture_to_game(x_nm, y_nm, user_offsets=None, user_stand_nudges=None):
         if not p:
             continue
         d = math.hypot(x_nm - (p["xNm"] - o["dxNm"]), y_nm - (p["yNm"] - o["dyNm"]))
-        w = max(0.0, 1.0 - d / FADE_NM)
+        w = 1.0 if d <= FULL_NM else max(0.0, 1.0 - (d - FULL_NM) / (FADE_NM - FULL_NM))
         if w == 0:
             continue
         total += w
