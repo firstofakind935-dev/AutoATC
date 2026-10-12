@@ -96,6 +96,7 @@ class TrackerWorker(QThread):
         next_region_search = 0.0
         region_logged = False
         misses = 0
+        last_debug_save = 0.0
 
         session_started = False
         try:
@@ -143,6 +144,20 @@ class TrackerWorker(QThread):
                         region, misses = None, 0  # the window moved or the minimap closed: look again
 
                     if marker_px is None:
+                        if misses == 5 and now - last_debug_save > 30:
+                            # show what the tracker sees, so a missing marker can be diagnosed from one picture
+                            last_debug_save = now
+                            debug_path = os.path.join(os.path.dirname(str(config.USER_STATE_PATH)), "minimap_debug.png")
+                            try:
+                                cv2.imwrite(debug_path, frame)
+                                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                                iy, ix = np.unravel_index(np.argmax(hsv[:, :, 2].astype(int) * (hsv[:, :, 1] > 80)
+                                                                    * ((hsv[:, :, 0] >= 25) & (hsv[:, :, 0] <= 60))), hsv.shape[:2])
+                                b, g, r = (int(c) for c in frame[iy, ix])
+                                self.log.emit(f"No aircraft marker in the minimap - saved what the tracker sees to {debug_path} "
+                                              f"(brightest green there: RGB {r},{g},{b}). Send that picture if this keeps happening.")
+                            except Exception as e:  # diagnostics must never stop tracking
+                                self.log.emit(f"Could not save the debug picture: {e}")
                         if not filt.has_position:
                             self.log.emit("Marker not found this frame.")
                     else:

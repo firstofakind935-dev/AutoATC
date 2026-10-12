@@ -93,3 +93,18 @@ class StaleCalibrationTest(unittest.TestCase):
                 self.assertNotIn("dropped", again)
             finally:
                 app_config.USER_STATE_PATH = saved
+
+
+class MarkerColourTest(unittest.TestCase):
+    def test_marker_found_when_the_colour_drifts(self):
+        import marker_finder
+        crop = cv2.imread(SHOT)[828:1125, 1690:2000]
+        for shift in ([0, 0, 0], [-15, 30, -20], [20, -30, 25], [-45, -45, -45]):
+            tinted = np.clip(crop.astype(int) + shift, 0, 255).astype(np.uint8)
+            p = marker_finder.find_marker_pixel(tinted)
+            self.assertIsNotNone(p, shift)
+            self.assertLess(math.hypot(p[0] - 155, p[1] - 148.4), 3, shift)
+        for shift in ([-30, -30, -30], [30, 30, 30], [0, 40, 0]):  # darker / brighter screens, a strong tint
+            tinted = np.clip(crop.astype(int) + shift, 0, 255).astype(np.uint8)
+            p = marker_finder.find_marker_pixel(tinted)
+            self.assertLess(math.hypot(p[0] - 155, p[1] - 148.4), 3, shift)
