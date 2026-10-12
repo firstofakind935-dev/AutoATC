@@ -9,6 +9,7 @@
     "pilot": "electron pilot-main.js"
   },
   "dependencies": {
+    "@techstark/opencv-js": "4.10.0-release.1",
     "koffi": "3.2.1",
     "tesseract.js": "^5.1.1",
     "ws": "^8.18.0"

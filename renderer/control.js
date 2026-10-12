@@ -58,6 +58,13 @@ async function loadSettings() {
   settings = { ...settings, ...saved };
   // Corrections saved on an older map frame were measured against positions that have since moved (frame 2: the
   // exact game frame), so they would push every fix off by the old error - drop them.
+  // Tracking v2 (feature matching, automatic minimap): automatic minimap fixes are on by default now - the old opt-in
+  // (and an old "off") came from the shape-only matcher, which could place you on the wrong island.
+  if (settings.trackingVersion !== 2) {
+    settings.trackingVersion = 2;
+    settings.autoMinimap = true;
+    await window.companion.saveSettings(settings);
+  }
   if (settings.frame !== 2) {
     const had = Object.keys(settings.airportOffsets || {}).length + Object.keys(settings.standOffsets || {}).length;
     settings.airportOffsets = {};
@@ -70,7 +77,7 @@ async function loadSettings() {
   document.getElementById('monitorUrl').value = settings.monitorUrl || '';
   document.getElementById('monitorApiKey').value = settings.monitorApiKey || '';
   document.getElementById('intervalSec').value = settings.intervalSec || 5;
-  document.getElementById('autoMiniCheck').checked = Boolean(settings.autoMinimap);
+  document.getElementById('autoMiniCheck').checked = settings.autoMinimap !== false;
   document.getElementById('autoBigMapCheck').checked = Boolean(settings.autoBigMap);
 }
 
@@ -254,6 +261,7 @@ window.companion.onOverlayResult(async (result) => {
     const nearest = await window.companion.nearestAirport(airports, world);
     currentFix = { world, atMs: Date.now() };
     lastCorrectionAtMs = Date.now();
+    window.companion.filterSet(world.lon * 60, -world.lat * 60, Date.now() / 1000);
     const summary = `${nearest.distanceNm.toFixed(1)}nm bearing ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}`;
     lastFixSummary = summary;
     setStatus('fixStatus', `Fix set: ~${summary}`, 'ok');
@@ -334,6 +342,7 @@ async function applyAnchor(a) {
     if (fix.error) { log(`ATC lined you up on ${a.runway} at ${a.airport}, but: ${fix.error}.`); return; }
     currentFix = { world: fix.world, atMs: Date.now() };
     lastCorrectionAtMs = Date.now();
+    window.companion.filterAnchor(fix.xNm, fix.yNm, Date.now() / 1000); // lined up: stopped, on the threshold
     lastHeadingDeg = fix.headingDeg;
     miniPending = null;
     const summary = `lined up runway ${fix.runway} at ${a.airport}`;
@@ -393,7 +402,35 @@ async function populateAirportDropdowns() {
 
 let mapFixBusy = false;
 let mapHint = null;
-let miniHint = null; // last minimap view, for the next fix
+let miniHint = null; // last minimap view, for the next fix (coastline fallback only)
+let lastIgnoredLogAtMs = 0;
+let firstMiniFixLogged = false;
+// The minimap, found on screen by its corner buttons when no region was drawn (lib/minimapFinder.js).
+const autoMini = { rect: null, nextSearchAtMs: 0, misses: 0, logged: false };
+
+/** The minimap's rectangle in capture-video pixels: the drawn region if there is one, else found automatically. */
+function miniRect() {
+  const drawn = toVideoRect(settings.regions && settings.regions.minimap);
+  if (drawn) return drawn;
+  if (autoMini.rect || !captureVideo.videoWidth || Date.now() < autoMini.nextSearchAtMs) return autoMini.rect;
+  autoMini.nextSearchAtMs = Date.now() + 3000;
+  const canvas = document.createElement('canvas');
+  canvas.width = captureVideo.videoWidth;
+  canvas.height = captureVideo.videoHeight;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(captureVideo, 0, 0);
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const found = window.companion.findMinimap({ width: image.width, height: image.height, data: image.data });
+  if (found) {
+    autoMini.rect = found;
+    autoMini.logged = false;
+    log(`Found the minimap at ${found.x},${found.y} (${found.w}x${found.h}).`);
+  } else if (!autoMini.logged) {
+    autoMini.logged = true;
+    log('Looking for the PTFS minimap - keep the game visible with the minimap open...');
+  }
+  return autoMini.rect;
+}
 let lastAutoMapFixAtMs = 0;
 let lastMiniFixAtMs = 0;
 let lastRawFix = null; // the latest map/minimap fix as matched on the picture, before the frame shift
@@ -403,11 +440,12 @@ let miniPending = null; // a minimap fix that disagreed with where we were, wait
 const MINI_TRUST_SCORE = 0.75;
 const MINI_CONFIRMATIONS = 3; // agreeing fixes in a row before a jump is believed
 let lastSpeedKts = null; // from the HUD, for the tracking loop
+let miniTimer = null;
 const MAP_MAX_WIDTH = 1100; // bigger crops are shrunk first - the match doesn't need more
 
 async function runMapFix(trigger, kind = 'big') {
   const mini = kind === 'mini';
-  const rect = toVideoRect(settings.regions && settings.regions[mini ? 'minimap' : 'bigmap']);
+  const rect = mini ? miniRect() : toVideoRect(settings.regions && settings.regions.bigmap);
   if (!rect) {
     if (trigger === 'manual') setStatus(mini ? 'miniFixStatus' : 'mapFixStatus', mini ? 'Select the minimap region first (step 3).' : 'Select the big-map region first (step 3).', 'bad');
     return false;
@@ -423,7 +461,15 @@ async function runMapFix(trigger, kind = 'big') {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(captureVideo, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
     const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const fix = await window.companion.fixFromMap({ width: image.width, height: image.height, data: image.data }, { hint: mini ? miniHint : mapHint, minScore: mini ? 0.6 : 0.45 });
+    const plain = { width: image.width, height: image.height, data: image.data };
+    const fix = mini
+      ? await window.companion.fixFromMinimap(plain, miniHint)
+      : await window.companion.fixFromMap(plain, { hint: mapHint, minScore: 0.45 });
+    if (mini && fix.noMarker && autoMini.rect && ++autoMini.misses >= 5) {
+      autoMini.rect = null; // the window moved or the minimap closed: look for it again
+      autoMini.misses = 0;
+    }
+    if (mini && !fix.noMarker) autoMini.misses = 0;
     if (fix.error) {
       if (trigger === 'manual' || (mini && fix.noCoast && Date.now() - lastNoCoastLogAtMs > 30_000)) {
         if (trigger === 'manual') setStatus(statusId, fix.error, 'bad');
@@ -443,28 +489,20 @@ async function runMapFix(trigger, kind = 'big') {
     fix.xNm = adj.xNm;
     fix.yNm = adj.yNm;
     const world = { lat: -fix.yNm / 60, lon: fix.xNm / 60 };
-    if (trigger === 'auto' && currentFix) {
-      // The minimap is matched on coastline alone, so a look-alike shore can fool it. A fix that agrees with where we
-      // believe we are is taken. A jump is only believed when several fixes in a row agree with EACH OTHER (a wrong
-      // match changes every time; a real one doesn't), and a parked aircraft cannot jump at all.
-      const moved = Math.hypot((world.lon - currentFix.world.lon) * 60, (world.lat - currentFix.world.lat) * 60);
-      const sinceFixHours = (Date.now() - (lastCorrectionAtMs || Date.now())) / 3_600_000;
-      const parked = lastSpeedKts !== null && lastSpeedKts < 5;
-      const allowed = parked ? 0.25 : 0.4 + sinceFixHours * 400;
-      if (moved > allowed) {
-        const same = miniPending && Math.hypot((world.lon - miniPending.world.lon) * 60, (world.lat - miniPending.world.lat) * 60) < 0.3;
-        miniPending = same ? { world, count: miniPending.count + 1, since: miniPending.since } : { world, count: 1, since: Date.now() };
-        // A parked aircraft needs the same answer to hold for a minute with a very strong match: a static scene repeats
-        // the same wrong match every frame, so counting frames alone proves nothing.
-        const held = !parked || Date.now() - miniPending.since >= 60_000;
-        if (miniPending.count < MINI_CONFIRMATIONS || fix.score < (parked ? 0.85 : MINI_TRUST_SCORE) || !held) {
-          log(`Minimap fix ignored (${moved.toFixed(1)} nm from where you were, match ${Math.round(fix.score * 100)}%, ${miniPending.count}/${MINI_CONFIRMATIONS} agreeing).`);
-          return false;
-        }
+    const nowS = Date.now() / 1000;
+    if (trigger === 'auto') {
+      // Which fixes to believe (lib/positionFilter.js, the tracker's rules): one that agrees with where we could be is
+      // taken; a jump needs several strong fixes in a row that agree with each other; a parked aircraft cannot jump.
+      const verdict = await window.companion.filterAccept(fix.xNm, fix.yNm, fix.score, nowS);
+      if (!verdict.ok) {
+        if (Date.now() - lastIgnoredLogAtMs > 5000) { lastIgnoredLogAtMs = Date.now(); log(`Minimap fix ${verdict.reason}.`); }
+        return false;
       }
-      miniPending = null;
+    } else {
+      await window.companion.filterSet(fix.xNm, fix.yNm, nowS); // asked for: taken as it is
     }
-    if (mini) miniHint = { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score };
+    miniPending = null;
+    if (mini) miniHint = fix.method === 'coastline' ? { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score } : null;
     else mapHint = { zoom: fix.zoom, x0: fix.x0, y0: fix.y0, score: fix.score };
     const nearest = await window.companion.nearestAirport(airports, world);
     currentFix = { world, atMs: Date.now() };
@@ -474,7 +512,10 @@ async function runMapFix(trigger, kind = 'big') {
     setStatus(statusId, `Fixed: ${summary} (match ${Math.round(fix.score * 100)}%)`, 'ok');
     setSidebar('dotFix', 'sidebarFixText', summary, 'good');
     syncBar();
-    if (!mini || trigger === 'manual') log(`${mini ? 'Minimap' : 'Map'} fix: ${summary}, match ${Math.round(fix.score * 100)}%${trigger === 'auto' ? ' (automatic)' : ''}.`);
+    if (!mini || trigger === 'manual' || !firstMiniFixLogged) {
+      firstMiniFixLogged = firstMiniFixLogged || mini;
+      log(`${mini ? 'Minimap' : 'Map'} fix: ${summary}, match ${Math.round(fix.score * 100)}%${fix.method ? ` (${fix.method})` : ''}${trigger === 'auto' ? ', automatic' : ''}.`);
+    }
     return true;
   } catch (err) {
     if (trigger === 'manual') setStatus(statusId, `${mini ? 'Minimap' : 'Map'} fix failed: ${err.message}`, 'bad');
@@ -562,6 +603,7 @@ async function setPositionFromStand() {
   const nearest = await window.companion.nearestAirport(airports, fix.world);
   currentFix = { world: fix.world, atMs: Date.now() };
   lastCorrectionAtMs = Date.now();
+  window.companion.filterAnchor(fix.xNm, fix.yNm, Date.now() / 1000); // parked on the stand
   mapHint = null;
   miniHint = null;
   miniPending = null;
@@ -712,24 +754,15 @@ function toVideoRect(region) {
 }
 
 async function trackTick() {
-  if (!settings.regions || !settings.regions.heading || !settings.regions.info) {
-    log('Skipping - heading/info regions not set yet.');
-    return;
-  }
   // While the big map is open, re-fix on it (at most every few seconds) - no clicking, no drift.
   // Only when asked for: with the big map closed, that screen region is the 3D view, and anything bright green in it
   // (HUD text, grass) was taken for the marker and matched somewhere random - e.g. Sea Haven while parked at Rockford.
-  if (settings.autoBigMap && settings.regions.bigmap && Date.now() - lastAutoMapFixAtMs > 4000 && !mapFixBusy) {
+  if (settings.autoBigMap && settings.regions && settings.regions.bigmap && Date.now() - lastAutoMapFixAtMs > 4000 && !mapFixBusy) {
     lastAutoMapFixAtMs = Date.now();
     runMapFix('auto');
   }
-  // The minimap, matched against the world map, keeps the position right between fixes - no pilot action.
-  if (settings.autoMinimap && settings.regions.minimap && !mapFixBusy && Date.now() - lastMiniFixAtMs > 2500) {
-    lastMiniFixAtMs = Date.now();
-    runMapFix('auto', 'mini');
-  }
   if (!currentFix) {
-    log('Skipping - no position fix yet. Open the big map and press F8 (or click "Set my position").');
+    log('Waiting for the first position - keep the minimap visible (or enter your stand, or press F8 on the big map).');
     return;
   }
   if (!settings.monitorUrl) {
@@ -738,6 +771,12 @@ async function trackTick() {
   }
   if (!captureVideo.videoWidth) {
     log('Skipping - screen capture not ready yet.');
+    return;
+  }
+  // Without the HUD regions there is no heading/speed/altitude to read: report from the minimap fixes alone, carried
+  // along the track between them (lib/positionFilter.js) - nothing to set up.
+  if (!settings.regions || !settings.regions.heading || !settings.regions.info) {
+    await reportFromFixesOnly();
     return;
   }
 
@@ -812,9 +851,57 @@ async function trackTick() {
   }
 }
 
+/** Upload with no HUD reading: the filter's position (carried along the track for a short gap), heading from the track. */
+async function reportFromFixesOnly() {
+  const now = Date.now();
+  const p = await window.companion.filterPositionAt(now / 1000);
+  if (!p) return;
+  const state = await window.companion.filterState();
+  currentFix = { world: { lat: -p.yNm / 60, lon: p.xNm / 60 }, atMs: now };
+  const nearest = await window.companion.nearestAirport(airports, currentFix.world);
+  const fixAgeSec = (now - lastCorrectionAtMs) / 1000;
+  const speed = state.speedKt != null ? Math.round(state.speedKt) : null;
+  const heading = state.trackDeg != null ? Math.round(state.trackDeg) : lastHeadingDeg;
+  window.companion.sendTelemetry({ lat: currentFix.world.lat, lon: currentFix.world.lon, headingDeg: heading, speedKt: speed, altFt: null, aircraftType: null, atMs: now });
+  try {
+    await window.companion.uploadPosition({
+      monitorUrl: settings.monitorUrl,
+      apiKey: settings.monitorApiKey || null,
+      callsign: settings.callsign,
+      aircraftType: settings.aircraftType || null,
+      speed,
+      distanceNm: nearest.distanceNm,
+      bearingDeg: nearest.bearingDeg,
+      referenceAirport: nearest.icao,
+      altitudeFt: null,
+      headingDeg: heading,
+      fixAgeSec,
+      squawk,
+      identing: identUntilMs > Date.now(),
+    });
+    if (now - lastFixOnlyLogAtMs > 15000) {
+      lastFixOnlyLogAtMs = now;
+      log(`Uploaded: ${nearest.distanceNm.toFixed(2)}nm brg ${Math.round(nearest.bearingDeg)}° from ${nearest.icao}` +
+        `${speed != null ? `, ${speed}kts` : ''} (minimap only - draw the HUD regions to add heading/altitude; fix age ${Math.round(fixAgeSec)}s).`);
+    }
+  } catch (err) {
+    log(`Upload failed: ${err.message}`);
+  }
+}
+let lastFixOnlyLogAtMs = 0;
+
+/** The minimap fixes run on their own, faster clock: a fix every 1.5 s keeps the track honest. */
+function miniTick() {
+  if (settings.autoMinimap === false || mapFixBusy) return;
+  lastMiniFixAtMs = Date.now();
+  runMapFix('auto', 'mini');
+}
+
 function startTracking() {
   if (trackingTimer) return;
   trackingTimer = setInterval(trackTick, Math.max(2, settings.intervalSec || 5) * 1000);
+  miniTimer = setInterval(miniTick, 1500);
+  miniTick();
   trackTick();
   document.getElementById('startTrackingBtn').disabled = true;
   document.getElementById('stopTrackingBtn').disabled = false;
@@ -826,6 +913,8 @@ function startTracking() {
 function stopTracking() {
   clearInterval(trackingTimer);
   trackingTimer = null;
+  clearInterval(miniTimer);
+  miniTimer = null;
   document.getElementById('startTrackingBtn').disabled = false;
   document.getElementById('stopTrackingBtn').disabled = true;
   setSidebar('dotTracking', 'sidebarTrackingText', 'Stopped', null);

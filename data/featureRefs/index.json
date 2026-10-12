@@ -1,0 +1,26 @@
+{
+ "note": "Built by scripts/build-feature-refs.py. world: px -> nm is / pxPerNm. tiles: toWorld maps tile px to world px.",
+ "world": {
+  "width": 1874,
+  "height": 1412,
+  "pxPerNm": 48
+ },
+ "tiles": {
+  "IRFD": {
+   "width": 1107,
+   "height": 1053,
+   "toWorld": [
+    [
+     0.2929306814146617,
+     -0.0012350818749234079,
+     850.4676108165098
+    ],
+    [
+     0.0012350818749234079,
+     0.2929306814146617,
+     854.0590454723845
+    ]
+   ]
+  }
+ }
+}
