@@ -18,6 +18,7 @@ TRUST_SCORE = 0.75
 PARKED_KT = 5.0
 PARKED_TRUST_SCORE = 0.85
 PARKED_HOLD_SECONDS = 60.0
+SPEED_WINDOW_S = 10.0
 
 
 class PositionFilter:
@@ -28,6 +29,7 @@ class PositionFilter:
         self.t = None
         self.speed_kt = None
         self._pending = None  # [(x, y), count]
+        self._track = []  # recent accepted fixes [(t, x, y)], for the ground speed
 
     @property
     def has_position(self):
@@ -36,12 +38,16 @@ class PositionFilter:
     def anchor(self, x_nm, y_nm, now):
         """A known position (the stand): trusted outright, and we are parked."""
         self.pos, self.t, self.speed_kt, self._pending = (x_nm, y_nm), now, 0.0, None
+        self._track = [(now, x_nm, y_nm)]
 
     def _take(self, x, y, now):
-        if self.pos is not None and self.t is not None and now - self.t >= 2.0:
-            dist = math.hypot(x - self.pos[0], y - self.pos[1])
-            speed = dist / ((now - self.t) / 3600.0)
-            self.speed_kt = speed if self.speed_kt is None else 0.5 * self.speed_kt + 0.5 * speed
+        # Ground speed over the last few seconds of accepted fixes. (It used to be measured only between two fixes
+        # 2 s or more apart - with a fix every second that never happened, so after a stand entry the aircraft
+        # stayed "parked" for the whole flight and every gap in the fixes froze it.)
+        self._track = [p for p in self._track if now - p[0] <= SPEED_WINDOW_S] + [(now, x, y)]
+        t0, x0, y0 = self._track[0]
+        if now - t0 >= 3.0:
+            self.speed_kt = math.hypot(x - x0, y - y0) / ((now - t0) / 3600.0)
         self.pos, self.t, self._pending = (x, y), now, None
 
     def accept(self, x_nm, y_nm, score, now):
@@ -54,7 +60,8 @@ class PositionFilter:
         moved = math.hypot(x_nm - self.pos[0], y_nm - self.pos[1])
         parked = self.speed_kt is not None and self.speed_kt < PARKED_KT
         since_h = max(0.0, now - self.t) / 3600.0
-        allowed = 0.25 if parked else 0.4 + since_h * 400.0
+        # parked: it can only have started taxiing since (~40 kt); moving: up to ~400 kt since the last fix
+        allowed = 0.25 + since_h * 40.0 if parked else 0.4 + since_h * 400.0
         if moved <= allowed:
             self._take(x_nm, y_nm, now)
             return True, "agrees"

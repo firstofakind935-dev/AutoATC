@@ -138,6 +138,8 @@ class TrackerWorker(QThread):
 
                     shot = sct.grab(region)
                     frame = cv2.cvtColor(np.array(shot), cv2.COLOR_BGRA2BGR)
+                    if auto_region:
+                        frame = minimap_finder.blank_buttons(frame)  # the panel's own buttons are not map
                     marker_px = find_marker_pixel(frame)
                     misses = 0 if marker_px is not None else misses + 1
                     if auto_region and misses >= 10:

@@ -115,3 +115,17 @@ def locate_on_screen(sct):
 def resolve_region(sct, configured):
     """The configured MINIMAP_REGION, or - when it is "auto" - wherever the minimap is on screen right now (or None)."""
     return locate_on_screen(sct) if wants_auto(configured) else configured
+
+
+def blank_buttons(panel_bgr):
+    """
+    The panel with its four corner buttons painted over in sea colour. They are fixed on screen, so their edges and
+    glyphs are features that belong to no place on the map - over open sea they are almost the only ones left, and
+    the matcher must not try to place them. (Each button is about 12% of the panel wide, with a small margin.)
+    """
+    out = panel_bgr.copy()
+    h, w = out.shape[:2]
+    s = int(round(min(w, h) * 0.15))
+    for y0, x0 in ((0, 0), (0, w - s), (h - s, 0), (h - int(s * 2.1), w - s)):  # "+" and "-" are stacked
+        out[max(y0, 0):y0 + (int(s * 2.1) if (y0 and x0) else s), max(x0, 0):x0 + s] = SEA_BGR
+    return out

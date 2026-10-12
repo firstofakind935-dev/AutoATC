@@ -56,7 +56,7 @@ class FirstFixTest(unittest.TestCase):
     def test_parked_at_rockford_without_pos_init(self):
         shot = cv2.imread(SHOT)
         r = minimap_finder.find_minimap(shot)
-        crop = shot[r["top"]:r["top"] + r["height"], r["left"]:r["left"] + r["width"]]
+        crop = minimap_finder.blank_buttons(shot[r["top"]:r["top"] + r["height"], r["left"]:r["left"] + r["width"]])
         marker = find_marker_pixel(crop)
         self.assertIsNotNone(marker)
         locator = MapLocator(os.path.join(HERE, "..", "src", "reference_map.png"))
@@ -108,3 +108,32 @@ class MarkerColourTest(unittest.TestCase):
             tinted = np.clip(crop.astype(int) + shift, 0, 255).astype(np.uint8)
             p = marker_finder.find_marker_pixel(tinted)
             self.assertLess(math.hypot(p[0] - 155, p[1] - 148.4), 3, shift)
+
+
+class FlightTest(unittest.TestCase):
+    def test_tracks_from_the_stand_into_the_air_through_gaps(self):
+        # POS INIT on the stand, taxi at 15 kt, take off and climb out at 250 kt; 12 s with no fix over the sea.
+        # (The speed used to be measured only between fixes 2 s apart - never, at one fix a second - so the
+        # aircraft stayed "parked" and every gap froze it for a minute, up to 5 nm behind.)
+        from position_filter import PositionFilter
+        f, t, x, y = PositionFilter(), 0.0, 20.84, 21.35
+        f.anchor(x, y, t)
+        worst = 0.0
+        for _ in range(600):
+            t += 1.0
+            x += (15 if t < 120 else min(250, 15 + (t - 120) * 4)) / 3600.0
+            if 300 <= t < 312:
+                continue
+            ok, why = f.accept(x, y, 0.9, t)
+            self.assertTrue(ok, f"t={t}: {why}")
+            worst = max(worst, math.hypot(f.pos[0] - x, f.pos[1] - y))
+        self.assertLess(worst, 1e-9)
+        self.assertGreater(f.speed_kt, 240)
+
+    def test_a_parked_aircraft_still_cannot_jump(self):
+        from position_filter import PositionFilter
+        f = PositionFilter()
+        f.anchor(20.84, 21.35, 0.0)
+        for t in range(1, 6):
+            self.assertTrue(f.accept(20.84, 21.35, 0.9, float(t))[0])
+        self.assertFalse(f.accept(20.0, 21.0, 0.95, 6.0)[0])  # 0.9 nm away a second later: a look-alike, refused
