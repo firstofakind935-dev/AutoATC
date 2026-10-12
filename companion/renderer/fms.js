@@ -443,10 +443,88 @@ function menuPage(s) {
       row([], [c(`<${s.titles.dir}`, 'white')], [], [c('ATC COM>', 'white')]),
       row([c('PLANNER', 'label')], [c(settings.plannerUrl ? settings.plannerUrl.replace(/^https?:\/\//, '').slice(0, 22) : 'NOT SET', settings.plannerUrl ? 'green' : 'amber')]),
       row([c('AUTOPILOT INPUTS', 'label')], [c(settings.live ? 'LIVE' : 'DRY RUN', settings.live ? 'amber' : 'green')]),
-      blankRow(),
+      row([], [c('<POS INIT', 'white')]),
     ]),
-    lsk: { L1: () => goPage('rte'), R1: () => goPage('legs'), L2: () => goPage('perf'), R2: () => goPage('prog'), L3: () => goPage('dir'), R3: () => goPage('atc') },
+    lsk: { L1: () => goPage('rte'), R1: () => goPage('legs'), L2: () => goPage('perf'), R2: () => goPage('prog'), L3: () => goPage('dir'), R3: () => goPage('atc'), L6: () => goPage('posinit') },
   };
+}
+
+// ---------------------------------------------------------------- POS INIT
+//
+// Like a real FMC's POS INIT: the pilot enters the reference airport and the stand (gate) the aircraft is parked on,
+// then SET POS. The tracking window puts the aircraft exactly on that stand (from the ground chart), and the next good
+// map/minimap fix calibrates that airport, so tracking stays on the real position from there.
+
+const posInit = { airport: '', stand: '', status: '', statusCls: 'white', busy: false };
+
+const posInitStands = () => (api?.listStands ? api.listStands() : {});
+
+function posInitPage() {
+  const all = posInitStands();
+  const airport = posInit.airport || ui.plan?.origin?.icao || '';
+  const known = all[airport];
+  const t = ui.telemetry;
+  const ready = Boolean(airport && known && posInit.stand) && !posInit.busy;
+  const box = (n) => c('□'.repeat(n), 'amber');
+  return {
+    title: 'POS INIT',
+    rows: rows([
+      row([c('REF AIRPORT', 'label')], [airport ? c(airport, 'big cyan') : box(4)], [c('STANDS', 'label')],
+        [c(known ? `${known[0]}-${known[known.length - 1]}` : airport ? 'NO DATA' : '', known ? 'green' : 'amber')]),
+      row([c('STAND', 'label')], [posInit.stand ? c(posInit.stand, 'big cyan') : box(3)], [c('AIRPORTS', 'label')], [c(Object.keys(all).join(' ').slice(0, 14), 'green')]),
+      row([c('LAST POS', 'label')], [c(t && typeof t.lat === 'number' ? `${(t.lon * 60).toFixed(2)}E/${(-t.lat * 60).toFixed(2)}S` : '-----', 'green')]),
+      row([c(posInit.status ? 'STATUS' : '', 'label')], [c(posInit.status.slice(0, COLS), posInit.statusCls)]),
+      row([], [], [], [c(posInit.busy ? 'SETTING...' : 'SET POS>', ready ? 'amber' : 'dim')]),
+      row([], [c('<INDEX', 'white')], [], [c('ROUTE>', 'white')]),
+    ]),
+    lsk: {
+      L1: (sp) => {
+        const icao = sp.trim().toUpperCase();
+        if (!/^[A-Z]{3,4}$/.test(icao)) return flash('FORMAT ERROR');
+        if (!all[icao]) return flash('NO STAND DATA');
+        posInit.airport = icao;
+        posInit.status = '';
+        ui.scratch = '';
+        return null;
+      },
+      L2: (sp) => {
+        const stand = sp.trim().replace(/^0+(?=\d)/, '');
+        if (!stand) return flash('ENTER STAND');
+        const list = all[airport];
+        if (!list) return flash('ENTER REF AIRPORT');
+        if (!list.includes(stand)) return flash('NOT IN DATA BASE');
+        posInit.stand = stand;
+        posInit.status = '';
+        ui.scratch = '';
+        return null;
+      },
+      R5: () => setPosFromStand(airport),
+      L6: () => goPage('menu'),
+      R6: () => goPage('rte'),
+    },
+  };
+}
+
+async function setPosFromStand(airport) {
+  if (!airport || !posInit.stand) return flash('ENTER AIRPORT AND STAND');
+  if (!api?.posInit) return flash('NOT AVAILABLE');
+  posInit.busy = true;
+  render();
+  try {
+    const r = await api.posInit(airport, posInit.stand);
+    posInit.airport = airport;
+    posInit.status = r.ok ? (r.warn ? 'SET - CHECK HEADING' : 'POS SET') : (r.message || 'FAILED').toUpperCase();
+    posInit.statusCls = r.ok ? (r.warn ? 'amber' : 'green') : 'amber';
+    flash(r.ok ? 'POS INIT COMPLETE' : 'POS INIT FAILED');
+  } catch (err) {
+    posInit.status = String(err.message || err).toUpperCase();
+    posInit.statusCls = 'amber';
+    flash('POS INIT FAILED');
+  } finally {
+    posInit.busy = false;
+    render();
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- ATC COM and SURV (pilot app)
@@ -566,7 +644,7 @@ function applyAtcState(state) {
   }
 }
 
-const PAGES = { rte: routePage, legs: legsPage, prog: progPage, perf: perfPage, dir: dirPage, menu: menuPage, atc: atcPage, atcmsg: atcMsgPage, surv: survPage };
+const PAGES = { rte: routePage, legs: legsPage, prog: progPage, perf: perfPage, dir: dirPage, menu: menuPage, atc: atcPage, atcmsg: atcMsgPage, surv: survPage, posinit: posInitPage };
 
 // ---------------------------------------------------------------- skins
 
@@ -631,7 +709,7 @@ const SKINS = {
     // left. Direct-to is done on LEGS: type the waypoint onto 1L.
     keyCols: 6,
     keys: [
-      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ATC', 'atc'], ['VNAV', 'perf'], ['', 'knob'],
+      ['INIT REF', 'posinit'], ['RTE', 'rte'], ['DEP ARR', null], ['ATC', 'atc'], ['VNAV', 'perf'], ['', 'knob'],
       ['FIX', null], ['LEGS', 'legs'], ['HOLD', null], ['FMC COMM', null], ['PROG', 'prog'], ['EXEC', 'exec'],
       ['MENU', 'menu', 'nav'], ['NAV RAD', null, 'nav'], ['PREV PAGE', 'up', 'nav'], ['NEXT PAGE', 'down', 'nav'],
     ],
@@ -650,7 +728,7 @@ const SKINS = {
     titles: { rte: 'RTE 1', legs: 'RTE 1 LEGS', prog: 'PROGRESS', perf: 'CRZ', dir: 'DIR INTC', menu: 'MENU' },
     keyCols: 5,
     keys: [
-      ['INIT REF', 'rte'], ['RTE', 'rte'], ['DEP ARR', null], ['ALTN', null], ['VNAV', 'perf'],
+      ['INIT REF', 'posinit'], ['RTE', 'rte'], ['DEP ARR', null], ['ALTN', null], ['VNAV', 'perf'],
       ['FIX', null], ['LEGS', 'legs'], ['HOLD', null], ['FMC COMM', null], ['PROG', 'prog'],
       ['NAV RAD', null], ['OFST', null], ['RTA', null], ['PREV PAGE', 'up'], ['NEXT PAGE', 'down'],
       ['EXEC', 'exec'], ['', null], ['', null], ['', null], ['', null],

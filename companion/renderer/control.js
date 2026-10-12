@@ -479,10 +479,10 @@ async function populateStandAirports() {
 async function setPositionFromStand() {
   const icao = document.getElementById('standAirport').value;
   const stand = document.getElementById('standInput').value.trim();
-  if (!icao || !stand) { setStatus('standStatus', 'Pick the airport and type your stand number.', 'bad'); return; }
+  if (!icao || !stand) { setStatus('standStatus', 'Pick the airport and type your stand number.', 'bad'); return { ok: false, message: 'pick the airport and stand' }; }
   const heading = await currentHeading();
   const fix = window.companion.standFix(icao, stand, heading, settings.standOffsets || {});
-  if (fix.error) { setStatus('standStatus', fix.error, 'bad'); return; }
+  if (fix.error) { setStatus('standStatus', fix.error, 'bad'); return { ok: false, message: fix.error }; }
   lastStandFix = { icao, xNm: fix.xNm, yNm: fix.yNm, at: Date.now(), autoPending: true };
   const nearest = await window.companion.nearestAirport(airports, fix.world);
   currentFix = { world: fix.world, atMs: Date.now() };
@@ -506,8 +506,18 @@ async function setPositionFromStand() {
   }
   setStatus('standStatus', note, tone);
   log(`Stand fix: ${summary}.${typeof heading === 'number' ? ` Heading ${Math.round(heading)}°.` : ''}`);
+  return { ok: true, warn: tone === 'warn', message: note };
 }
-document.getElementById('standFixBtn').addEventListener('click', setPositionFromStand);
+document.getElementById('standFixBtn').addEventListener('click', () => setPositionFromStand());
+
+// POS INIT from the FMS window's MCDU: same as the stand button here.
+window.companion.onPosInitRequest?.(async ({ id, icao, stand }) => {
+  const select = document.getElementById('standAirport');
+  select.value = icao;
+  document.getElementById('standInput').value = stand;
+  const result = select.value === icao ? await setPositionFromStand() : { ok: false, message: `no stand data for ${icao}` };
+  window.companion.posInitReply({ id, ...result });
+});
 
 // Nudge buttons: move where stands at this airport are put, in small steps, while watching the radar. Saved per airport.
 async function nudgeStand(dx, dy) {
