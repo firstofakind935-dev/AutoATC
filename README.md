@@ -665,7 +665,7 @@ GET /api/public/v1/airports  — every airport's position on the world grid
 GET /api/public/v1/frame     — exact transforms from game units (24RC/24Radar map SVGs) and 24SPY map units to the world grid
 ```
 
-No auth, and both send `Access-Control-Allow-Origin: *`, so any website
+No auth, and all three send `Access-Control-Allow-Origin: *`, so any website
 can call them straight from the browser. Same trust tier as the
 already-open `/api/dashboard/positions` - live traffic position only.
 Unlike that endpoint, `monitor/publicApi.js` whitelists each field it
