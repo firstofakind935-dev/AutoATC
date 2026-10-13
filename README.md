@@ -662,6 +662,7 @@ dependencies) to copy and build on.
 ```
 GET /api/public/v1/traffic   — every fresh aircraft's location data
 GET /api/public/v1/airports  — every airport's position on the world grid
+GET /api/public/v1/frame     — exact transforms from game units (24RC/24Radar map SVGs) and 24SPY map units to the world grid
 ```
 
 No auth, and both send `Access-Control-Allow-Origin: *`, so any website

@@ -16,6 +16,7 @@
       <a href="#quickstart">Quick start</a>
       <a href="#endpoints">Endpoints</a>
       <a href="#fields">Fields</a>
+      <a href="#maps">Drawing real maps</a>
       <a href="#explorer">Live explorer</a>
       <a href="#starter">Starter radar</a>
       <a href="#rules">Usage notes</a>
@@ -28,7 +29,7 @@
     <h2>Quick start</h2>
     <p>Every aircraft and airport has an <code>xNm</code>/<code>yNm</code> position on one flat world grid,
       in nautical miles. Multiply by a zoom factor, put a dot there, and you have a radar of the whole
-      world. There's no map image; draw your own coastlines if you want them.</p>
+      world. There's no map image, but <a href="#maps">real maps line up exactly</a> if you want coastlines and airport diagrams.</p>
     <div class="tabs" role="tablist">
       <button class="tab active" data-snippet="js">JavaScript</button>
       <button class="tab" data-snippet="python">Python</button>
@@ -59,13 +60,14 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
 
   <section id="endpoints">
     <h2>Endpoints</h2>
-    <p>Both are <code>GET</code>, return JSON, need no key, and send
+    <p>All three are <code>GET</code>, return JSON, need no key, and send
       <code>Access-Control-Allow-Origin: *</code>, so you can call them from any website.</p>
     <table>
       <thead><tr><th>Endpoint</th><th>What it returns</th><th>Poll</th></tr></thead>
       <tbody>
         <tr><td><code>/api/public/v1/traffic</code></td><td>Every aircraft with a fresh position report.</td><td>Every 2–5 s</td></tr>
         <tr><td><code>/api/public/v1/airports</code></td><td>Every airport's position on the world grid.</td><td>Once</td></tr>
+        <tr><td><code>/api/public/v1/frame</code></td><td>Exact transforms from game coordinates and 24SPY map units to the world grid, for drawing real maps (see <a href="#maps">Drawing real maps</a>).</td><td>Once</td></tr>
       </tbody>
     </table>
 <pre><code>// GET /api/public/v1/traffic
@@ -81,7 +83,7 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
 // GET /api/public/v1/airports
 {
   "world": { ... },
-  "airports": [ { "icao": "IRFD", "xNm": 20.96, "yNm": 21.38, "placement": "measured" }, ... ]
+  "airports": [ { "icao": "IRFD", "xNm": 20.79, "yNm": 21.21, "placement": "measured" }, ... ]
 }</code></pre>
 
     <h3>The world grid</h3>
@@ -91,6 +93,27 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
       whole area, for fitting it on screen.</p>
     <p>To draw a heading or vector line, step <code>nm × sin(heading)</code> in x and
       <code>−nm × cos(heading)</code> in y from the aircraft.</p>
+  </section>
+
+  <section id="maps">
+    <h2>Drawing real maps</h2>
+    <p>The world grid is tied exactly to the game's own coordinates, so any map drawn in game coordinates lines up
+      with the traffic. <code>/api/public/v1/frame</code> gives the 2×3 matrices
+      <code>[[a, b, c], [d, e, f]]</code>; apply one to a point <code>(u, v)</code> as
+      <code>x = a·u + b·v + c</code>, <code>y = d·u + e·v + f</code>.</p>
+    <table>
+      <thead><tr><th>Matrix</th><th>From → to</th><th>Use it for</th></tr></thead>
+      <tbody>
+        <tr><td><code>gridFromGame</code></td><td>game units (100 studs) → grid nm</td><td>The map SVGs of 24RC and 24Radar (<code>coast.svg</code>, each airport's <code>GROUND.svg</code>) are drawn in game units: wrap them in an SVG <code>&lt;g transform="matrix(a d b e c f)"&gt;</code> and they sit on the grid. Accurate to 3–60 m.</td></tr>
+        <tr><td><code>gameFromGrid</code></td><td>grid nm → game units</td><td>The other way: put an aircraft on a ground chart you draw in its own units.</td></tr>
+        <tr><td><code>spyFromGame</code>, <code>gridFromSpy</code></td><td>24SPY map units ↔ grid nm</td><td>24SPY's 1200 × 1200 map tiles and its airport/waypoint coordinates. Accurate to about 0.03 nm.</td></tr>
+      </tbody>
+    </table>
+<pre><code>// put 24RC's coast.svg (game units) under a radar drawn in nm
+const f = await fetch(`${BASE}/api/public/v1/frame`).then(r => r.json());
+const [[a, b, c], [d, e, g]] = f.gridFromGame;
+coastGroup.setAttribute('transform', `matrix(${a} ${d} ${b} ${e} ${c} ${g})`);</code></pre>
+    <p>Mind each map's licence: 24RC and 24Radar are GPLv3; 24SPY is non-commercial with attribution.</p>
   </section>
 
   <section id="fields">
@@ -110,7 +133,7 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
         <tr><td><code>referenceAirport</code></td><td>string</td><td>ICAO code of the airport the raw position is measured from.</td></tr>
         <tr><td><code>distanceNm</code></td><td>number</td><td>Distance from <code>referenceAirport</code> in nautical miles.</td></tr>
         <tr><td><code>bearingDeg</code></td><td>number</td><td>Bearing from <code>referenceAirport</code>, degrees clockwise from north.</td></tr>
-        <tr><td><code>fixAgeSec</code></td><td>number</td><td>Seconds since the pilot's last manual position correction. Above ~60 the estimate is drifting; consider fading the target.</td></tr>
+        <tr><td><code>fixAgeSec</code></td><td>number</td><td>Seconds since the last position fix (an automatic minimap match, a stand entry or an ATC clearance). Fixes normally come every couple of seconds; during a gap (open sea, short final to a small island) the position is carried along the aircraft's track for up to 30 s and then held, so above ~30 consider fading the target.</td></tr>
         <tr><td><code>reportAgeMs</code></td><td>number</td><td>How old this report is. Aircraft drop off after 30 s without a report.</td></tr>
         <tr><td><code>assignedHeadingDeg</code></td><td>number</td><td>Heading ATC has vectored this aircraft onto, if any.</td></tr>
         <tr><td><code>vectorReason</code></td><td>string</td><td>Why, e.g. <code>"vectors ILS 25C"</code>.</td></tr>
@@ -125,6 +148,7 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
       <select id="explorer-endpoint">
         <option value="/api/public/v1/traffic">/api/public/v1/traffic</option>
         <option value="/api/public/v1/airports">/api/public/v1/airports</option>
+        <option value="/api/public/v1/frame">/api/public/v1/frame</option>
       </select>
       <button id="explorer-run">Send request</button>
       <span id="explorer-meta" class="dim"></span>
@@ -151,9 +175,9 @@ curl <span class="base"></span>/api/public/v1/airports</code></pre>
     <h2>Usage notes</h2>
     <ul>
       <li><strong>Poll every 2 seconds or slower.</strong> Positions only update every few seconds, so faster polling just costs everyone bandwidth.</li>
-      <li><strong>Positions are estimates.</strong> They come from each pilot's companion app reading their own game screen, so they can drift. Don't present them as exact.</li>
-      <li><strong>Only pilots running the companion app appear.</strong> Everyone else is invisible to this API.</li>
-      <li><strong>Airport positions vary in accuracy.</strong> Each airport's <code>placement</code> is <code>measured</code>, <code>derived</code> (offset from a measured one) or <code>estimated</code> (rough).</li>
+      <li><strong>Positions are estimates.</strong> They come from each pilot's AutoATC companion or tracker matching their own game minimap against the map (runways, taxiways, buildings, coastline) every couple of seconds - typically within a stand's width on the ground, but a gap in fixes or a look-alike match can still put one off for a while. Don't present them as exact; <code>fixAgeSec</code> tells you how fresh they are.</li>
+      <li><strong>Only pilots running the AutoATC companion, pilot app or tracker appear.</strong> Everyone else is invisible to this API.</li>
+      <li><strong>Airport positions</strong> are the airports' reference points from 24SPY, placed on the grid through the exact frame (<code>placement: "measured"</code>); a few without one are <code>derived</code> or <code>estimated</code>. Distances and bearings in <code>/traffic</code> are measured from these same points.</li>
       <li><strong>v1 won't break.</strong> Fields may be added, but existing ones won't be renamed or removed. A breaking change would ship as <code>/v2</code> alongside it.</li>
     </ul>
   </section>

@@ -5,7 +5,8 @@
 // a radar can show the whole world at once. Deliberately no map imagery:
 // no world map image and no pixel coordinates on it. Everything is in
 // nautical miles on a flat world grid, and what a radar draws underneath
-// is up to whoever builds it.
+// is up to whoever builds it - /frame gives the exact transforms to draw
+// real maps (24RC/24Radar charts, 24SPY tiles) on that grid.
 //
 // Versioned under /api/public/v1 on purpose - an external site can't be
 // migrated in lockstep with this repo, so a breaking shape change means a
@@ -110,6 +111,34 @@ function toPublicAircraft(row) {
   };
 }
 
+// The exact coordinate frames, for radars that want to draw real maps underneath. Same numbers as
+// data/gameFrame.json (test/public-api-frame.test.js keeps them in step), kept here because the monitor can be
+// deployed on its own. Fitted on island outlines, not airport points: 24RC's coast.svg (drawn in game units) against
+// the radar's world map (3-60 m) and against 24SPY's map tiles (~0.03 nm).
+const FRAME = {
+  note: 'Exact transforms between the PTFS coordinate frames and the world grid. Apply a 2x3 matrix [[a, b, c], [d, e, f]] to (u, v) as x = a*u + b*v + c, y = d*u + e*v + f.',
+  grid: 'the world grid of /traffic and /airports: nm, origin north-west, x east, y south',
+  gameUnit: 'PTFS game position / 100 studs - the unit of 24RC and 24Radar map SVGs (coast.svg, GROUND.svg), x east, y south',
+  gridFromGame: [[0.030675641063886483, -1.609052091551345e-05, 21.731369781953834], [1.609052091551345e-05, 0.030675641063886483, 14.790667919876864]],
+  spyUnit: "24SPY's 1200 x 1200 map units (its tiles cover 0..1200 both ways)",
+  spyFromGame: [[1.0377724153008663, 0.001413798184362036, 610.290702874971], [-0.001413798184362036, 1.0377724153008663, 575.9733676074744]],
+  accuracy: { gridFromGame: 'island outlines within 3-60 m', spyFromGame: 'island outlines within ~0.03 nm' },
+};
+/** The inverse of a similarity [[a, -b, c], [b, a, f]]. */
+function invertSimilarity([[a, , c], [b, , f]]) {
+  const d = a * a + b * b;
+  return [[a / d, b / d, -(a * c + b * f) / d], [-b / d, a / d, (b * c - a * f) / d]];
+}
+FRAME.gameFromGrid = invertSimilarity(FRAME.gridFromGame);
+FRAME.gridFromSpy = (() => {
+  // grid <- game <- spy
+  const g = FRAME.gridFromGame, s = invertSimilarity(FRAME.spyFromGame);
+  return [
+    [g[0][0] * s[0][0] + g[0][1] * s[1][0], g[0][0] * s[0][1] + g[0][1] * s[1][1], g[0][0] * s[0][2] + g[0][1] * s[1][2] + g[0][2]],
+    [g[1][0] * s[0][0] + g[1][1] * s[1][0], g[1][0] * s[0][1] + g[1][1] * s[1][1], g[1][0] * s[0][2] + g[1][1] * s[1][2] + g[1][2]],
+  ];
+})();
+
 function allowAnyOrigin(req, res, next) {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -136,8 +165,13 @@ function createPublicApiRouter({ getPositions }) {
     res.json({ world: WORLD, airports: AIRPORTS });
   });
 
+  router.get('/frame', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({ world: WORLD, ...FRAME });
+  });
+
   router.use((req, res) => res.status(404).json({ error: 'unknown public API route' }));
   return router;
 }
 
-module.exports = { createPublicApiRouter, toPublicAircraft };
+module.exports = { FRAME, createPublicApiRouter, toPublicAircraft };

@@ -160,6 +160,9 @@ function drawScaleBar() {
 
 function drawAircraft(a) {
   const color = a.identing ? css('--ident') : css('--target');
+  // No position fix for a while (open sea, short final to a small island): the position is being carried along the
+  // track, so draw it fainter.
+  ctx.globalAlpha = a.fixAgeSec !== null && a.fixAgeSec > 30 ? 0.45 : 1;
   if (checked('show-trails')) {
     ctx.fillStyle = css('--dim');
     for (const t of (trails.get(a.callsign) || []).slice(0, -1)) {
@@ -185,6 +188,7 @@ function drawAircraft(a) {
   ctx.fillText(`${alt} ${spd}`, s.x + 10, s.y + 3);
   ctx.fillStyle = css('--dim');
   ctx.fillText(a.aircraftType || '', s.x + 10, s.y + 16);
+  ctx.globalAlpha = 1;
 }
 
 function draw() {
