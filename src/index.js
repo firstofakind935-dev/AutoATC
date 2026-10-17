@@ -7,6 +7,7 @@ const { BotManagerBot } = require('./bot/BotManagerBot');
 const { makeLogger } = require('./utils/logger');
 const { startPositionSync } = require('./flightradar365/positionSync');
 const { inviteUrl } = require('../monitor/fleetInvites');
+const { startRadioWorker } = require('./radio/radioWorker');
 
 const logger = makeLogger('fleet');
 const STARTUP_GAP_MS = 1500;
@@ -22,6 +23,10 @@ function createBot(config, fleetConfig) {
 
 async function main() {
   const fleetConfig = loadFleetConfig();
+
+  // The in-app radio (companion / pilot app push-to-talk): every station on the frequency list answers there, with or
+  // without a Discord bot - see src/radio/. RADIO_ENABLED=false turns it off.
+  if (process.env.RADIO_ENABLED !== 'false') startRadioWorker();
 
   if (fleetConfig.length === 0) {
     logger.warn('No bot has its token env var set - staying up idle. Add one in your host\'s env vars and redeploy.');

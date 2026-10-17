@@ -5,6 +5,7 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const { createPublicApiRouter } = require('./publicApi');
 const { createFleetInvites, invitePage } = require('./fleetInvites');
+const { createRadioHub } = require('./radio');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -554,7 +555,18 @@ const server = app.listen(PORT, () => {
 // Optional: push live positions to flightradar365 (needs FR365_BOT_KEY, see flightradar365Push.js).
 require('./flightradar365Push').startFromEnv(freshPositions);
 
-const wss = new WebSocketServer({ server, path: '/ws' });
+// Two websocket endpoints share the server, so upgrades are routed by path (a WebSocketServer given `server` would
+// reject every path but its own).
+const wss = new WebSocketServer({ noServer: true });
+const radioHub = createRadioHub({ workerKey: INGEST_API_KEY, logger: { info: (...a) => console.log(...a) } });
+server.on('upgrade', (req, socket, head) => {
+  const pathname = (req.url || '').split('?')[0];
+  if (pathname === '/ws') {
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+  } else if (!radioHub.handleUpgrade(req, socket, head)) {
+    socket.destroy();
+  }
+});
 
 wss.on('connection', (ws, req) => {
   if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
