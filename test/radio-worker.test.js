@@ -73,3 +73,40 @@ test('a transmission through the hub is transcribed, answered by that station an
     server.close();
   }
 });
+
+test('on a shared frequency, the station the pilot calls answers', async (t) => {
+  const stt = require('../src/speech/stt');
+  const tts = require('../src/speech/tts');
+  const llm = require('../src/ai/llmProvider');
+  const said = ['Larnaca Approach, N42Y, with you at 3000', 'Pingyeri Tower, N42Y, ready for departure'];
+  t.mock.method(stt, 'transcribeAudio', async () => said.shift());
+  t.mock.method(tts, 'synthesizeSpeech', async () => Buffer.from('mp3'));
+  t.mock.method(llm, 'generateAtcReplyWithFallback', async (args) => `reply as ${/You are working the (\w+)/.exec(args.systemPrompt)[1]}`);
+  delete require.cache[require.resolve('../src/radio/radioWorker')];
+  delete require.cache[require.resolve('../src/radio/ControllerBrain')];
+  const { startRadioWorker, loadStations } = require('../src/radio/radioWorker');
+  const { createRadioHub } = require('../monitor/radio');
+  const hub = createRadioHub({ logger: { info() {} } });
+  const server = http.createServer();
+  server.on('upgrade', (req, socket, head) => { if (!hub.handleUpgrade(req, socket, head)) socket.destroy(); });
+  await new Promise((r) => server.listen(0, r));
+  const port = server.address().port;
+  const worker = startRadioWorker({ monitorUrl: `http://127.0.0.1:${port}`, stations: loadStations() });
+  try {
+    const pilot = new WebSocket(`ws://127.0.0.1:${port}/radio?callsign=N42Y`);
+    const clips = [];
+    pilot.on('message', (d, bin) => { if (!bin) { const m = JSON.parse(d.toString()); if (m.type === 'rx-clip') clips.push(m); } });
+    await new Promise((r) => pilot.on('open', r));
+    await new Promise((r) => setTimeout(r, 200));
+    pilot.send(JSON.stringify({ type: 'tune', tx: '119.425' })); // ILAR APP and ITEY TWR share it
+    for (let i = 0; i < 2; i++) {
+      pilot.send(JSON.stringify({ type: 'ptt', on: true }));
+      await new Promise((r) => setTimeout(r, 30));
+      pilot.send(Buffer.alloc(16000));
+      pilot.send(JSON.stringify({ type: 'ptt', on: false }));
+      for (let j = 0; j < 40 && clips.length <= i; j++) await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.deepStrictEqual(clips.map((c) => c.from), ['Larnaca Approach', 'Pingyeri Tower']);
+    pilot.close();
+  } finally { worker.stop(); hub.close(); server.close(); }
+});

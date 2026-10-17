@@ -12,6 +12,7 @@ const { pcmToWav } = require('../utils/audio');
 const { transcribeAudio } = require('../speech/stt');
 const { synthesizeSpeech } = require('../speech/tts');
 const { makeLogger } = require('../utils/logger');
+const { resolvePersonaFromTranscript } = require('../ai/personaMatcher');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SAMPLE_RATE = 16000;
@@ -60,13 +61,11 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
   const logger = makeLogger('radio');
   if (!monitorUrl) { logger.warn('MONITOR_URL is not set - the in-app radio has no hub to connect to.'); return null; }
   const list = stations || loadStations();
-  // two stations sharing a frequency (the sheet has a few) would answer over each other: the first one keeps it
-  const byFreq = new Map();
-  for (const s of list) {
-    if (byFreq.has(s.freq)) { logger.warn(`${s.station} shares ${s.freq} with ${byFreq.get(s.freq).station} - only ${byFreq.get(s.freq).station} answers there.`); continue; }
-    byFreq.set(s.freq, s);
-  }
-  const brains = new Map(); // freq -> ControllerBrain (made on first use)
+  // A few stations share a frequency (the sheet has four pairs): there, the one the pilot calls answers ("Larnaca
+  // Approach, ..." vs "Pingyeri Tower, ..."), else the first listed.
+  const byFreq = new Map(); // freq -> [station, ...]
+  for (const s of list) byFreq.set(s.freq, [...(byFreq.get(s.freq) || []), s]);
+  const brains = new Map(); // station -> ControllerBrain (made on first use)
   const queues = new Map(); // freq -> Promise chain
   const url = `${monitorUrl.replace(/^http/, 'ws').replace(/\/+$/, '')}/radio/worker`;
   let ws = null;
@@ -74,22 +73,29 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
   let stopped = false;
 
   const brainFor = (s) => {
-    if (!brains.has(s.freq)) brains.set(s.freq, new ControllerBrain({ persona: s.persona, ai: s.ai, logger: makeLogger(s.persona.callsign) }));
-    return brains.get(s.freq);
+    if (!brains.has(s.station)) brains.set(s.station, new ControllerBrain({ persona: s.persona, ai: s.ai, logger: makeLogger(s.persona.callsign) }));
+    return brains.get(s.station);
+  };
+  const addressed = (onFreq, transcript) => {
+    if (onFreq.length === 1) return onFreq[0];
+    const m = resolvePersonaFromTranscript(transcript, onFreq.map((s) => s.persona));
+    return (m && onFreq.find((s) => s.persona === m)) || onFreq[0];
   };
   const send = (msg) => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg)); };
 
   async function handle(msg) {
-    const s = byFreq.get(msg.freq);
-    if (!s) return;
+    const onFreq = byFreq.get(msg.freq);
+    if (!onFreq) return;
+    const freq = msg.freq;
     let transcript;
     try {
       transcript = await transcribeAudio(pcmToWav(Buffer.from(msg.audio, 'base64'), { sampleRate: SAMPLE_RATE, channels: 1, bitsPerSample: 16 }));
     } catch (err) {
-      logger.error(`Transcription failed on ${s.freq}: ${err.message}`);
+      logger.error(`Transcription failed on ${freq}: ${err.message}`);
       return;
     }
     if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return;
+    const s = addressed(onFreq, transcript);
     send({ type: 'transcript', id: msg.id, freq: s.freq, from: msg.from, text: transcript });
     logger.info(`${s.freq} ${msg.from}: ${transcript}`);
     const reply = await brainFor(s).respond(transcript, { from: msg.from });
@@ -109,7 +115,7 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
     ws = new WebSocket(url, { headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {} });
     ws.on('open', () => {
       retryMs = 2000;
-      send({ type: 'hello', stations: [...byFreq.values()].map((s) => ({ freq: s.freq, station: s.station, callsign: s.persona.callsign })) });
+      send({ type: 'hello', stations: [...byFreq.values()].map((on) => ({ freq: on[0].freq, station: on.map((s) => s.station).join(' / '), callsign: on.map((s) => s.persona.callsign).join(' / ') })) });
       logger.info(`In-app radio: answering on ${byFreq.size} frequencies.`);
     });
     ws.on('message', (data) => {
