@@ -44,7 +44,8 @@ class AtisBot {
   }
 
   async _onReady() {
-    this.logger.info(`Logged in as ${this.client.user.tag}`);
+    // The application id lets the monitor's /invite page build this bot's invite link (see monitor/fleetInvites.js).
+    this.logger.info(`Logged in as ${this.client.user.tag} (application ${this.client.application?.id || this.client.user.id}, type atis)`);
 
     const guild = await this.client.guilds.fetch(this.config.guildId);
     await waitForShardReady(guild.shard);

@@ -4,6 +4,7 @@ const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const { createPublicApiRouter } = require('./publicApi');
+const { createFleetInvites, invitePage } = require('./fleetInvites');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -115,6 +116,8 @@ function requireDashboardAuth(req, res, next) {
 }
 
 const app = express();
+const fleetInvites = createFleetInvites();
+
 app.use(express.json({ limit: '256kb' }));
 
 app.get('/health', (req, res) => res.status(200).send('ok'));
@@ -131,8 +134,16 @@ app.post('/api/ingest', requireIngestAuth, (req, res) => {
     timestamp: new Date().toISOString(),
   };
   pushLog(entry);
+  fleetInvites.observe(entry);
   broadcast(entry);
   res.status(204).end();
+});
+
+// One-click invite links for every bot that has checked in (monitor/fleetInvites.js). Behind the dashboard login.
+app.get('/invite', requireDashboardAuth, (req, res) => {
+  const guild = typeof req.query.guild === 'string' && /^\d{15,22}$/.test(req.query.guild) ? req.query.guild : null;
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(invitePage(fleetInvites.list(), guild));
 });
 
 app.get('/api/logs', requireDashboardAuth, (req, res) => {
