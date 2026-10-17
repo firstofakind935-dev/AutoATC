@@ -2,7 +2,8 @@
 // monitor's radio hub (monitor/radio.js) instead of Discord. Hold push-to-talk (a key watched while the game has
 // focus - lib/pttKey.js - or the on-screen button) to transmit on your primary radio; you hear every powered radio's
 // active frequency. Audio out: 16 kHz mono 16-bit PCM, sent live. Audio in: other pilots live, controllers' replies as
-// MP3 clips. Used by control.js through window.AppRadio.
+// MP3 clips. Used by control.js through window.AppRadio - and, with {role: 'controller', key}, by the human
+// controllers' console (monitor/console/), where takeover(freq)/handback(freq) take frequencies from the AI and back.
 
 (function () {
   const RATE = 16000;
@@ -20,7 +21,7 @@
   let volume = 1;
   const streams = new Map(); // stream id -> {freq, from, at (next play time)}
   let clipChain = Promise.resolve();
-  const listeners = { status: [], log: [], stations: [], ptt: [] };
+  const listeners = { status: [], log: [], stations: [], ptt: [], control: [], history: [] };
   let stations = [];
 
   const emit = (kind, ...args) => listeners[kind].forEach((fn) => { try { fn(...args); } catch (e) { console.error(e); } });
@@ -33,8 +34,9 @@
   }
 
   // ---- connection ----------------------------------------------------------------------------------------------
-  function connect(monitorUrl, callsign) {
-    const next = `${String(monitorUrl || '').replace(/^http/, 'ws').replace(/\/+$/, '')}/radio?callsign=${encodeURIComponent(callsign || 'UNKNOWN')}`;
+  function connect(monitorUrl, callsign, { role = 'pilot', key = '' } = {}) {
+    const extra = role === 'controller' ? `&role=controller&key=${encodeURIComponent(key || '')}` : '';
+    const next = `${String(monitorUrl || '').replace(/^http/, 'ws').replace(/\/+$/, '')}/radio?callsign=${encodeURIComponent(callsign || 'UNKNOWN')}${extra}`;
     if (!monitorUrl) { status('off', 'Set the Monitor URL in settings to use the radio.'); return; }
     if (ws && url === next && ws.readyState <= 1) return;
     disconnect();
@@ -79,7 +81,13 @@
   // ---- receiving -----------------------------------------------------------------------------------------------
   function onJson(msg) {
     if (msg.type === 'hello' || msg.type === 'stations') { stations = msg.stations || []; emit('stations', stations); }
-    else if (msg.type === 'ptt') {
+    else if (msg.type === 'takeover' || msg.type === 'handback') {
+      if (msg.type === 'takeover' && msg.ok) tuned.tx = msg.freq;
+      if (msg.type === 'handback' && tuned.tx === msg.freq) { stopTransmit(); tuned.tx = null; }
+      emit('control', msg.type, msg.freq, msg.ok, msg.reason);
+    } else if (msg.type === 'history') {
+      emit('history', msg.freq, msg.lines || []);
+    } else if (msg.type === 'ptt') {
       if (!msg.granted) { stopTransmit(); emit('log', { kind: 'warn', text: `Can't transmit: ${msg.reason}` }); emit('ptt', 'denied', msg.reason); }
       else emit('ptt', 'transmitting', msg.freq);
     } else if (msg.type === 'rx-start') {
@@ -187,6 +195,8 @@
     disconnect,
     tune,
     setPtt,
+    takeover: (freq) => sendJson({ type: 'takeover', freq }),
+    handback: (freq) => sendJson({ type: 'handback', freq }),
     setVolume: (v) => { volume = Math.max(0, Math.min(2, Number(v) || 0)); },
     stationOn,
     get stations() { return stations; },
