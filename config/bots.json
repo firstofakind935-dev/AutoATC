@@ -1,7 +1,7 @@
 [
   {
     "name": "Barths Center",
-    "tokenEnv": "BOT_TOWER_TOKEN",
+    "tokenEnv": "BOT_IBCC_TOKEN",
     "guildId": "1561048151794913450",
     "voiceChannelId": "1561059975134969886",
     "logChannelId": null,
