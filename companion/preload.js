@@ -55,6 +55,11 @@ contextBridge.exposeInMainWorld('companion', {
   // IPC (main process)
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  // In-app radio push-to-talk (main.js, lib/pttKey.js): the key held down while the game has focus.
+  onPtt: (callback) => ipcRenderer.on('ptt', (event, down) => callback(down)),
+  setPttKey: (name) => ipcRenderer.invoke('ptt-set-key', name),
+  pttSupported: () => ipcRenderer.invoke('ptt-supported'),
+  pttKeys: () => Object.keys(require('./lib/pttKey').PTT_KEYS),
   getAirports: () => ipcRenderer.invoke('get-airports'),
   getDisplays: () => ipcRenderer.invoke('get-displays'),
   createOverlay: (displayId) => ipcRenderer.invoke('create-overlay', displayId),

@@ -414,8 +414,18 @@ ipcMain.handle('recognize-heading-text', (event, image) => {
   });
 });
 
+// In-app radio push-to-talk: watched here so it works while the game has focus (lib/pttKey.js).
+let pttWatcher = null;
+function startPttWatcher() {
+  const { watchPttKey } = require('./lib/pttKey');
+  pttWatcher = watchPttKey((down) => { if (controlWindow) controlWindow.webContents.send('ptt', down); }, { key: (loadSettings() || {}).pttKey });
+}
+ipcMain.handle('ptt-set-key', (event, name) => { if (pttWatcher) pttWatcher.setKey(name); return pttWatcher ? pttWatcher.supported : false; });
+ipcMain.handle('ptt-supported', () => (pttWatcher ? pttWatcher.supported : false));
+
 app.whenReady().then(() => {
   createControlWindow();
+  try { startPttWatcher(); } catch (err) { console.error('push-to-talk unavailable:', err.message); }
   // F8: take a position fix from the open big map, from inside the game.
   globalShortcut.register('F8', () => { if (controlWindow) controlWindow.webContents.send('map-fix-hotkey'); });
   if (PILOT) openFmsWindow();

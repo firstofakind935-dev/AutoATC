@@ -283,3 +283,14 @@ input[type="checkbox"] {
   width: 100%;
   margin-top: 16px;
 }
+
+/* In-app radio */
+.radio-log {
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-size: 12px;
+  margin-top: 10px;
+}
+#pttBtn { user-select: none; touch-action: none; }
+#pttBtn.transmitting { background: #c0392b; border-color: #c0392b; }

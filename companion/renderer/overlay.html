@@ -55,6 +55,17 @@
     -webkit-app-region: no-drag;
   }
   .bar-brand, .bar-status { display: none; }
+  /* in-app radio: transmit light + the controller's last words (renderer/radio.js via control.js) */
+  #radioPill {
+    display: flex; align-items: center; gap: 7px; max-width: 46vw;
+    background: rgba(15, 23, 42, 0.78); border: 1px solid rgba(56, 189, 248, 0.35); color: #e6ebf5;
+    border-radius: 6px; padding: 4px 10px; font-size: 0.85em; pointer-events: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #radioPill[hidden] { display: none; }
+  #radioPill #barRadioText { overflow: hidden; text-overflow: ellipsis; }
+  .radio-dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; flex-shrink: 0; }
+  .radio-dot.tx { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
   .bar-actions {
     display: flex;
     align-items: center;
@@ -250,7 +261,9 @@
       <span class="bar-dot" id="barDotFix"></span><span id="barFixText">No fix</span>
       <span class="bar-sep">|</span>
       <span class="bar-dot" id="barDotTracking"></span><span id="barTrackingText">Stopped</span>
+
     </div>
+    <div id="radioPill" hidden><span class="radio-dot" id="barDotTx"></span><span id="barRadioText"></span></div>
     <div class="bar-actions">
       <button id="barMessagesBtn" class="overlay-ui">Messages<span id="messagesBadge" hidden></span></button>
       <button id="barRadiosBtn" class="overlay-ui">Radios</button>
