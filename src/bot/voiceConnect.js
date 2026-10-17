@@ -24,7 +24,9 @@ async function joinVoiceWithRetry(joinOptions, logger) {
     // before any 'stateChange' listener could be attached to see it.
     logger.info(`Voice connection initial state (attempt ${attempt}): ${connection.state.status}`);
     connection.on('stateChange', (oldState, newState) => {
-      logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
+      // Same-state updates (ready -> ready on every voice server refresh) were ~2,000 log lines an hour across the
+      // fleet and buried the useful ones; only real transitions are logged.
+      if (oldState.status !== newState.status) logger.info(`Voice connection state: ${oldState.status} -> ${newState.status}`);
     });
 
     try {
@@ -52,6 +54,53 @@ async function joinVoiceWithRetry(joinOptions, logger) {
  * race, dropping the connection straight to "disconnected"
  * (AdapterUnavailable) before any listener can observe it.
  */
+const GUILD_RETRY_MS = 30_000;
+const NOT_IN_GUILD = new Set([10004, 50001]); // Unknown Guild, Missing Access: the bot isn't in that server (yet)
+
+/**
+ * The bot's configured server, waiting for it when the bot hasn't been added yet. It used to fail once ("Unknown
+ * Guild") and stay offline until the next redeploy - with 60 bots, invites get rate-limited and some always land
+ * late. Now it says so once (with how to invite it) and checks again every 30 s, or at once when it is added
+ * (guildCreate), then carries on with startup by itself. Other errors are thrown as before.
+ */
+async function fetchGuildWhenAdded(client, guildId, logger) {
+  let told = false;
+  for (;;) {
+    try {
+      return await client.guilds.fetch(guildId);
+    } catch (err) {
+      if (!NOT_IN_GUILD.has(err.code)) throw err;
+      if (!told) {
+        told = true;
+        logger.warn(`Not in server ${guildId} yet - invite this bot (monitor /invite page, or the INVITE LINKS block in the logs). ` +
+          'It will join by itself once it has been added.');
+      }
+      await new Promise((resolve) => {
+        const onAdd = (guild) => { if (guild.id === guildId) done(); };
+        const timer = setTimeout(() => done(), GUILD_RETRY_MS);
+        function done() { clearTimeout(timer); client.off('guildCreate', onAdd); resolve(); }
+        client.on('guildCreate', onAdd);
+      });
+    }
+  }
+}
+
+/**
+ * Runs `join` until it succeeds, waiting between tries - a voice join that fails all of joinVoiceWithRetry's quick
+ * attempts (rate-limited, Discord hiccup) used to leave the bot logged in but outside its channel for good.
+ */
+async function keepTrying(join, logger, what = 'join the voice channel') {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await join();
+    } catch (err) {
+      const waitS = Math.min(300, 15 * attempt);
+      logger.warn(`Could not ${what} (${err.message}) - trying again in ${waitS}s.`);
+      await new Promise((resolve) => setTimeout(resolve, waitS * 1000));
+    }
+  }
+}
+
 async function waitForShardReady(shard, timeoutMs = SHARD_READY_TIMEOUT_MS) {
   const start = Date.now();
   while (shard.status !== Status.Ready) {
@@ -62,4 +111,4 @@ async function waitForShardReady(shard, timeoutMs = SHARD_READY_TIMEOUT_MS) {
   }
 }
 
-module.exports = { joinVoiceWithRetry, waitForShardReady };
+module.exports = { fetchGuildWhenAdded, keepTrying, joinVoiceWithRetry, waitForShardReady };

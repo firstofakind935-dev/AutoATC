@@ -9,6 +9,7 @@ const { startPositionSync } = require('./flightradar365/positionSync');
 const { inviteUrl } = require('../monitor/fleetInvites');
 
 const logger = makeLogger('fleet');
+const STARTUP_GAP_MS = 1500;
 
 // fleetConfig is only used by BotManagerBot, which needs to see every other
 // bot's config (for the failover hierarchy and frequency-tuning lookup) -
@@ -36,7 +37,10 @@ async function main() {
 
   const bots = fleetConfig.map((c) => createBot(c, fleetConfig));
 
-  const results = await Promise.allSettled(bots.map((bot) => bot.start()));
+  // Log in one after another, a little apart: 60 bots hitting Discord in the same second trip its rate limits.
+  const results = await Promise.allSettled(
+    bots.map((bot, i) => new Promise((resolve) => setTimeout(resolve, i * STARTUP_GAP_MS)).then(() => bot.start()))
+  );
   results.forEach((result, index) => {
     if (result.status === 'rejected') {
       logger.error(`Bot "${fleetConfig[index].name}" failed to start:`, result.reason);

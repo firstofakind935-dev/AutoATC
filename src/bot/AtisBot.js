@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { createAudioPlayer, createAudioResource, StreamType, AudioPlayerStatus } = require('@discordjs/voice');
 
-const { joinVoiceWithRetry, waitForShardReady } = require('./voiceConnect');
+const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying } = require('./voiceConnect');
 const { bufferToStream } = require('../utils/audio');
 const { synthesizeSpeech } = require('../speech/tts');
 const { getAtis } = require('../flightradar365/client');
@@ -47,7 +47,7 @@ class AtisBot {
     // The application id lets the monitor's /invite page build this bot's invite link (see monitor/fleetInvites.js).
     this.logger.info(`Logged in as ${this.client.user.tag} (application ${this.client.application?.id || this.client.user.id}, type atis)`);
 
-    const guild = await this.client.guilds.fetch(this.config.guildId);
+    const guild = await fetchGuildWhenAdded(this.client, this.config.guildId, this.logger);
     await waitForShardReady(guild.shard);
 
     const joinOptions = {
@@ -57,7 +57,7 @@ class AtisBot {
       selfDeaf: true, // never needs to hear anything
       selfMute: false,
     };
-    this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
+    this.connection = await keepTrying(() => joinVoiceWithRetry(joinOptions, this.logger), this.logger);
     this.connection.subscribe(this.player);
     this.logger.info(`Joined ATIS voice channel ${this.config.voiceChannelId}`);
 

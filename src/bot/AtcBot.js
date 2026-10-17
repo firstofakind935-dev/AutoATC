@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
 const { createAudioPlayer, createAudioResource, entersState, StreamType, VoiceConnectionStatus, AudioPlayerStatus } = require('@discordjs/voice');
 
-const { joinVoiceWithRetry, waitForShardReady } = require('./voiceConnect');
+const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying } = require('./voiceConnect');
 const { VoiceCapture } = require('./VoiceCapture');
 const { HumanHandoff } = require('./HumanHandoff');
 const { pcmToWav, bufferToStream } = require('../utils/audio');
@@ -85,14 +85,14 @@ class AtcBot {
     // The application id lets the monitor's /invite page build this bot's invite link (see monitor/fleetInvites.js).
     this.logger.info(`Logged in as ${this.client.user.tag} (application ${this.client.application?.id || this.client.user.id}, type atc)`);
 
-    this.guild = await this.client.guilds.fetch(this.config.guildId);
+    this.guild = await fetchGuildWhenAdded(this.client, this.config.guildId, this.logger);
     await this.guild.commands.set(buildSlashCommands()).catch((err) => this.logger.error('Failed to register slash commands:', err.message));
 
     if (this.config.logChannelId) {
       this.logChannel = await this.guild.channels.fetch(this.config.logChannelId).catch(() => null);
     }
 
-    await this._connectVoice();
+    await keepTrying(() => this._connectVoice(), this.logger);
 
     await this._announce(`${this.config.persona.callsign} online. AI ATC active.`);
 
@@ -171,12 +171,8 @@ class AtcBot {
       } catch {
         this.logger.warn('Voice connection lost. Destroying and attempting to rejoin...');
         this.connection.destroy();
-        try {
-          await this._connectVoice();
-          this.logger.info('Rejoined voice channel after a lost connection.');
-        } catch (err) {
-          this.logger.error(`Failed to rejoin voice channel after a lost connection: ${err.message}`);
-        }
+        await keepTrying(() => this._connectVoice(), this.logger, 'rejoin the voice channel after a lost connection');
+        this.logger.info('Rejoined voice channel after a lost connection.');
       }
     });
   }
