@@ -6,6 +6,7 @@ const { AtisBot } = require('./bot/AtisBot');
 const { BotManagerBot } = require('./bot/BotManagerBot');
 const { makeLogger } = require('./utils/logger');
 const { startPositionSync } = require('./flightradar365/positionSync');
+const { inviteUrl } = require('../monitor/fleetInvites');
 
 const logger = makeLogger('fleet');
 
@@ -46,6 +47,28 @@ async function main() {
     logger.error('No bots started successfully. Exiting.');
     process.exit(1);
   }
+
+  printInviteLinks(bots, fleetConfig).catch((err) => logger.warn('Could not list invite links:', err.message));
+}
+
+/**
+ * Every bot's "add to server" link, in one block in the logs. Discord only lets a server admin add a bot (one
+ * authorization per bot - a bot can't add other bots), so this saves looking up each one's client id. INVITE_GUILD_ID
+ * pre-selects the server. Waits up to a minute for the bots to finish logging in.
+ */
+async function printInviteLinks(bots, fleetConfig) {
+  const guildId = /^\d{15,22}$/.test(process.env.INVITE_GUILD_ID || '') ? process.env.INVITE_GUILD_ID : null;
+  const until = Date.now() + 60_000;
+  while (Date.now() < until && bots.some((b) => b.client && !b.client.isReady())) await new Promise((r) => setTimeout(r, 2000));
+  const lines = [];
+  bots.forEach((bot, i) => {
+    const c = bot.client;
+    if (!c || !c.isReady()) { lines.push(`  ${fleetConfig[i].name}: not logged in - check its token`); return; }
+    const url = inviteUrl({ applicationId: c.application?.id || c.user.id, type: fleetConfig[i].type || 'atc' }, guildId);
+    lines.push(`  ${fleetConfig[i].name}: ${url}`);
+  });
+  console.log(`\n===== INVITE LINKS (${bots.length} bots${guildId ? `, server ${guildId}` : ' - set INVITE_GUILD_ID to pre-select the server'}) =====\n` +
+    `Open each link while logged into Discord as a server admin and click Authorize.\n${lines.join('\n')}\n===== END INVITE LINKS =====\n`);
 }
 
 process.on('unhandledRejection', (err) => {
