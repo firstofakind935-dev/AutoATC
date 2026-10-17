@@ -110,3 +110,42 @@ test('on a shared frequency, the station the pilot calls answers', async (t) => 
     pilot.close();
   } finally { worker.stop(); hub.close(); server.close(); }
 });
+
+test('while a human controller has the frequency the brain only listens - and remembers for the handback', async (t) => {
+  const stt = require('../src/speech/stt');
+  const llm = require('../src/ai/llmProvider');
+  const said = ['Rockford Tower, N42Y, request takeoff', 'N42Y, Rockford Tower, hold short, traffic on final'];
+  t.mock.method(stt, 'transcribeAudio', async () => said.shift());
+  const gen = t.mock.method(llm, 'generateAtcReplyWithFallback', async () => 'should not be called');
+  delete require.cache[require.resolve('../src/radio/radioWorker')];
+  delete require.cache[require.resolve('../src/radio/ControllerBrain')];
+  const { startRadioWorker, loadStations } = require('../src/radio/radioWorker');
+  const { createRadioHub } = require('../monitor/radio');
+  const hub = createRadioHub({ logger: { info() {} } });
+  const server = http.createServer();
+  server.on('upgrade', (req, socket, head) => { if (!hub.handleUpgrade(req, socket, head)) socket.destroy(); });
+  await new Promise((r) => server.listen(0, r));
+  const port = server.address().port;
+  const worker = startRadioWorker({ monitorUrl: `http://127.0.0.1:${port}`, stations: loadStations() });
+  try {
+    const open = (q) => new Promise((res) => { const w = new WebSocket(`ws://127.0.0.1:${port}/radio?${q}`); w.msgs = []; w.on('message', (d, b) => { if (!b) w.msgs.push(JSON.parse(d.toString())); }); w.on('open', () => res(w)); });
+    const human = await open('role=controller&callsign=Bob');
+    const pilot = await open('callsign=N42Y');
+    await new Promise((r) => setTimeout(r, 200));
+    human.send(JSON.stringify({ type: 'takeover', freq: '121.000' }));
+    pilot.send(JSON.stringify({ type: 'tune', tx: '121.000' }));
+    await new Promise((r) => setTimeout(r, 50));
+    for (const who of [pilot, human]) {
+      who.send(JSON.stringify({ type: 'ptt', on: true }));
+      await new Promise((r) => setTimeout(r, 30));
+      who.send(Buffer.alloc(16000));
+      who.send(JSON.stringify({ type: 'ptt', on: false }));
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    const texts = pilot.msgs.filter((m) => m.type === 'rx-text').map((m) => `${m.from}: ${m.text}`);
+    assert.deepStrictEqual(texts, ['N42Y: Rockford Tower, N42Y, request takeoff', 'Bob: N42Y, Rockford Tower, hold short, traffic on final']);
+    assert.strictEqual(gen.mock.callCount(), 0, 'the AI did not answer');
+    assert.ok(!pilot.msgs.some((m) => m.type === 'rx-clip'));
+    pilot.close(); human.close();
+  } finally { worker.stop(); hub.close(); server.close(); }
+});

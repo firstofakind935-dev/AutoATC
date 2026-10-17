@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller Console</title>
+<style>
+  :root {
+    --bg: #0f141c; --panel: #161d28; --line: #263142; --fg: #e6ebf5; --dim: #8b97a8;
+    --accent: #38bdf8; --ai: #a78bfa; --human: #34d399; --tx: #ef4444; --warn: #fbbf24;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #f4f6fa; --panel: #ffffff; --line: #dde3ec; --fg: #172033; --dim: #5d6b80; --accent: #0284c7; --ai: #7c3aed; --human: #059669; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  input, select, button { font: inherit; color: inherit; }
+  input, select { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; min-width: 0; }
+  button { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.take { border-color: var(--human); color: var(--human); }
+  button.back { border-color: var(--ai); color: var(--ai); }
+  .pill { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); font-size: 12px; white-space: nowrap; }
+  .pill.ok { color: var(--human); border-color: var(--human); }
+  .pill.bad { color: var(--tx); border-color: var(--tx); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; padding: 16px; max-width: 1300px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  section h2 { font-size: 14px; margin: 0 0 10px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .filter { width: 100%; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+  td.f { font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+  td.who { color: var(--dim); }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+  .tag.ai { color: var(--ai); border: 1px solid var(--ai); }
+  .tag.human { color: var(--human); border: 1px solid var(--human); }
+  .tag.mine { background: var(--human); color: #fff; }
+  .stations { max-height: 64vh; overflow-y: auto; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  label.listen { display: inline-flex; gap: 4px; align-items: center; color: var(--dim); font-size: 12px; }
+  #ptt { width: 100%; padding: 18px; font-size: 17px; margin: 8px 0; user-select: none; touch-action: none; }
+  #ptt.tx { background: var(--tx); border-color: var(--tx); color: #fff; }
+  #held { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  #held label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--human); border-radius: 8px; padding: 6px 10px; }
+  #log { height: 46vh; overflow-y: auto; font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; background: var(--bg); border-radius: 8px; padding: 10px; border: 1px solid var(--line); }
+  .l-atc { color: var(--ai); } .l-ctl { color: var(--human); } .l-warn { color: var(--warn); } .l-hist { color: var(--dim); }
+  .hint { color: var(--dim); font-size: 12.5px; margin: 6px 0 0; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Controller Console</h1>
+  <input id="callsign" placeholder="Your name / position" size="18">
+  <input id="key" type="password" placeholder="Controller key" size="14">
+  <button class="primary" id="connect">Connect</button>
+  <span class="pill" id="status">Not connected</span>
+  <span style="flex:1"></span>
+  <label class="listen">Volume <input id="volume" type="range" min="0" max="2" step="0.05" value="1"></label>
+</header>
+<main>
+  <section>
+    <h2>Stations</h2>
+    <input class="filter" id="filter" placeholder="Filter: airport, station or frequency (e.g. IRFD, Tower, 121)">
+    <div class="stations"><table><tbody id="stations"></tbody></table></div>
+    <p class="hint"><b>Listen</b> to hear a frequency without taking it. <b>Take over</b>: the AI stops answering there at once
+      and you get its recent transcript. <b>Hand back</b> gives it back to the AI (it knows what you said meanwhile).</p>
+  </section>
+  <section>
+    <h2>Your frequencies</h2>
+    <div id="held"><span class="hint">Take a station over to transmit on it.</span></div>
+    <button id="ptt" disabled>Hold to talk (or hold <kbd>Space</kbd>)</button>
+    <div id="log"></div>
+  </section>
+</main>
+<script src="radio.js"></script>
+<script src="console.js"></script>
+</body>
+</html>

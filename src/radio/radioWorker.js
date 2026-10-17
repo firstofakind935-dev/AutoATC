@@ -85,7 +85,7 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
 
   async function handle(msg) {
     const onFreq = byFreq.get(msg.freq);
-    if (!onFreq) return;
+    if (!onFreq && !msg.listenOnly) return;
     const freq = msg.freq;
     let transcript;
     try {
@@ -95,9 +95,18 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
       return;
     }
     if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return;
+    send({ type: 'transcript', id: msg.id, freq, from: msg.from, text: transcript });
+    logger.info(`${freq} ${msg.from}${msg.listenOnly ? ' (human-controlled)' : ''}: ${transcript}`);
+    if (msg.listenOnly) {
+      // A human controller has this frequency: only keep the AI up to date, so it carries on from here if the
+      // frequency is handed back.
+      if (onFreq) {
+        const s = msg.speaker === 'controller' ? onFreq[0] : addressed(onFreq, transcript);
+        brainFor(s).observe(transcript, { speaker: msg.speaker === 'controller' ? 'controller' : 'pilot' });
+      }
+      return;
+    }
     const s = addressed(onFreq, transcript);
-    send({ type: 'transcript', id: msg.id, freq: s.freq, from: msg.from, text: transcript });
-    logger.info(`${s.freq} ${msg.from}: ${transcript}`);
     const reply = await brainFor(s).respond(transcript, { from: msg.from });
     if (!reply) return;
     logger.info(`${s.freq} ${s.persona.callsign}: ${reply}`);

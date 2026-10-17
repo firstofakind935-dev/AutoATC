@@ -30,6 +30,15 @@ class ControllerBrain {
   }
 
   /**
+   * Something said on the frequency while a human controller had it: kept in this position's conversation, so the AI
+   * knows the traffic situation when the frequency is handed back. Nothing is generated.
+   */
+  observe(text, { speaker }) {
+    if (speaker === 'controller') this.history.addAtcReply(text);
+    else this.history.addPilotTransmission(text);
+  }
+
+  /**
    * The controller's reply to one transmission, or '' when none is needed (the model says NO_RESPONSE_NEEDED, or
    * generation failed - logged). `from` is the callsign the pilot's app reports, given to the model as context.
    */

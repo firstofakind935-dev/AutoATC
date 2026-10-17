@@ -502,6 +502,9 @@ app.delete('/api/tune-requests/:id', requireIngestAuth, (req, res) => {
 // from dashboard auth - see publicApi.js for exactly what is exposed.
 app.use('/api/public/v1', createPublicApiRouter({ getPositions: freshPositions }));
 app.use('/developers', express.static(path.join(__dirname, 'developers')));
+// The human controllers' radio console (monitor/console/): take frequencies over from the AI. Not behind the
+// dashboard login - taking over needs the CONTROLLER_KEY instead (see radio.js).
+app.use('/console', express.static(path.join(__dirname, 'console')));
 
 // /radar is the 24SPY-based radar (a modified fork of 24SPY by tiaguinho_2009,
 // non-commercial licence - see public/radar/LICENSE.md and README). The older
@@ -558,7 +561,9 @@ require('./flightradar365Push').startFromEnv(freshPositions);
 // Two websocket endpoints share the server, so upgrades are routed by path (a WebSocketServer given `server` would
 // reject every path but its own).
 const wss = new WebSocketServer({ noServer: true });
-const radioHub = createRadioHub({ workerKey: INGEST_API_KEY, logger: { info: (...a) => console.log(...a) } });
+// CONTROLLER_KEY: what the human controllers enter in the console (/console) to take frequencies over. Without it
+// anyone could silence the AI - set it for the event.
+const radioHub = createRadioHub({ workerKey: INGEST_API_KEY, controllerKey: process.env.CONTROLLER_KEY || null, logger: { info: (...a) => console.log(...a) } });
 server.on('upgrade', (req, socket, head) => {
   const pathname = (req.url || '').split('?')[0];
   if (pathname === '/ws') {

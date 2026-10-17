@@ -18,6 +18,24 @@ and persona (e.g. "Springfield Tower", "Springfield Ground"). A bot:
    (again, OpenAI's hosted API by default, or self-hosted) and plays it
    back into the channel.
 
+## In-app radio and the controller console
+
+Pilots talk to ATC through the companion / pilot app (push-to-talk, see `companion/README.md`); the monitor relays it
+(`monitor/radio.js`, `/radio`) and the bot service answers on every station of `data/frequencies.json`
+(`src/radio/`, no Discord bots needed - `RADIO_ENABLED=false` turns it off).
+
+**Human controllers** take over from the AI at any moment at **`/console`** on the monitor (e.g.
+`https://cpdlc.up.railway.app/console/`), in any browser:
+
+1. Enter your name/position and the **controller key** (the monitor's `CONTROLLER_KEY` variable - set it, or anyone could
+   silence the AI), then **Connect**.
+2. **Listen** to any frequency, or **Take over** a station: the AI stops answering there at once, pilots see the station
+   as human-staffed, and you get the last 20 minutes of that frequency's transcript.
+3. Talk with **Space** (or the Hold to talk button); you hear pilots live and see what they said as text.
+4. **Hand back** returns the frequency to the AI, which has overheard everything said meanwhile and carries on from
+   there. Closing the page hands back too. One controller per frequency; a controller can hold several and pick which
+   one to transmit on.
+
 ## How the human handoff works today
 
 The bot does **not** yet know how to detect a real human controller taking
