@@ -115,6 +115,7 @@ function validateEntry(entry, index) {
     token,
     guildId: String(entry.guildId),
     voiceChannelId: entry.voiceChannelId ? String(entry.voiceChannelId) : null,
+    station: entry.station ? String(entry.station) : null, // e.g. "IRFD TWR" - also the voice channel's name
     logChannelId: entry.logChannelId ? String(entry.logChannelId) : null,
   };
 

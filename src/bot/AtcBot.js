@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
 const { createAudioPlayer, createAudioResource, entersState, StreamType, VoiceConnectionStatus, AudioPlayerStatus } = require('@discordjs/voice');
 
-const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying } = require('./voiceConnect');
+const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying, resolveVoiceChannelId } = require('./voiceConnect');
 const { VoiceCapture } = require('./VoiceCapture');
 const { HumanHandoff } = require('./HumanHandoff');
 const { pcmToWav, bufferToStream } = require('../utils/audio');
@@ -126,8 +126,9 @@ class AtcBot {
     // immediately.
     await waitForShardReady(this.guild.shard);
 
+    this.voiceChannelId = await resolveVoiceChannelId(this.guild, this.config, this.logger);
     const joinOptions = {
-      channelId: this.config.voiceChannelId,
+      channelId: this.voiceChannelId,
       guildId: this.config.guildId,
       adapterCreator: this.guild.voiceAdapterCreator,
       selfDeaf: false,
@@ -136,7 +137,7 @@ class AtcBot {
     this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
     this._watchConnectionHealth();
     this.connection.subscribe(this.player);
-    this.logger.info(`Joined voice channel ${this.config.voiceChannelId}`);
+    this.logger.info(`Joined voice channel ${this.voiceChannelId}`);
 
     this.capture = new VoiceCapture(this.connection, {
       logger: this.logger,
@@ -213,7 +214,7 @@ class AtcBot {
   }
 
   async _handleUtterance(guild, userId, pcmBuffer) {
-    if (await this.handoff.shouldStayQuiet(this.config.guildId, this.config.voiceChannelId)) {
+    if (await this.handoff.shouldStayQuiet(this.config.guildId, this.voiceChannelId || this.config.voiceChannelId)) {
       return;
     }
 

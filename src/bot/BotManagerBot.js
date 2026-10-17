@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder } = require('discord.js');
-const { fetchGuildWhenAdded } = require('./voiceConnect');
+const { fetchGuildWhenAdded, resolveVoiceChannelId } = require('./voiceConnect');
 
 const { AtcBot } = require('./AtcBot');
 const { findFallback } = require('../botmanager/hierarchy');
@@ -77,6 +77,13 @@ class BotManagerBot {
     await this._pollStatus(); // establish the initial online/offline baseline immediately, not 15s from now
   }
 
+  /** A position's voice channel the same way its bot finds it: by station name first (see resolveVoiceChannelId). */
+  async _channelOf(config) {
+    if (!this.guild) return config.voiceChannelId;
+    const quiet = { info() {}, warn() {}, error() {} };
+    return resolveVoiceChannelId(this.guild, config, quiet);
+  }
+
   _monitorHeaders() {
     const headers = { 'Content-Type': 'application/json' };
     if (MONITOR_API_KEY) headers.Authorization = `Bearer ${MONITOR_API_KEY}`;
@@ -127,7 +134,7 @@ class BotManagerBot {
 
     const fallback = findFallback(offlineConfig, this.fleetConfigs, (name) => this._isOnline(name));
     if (fallback) {
-      await this._moveEveryoneFromTo(offlineConfig.voiceChannelId, fallback.voiceChannelId, offlineConfig.persona.callsign, fallback.persona.callsign);
+      await this._moveEveryoneFromTo(await this._channelOf(offlineConfig), await this._channelOf(fallback), offlineConfig.persona.callsign, fallback.persona.callsign);
       return;
     }
 
@@ -245,7 +252,7 @@ class BotManagerBot {
       return;
     }
 
-    await member.voice.setChannel(target.voiceChannelId);
+    await member.voice.setChannel(await this._channelOf(target));
     this.logger.info(`${callsign} tuned ${frequency} - moved to ${target.persona.callsign}.`);
   }
 

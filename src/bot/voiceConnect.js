@@ -101,6 +101,38 @@ async function keepTrying(join, logger, what = 'join the voice channel') {
   }
 }
 
+/** "IRFD TWR", "irfd-twr", "IRFD_TWR", "🎧 IRFD TWR" all compare equal. */
+const channelKey = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+/**
+ * The voice channel to join: the one NAMED after this position's station (config "station", e.g. "IRFD TWR"), if
+ * the server has exactly one; otherwise the configured voiceChannelId. Channel IDs copied from a spreadsheet can be
+ * on the wrong row (Rockford Center's ID turned out to be the "IBTH TWR" channel), while the names are what people
+ * see - so the name wins, and the log says when the two disagree.
+ */
+async function resolveVoiceChannelId(guild, config, logger) {
+  if (!config.station) return config.voiceChannelId;
+  let channels;
+  try {
+    channels = await guild.channels.fetch();
+  } catch (err) {
+    logger.warn(`Could not list the server's channels (${err.message}) - using the configured channel ${config.voiceChannelId}.`);
+    return config.voiceChannelId;
+  }
+  const want = channelKey(config.station);
+  const named = [...channels.values()].filter((c) => c && c.isVoiceBased && c.isVoiceBased() && channelKey(c.name) === want);
+  if (named.length === 1) {
+    if (named[0].id !== config.voiceChannelId) {
+      const configured = channels.get(config.voiceChannelId);
+      logger.warn(`Joining "${named[0].name}" (${named[0].id}) by name - the configured channel ${config.voiceChannelId}` +
+        `${configured ? ` is "${configured.name}"` : ' is not in this server'}.`);
+    }
+    return named[0].id;
+  }
+  if (named.length > 1) logger.warn(`${named.length} voice channels are named "${config.station}" - using the configured one.`);
+  return config.voiceChannelId;
+}
+
 async function waitForShardReady(shard, timeoutMs = SHARD_READY_TIMEOUT_MS) {
   const start = Date.now();
   while (shard.status !== Status.Ready) {
@@ -111,4 +143,4 @@ async function waitForShardReady(shard, timeoutMs = SHARD_READY_TIMEOUT_MS) {
   }
 }
 
-module.exports = { fetchGuildWhenAdded, keepTrying, joinVoiceWithRetry, waitForShardReady };
+module.exports = { resolveVoiceChannelId, channelKey, fetchGuildWhenAdded, keepTrying, joinVoiceWithRetry, waitForShardReady };

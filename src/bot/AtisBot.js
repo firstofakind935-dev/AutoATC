@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { createAudioPlayer, createAudioResource, StreamType, AudioPlayerStatus } = require('@discordjs/voice');
 
-const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying } = require('./voiceConnect');
+const { joinVoiceWithRetry, waitForShardReady, fetchGuildWhenAdded, keepTrying, resolveVoiceChannelId } = require('./voiceConnect');
 const { bufferToStream } = require('../utils/audio');
 const { synthesizeSpeech } = require('../speech/tts');
 const { getAtis } = require('../flightradar365/client');
@@ -50,8 +50,9 @@ class AtisBot {
     const guild = await fetchGuildWhenAdded(this.client, this.config.guildId, this.logger);
     await waitForShardReady(guild.shard);
 
+    this.voiceChannelId = await resolveVoiceChannelId(guild, this.config, this.logger);
     const joinOptions = {
-      channelId: this.config.voiceChannelId,
+      channelId: this.voiceChannelId,
       guildId: this.config.guildId,
       adapterCreator: guild.voiceAdapterCreator,
       selfDeaf: true, // never needs to hear anything
@@ -59,7 +60,7 @@ class AtisBot {
     };
     this.connection = await keepTrying(() => joinVoiceWithRetry(joinOptions, this.logger), this.logger);
     this.connection.subscribe(this.player);
-    this.logger.info(`Joined ATIS voice channel ${this.config.voiceChannelId}`);
+    this.logger.info(`Joined ATIS voice channel ${this.voiceChannelId}`);
 
     await this._refreshAtis();
     this.pollInterval = setInterval(() => {
