@@ -137,7 +137,8 @@ class AtcBot {
     this.connection = await joinVoiceWithRetry(joinOptions, this.logger);
     this._watchConnectionHealth();
     this.connection.subscribe(this.player);
-    this.logger.info(`Joined voice channel ${this.voiceChannelId}`);
+    const joined = this.guild.channels.cache.get(this.voiceChannelId);
+    this.logger.info(`Joined voice channel ${this.voiceChannelId} ("${joined ? joined.name : '?'}") as ${this.config.station || this.config.name}`);
 
     this.capture = new VoiceCapture(this.connection, {
       logger: this.logger,

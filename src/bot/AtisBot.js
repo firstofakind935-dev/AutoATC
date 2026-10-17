@@ -60,7 +60,8 @@ class AtisBot {
     };
     this.connection = await keepTrying(() => joinVoiceWithRetry(joinOptions, this.logger), this.logger);
     this.connection.subscribe(this.player);
-    this.logger.info(`Joined ATIS voice channel ${this.voiceChannelId}`);
+    const joined = guild.channels.cache.get(this.voiceChannelId);
+    this.logger.info(`Joined ATIS voice channel ${this.voiceChannelId} ("${joined ? joined.name : '?'}") as ${this.config.station || this.config.name}`);
 
     await this._refreshAtis();
     this.pollInterval = setInterval(() => {
