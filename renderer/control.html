@@ -76,6 +76,30 @@
         </div>
       </section>
 
+      <section class="card" id="radioCard">
+        <div class="card-header">
+          <span class="step-badge">&#x1F4FB;</span>
+          <h2>Radio</h2>
+        </div>
+        <div class="card-body">
+          <p class="hint">
+            Talk to ATC right here - no Discord needed. Hold your push-to-talk key (it works while the game has focus) to
+            transmit on your primary radio; you hear the controllers and other pilots on every radio that's switched on.
+            Tune with the overlay's <strong>Radios</strong> panel or the FMS; <strong>Hold to talk</strong> below works too.
+          </p>
+          <div class="field-grid">
+            <label>Push-to-talk key <select id="pttKeySelect"></select></label>
+            <label>Volume <input id="radioVolume" type="range" min="0" max="2" step="0.05" value="1"></label>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" id="pttBtn">Hold to talk</button>
+            <span class="status-pill" id="radioStatus">Radio off</span>
+            <span class="status-pill" id="radioTuned"></span>
+          </div>
+          <pre id="radioLog" class="radio-log"></pre>
+        </div>
+      </section>
+
       <section class="card" id="displayPicker">
         <div class="card-header">
           <span class="step-badge">2</span>
@@ -219,6 +243,7 @@
     </main>
   </div>
 
+  <script src="radio.js"></script>
   <script src="control.js"></script>
 </body>
 </html>

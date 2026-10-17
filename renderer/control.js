@@ -87,6 +87,7 @@ async function saveSettingsFromForm() {
   settings.monitorApiKey = document.getElementById('monitorApiKey').value.trim();
   settings.intervalSec = Number(document.getElementById('intervalSec').value) || 5;
   await window.companion.saveSettings(settings);
+  radioConnect();
   setStatus('settingsStatus', 'Saved.', 'ok');
   setTimeout(() => setStatus('settingsStatus', '', null), 2000);
 }
@@ -984,7 +985,79 @@ function clampFreq(value) {
 // themselves default to it being the only one switched on.
 let primaryRadio = 'vhf1';
 
+
+// ---------- In-app radio (renderer/radio.js) ----------
+// Transmit on the primary radio's active frequency; listen on every radio that's switched on.
+function radioTuneFromRadios() {
+  if (!window.AppRadio) return;
+  const primary = radios[primaryRadio];
+  const tx = primary && !primary.inop ? primary.active : null;
+  const rx = Object.values(radios).filter((r) => !r.inop).map((r) => r.active);
+  window.AppRadio.tune(tx, rx);
+  const station = tx && window.AppRadio.stationOn(Number(tx).toFixed(3));
+  setStatus('radioTuned', tx ? `TX ${Number(tx).toFixed(3)}${station ? ` - ${station.callsign}${station.staffed === 'human' ? ' (human)' : ''}` : ' - no ATC here'}` : 'No radio on', null);
+}
+
+function radioConnect() {
+  if (!window.AppRadio) return;
+  window.AppRadio.connect(settings.monitorUrl, settings.callsign);
+  radioTuneFromRadios();
+}
+
+function setupRadio() {
+  if (!window.AppRadio) return;
+  const logEl = document.getElementById('radioLog');
+  const lines = [];
+  const addLine = (text) => {
+    lines.push(`${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}  ${text}`);
+    while (lines.length > 40) lines.shift();
+    logEl.textContent = lines.join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+  window.AppRadio.on('status', (state, detail) => {
+    const label = { connected: 'Radio connected', connecting: 'Radio connecting...', reconnecting: 'Radio reconnecting...', off: detail || 'Radio off' }[state] || state;
+    setStatus('radioStatus', label, state === 'connected' ? 'ok' : state === 'off' ? null : 'warn');
+  });
+  window.AppRadio.on('stations', () => radioTuneFromRadios());
+  window.AppRadio.on('ptt', (state, info) => {
+    const btn = document.getElementById('pttBtn');
+    btn.classList.toggle('transmitting', state === 'transmitting');
+    btn.textContent = state === 'transmitting' ? `Transmitting on ${info}` : state === 'requesting' ? 'Keying...' : 'Hold to talk';
+    window.companion.sendToOverlay({ type: 'radio-tx', transmitting: state === 'transmitting' || state === 'requesting', freq: info || null });
+  });
+  window.AppRadio.on('log', (e) => {
+    if (e.kind === 'warn') { addLine(`!! ${e.text}`); return; }
+    if (e.live) return; // the transcript follows
+    addLine(`${e.freq}  ${e.from || '?'}: ${e.text}`);
+    if (e.kind === 'atc') window.companion.sendToOverlay({ type: 'radio-rx', freq: e.freq, from: e.from, text: e.text });
+  });
+
+  const select = document.getElementById('pttKeySelect');
+  for (const name of window.companion.pttKeys()) select.add(new Option(name, name));
+  select.value = settings.pttKey || 'Right Ctrl';
+  select.addEventListener('change', async () => {
+    settings.pttKey = select.value;
+    await window.companion.saveSettings(settings);
+    window.companion.setPttKey(select.value);
+  });
+  window.companion.pttSupported().then((ok) => {
+    if (!ok) addLine('!! Push-to-talk from inside the game works on Windows only - here, hold the Hold to talk button instead.');
+  });
+  const volume = document.getElementById('radioVolume');
+  volume.value = settings.radioVolume != null ? settings.radioVolume : 1;
+  window.AppRadio.setVolume(volume.value);
+  volume.addEventListener('change', () => { window.AppRadio.setVolume(volume.value); settings.radioVolume = Number(volume.value); window.companion.saveSettings(settings); });
+
+  // push-to-talk: the global key (main process), the button, or the key with this window focused
+  window.companion.onPtt((down) => window.AppRadio.setPtt(down));
+  const btn = document.getElementById('pttBtn');
+  btn.addEventListener('pointerdown', () => window.AppRadio.setPtt(true));
+  for (const ev of ['pointerup', 'pointerleave']) btn.addEventListener(ev, () => window.AppRadio.setPtt(false));
+  radioConnect();
+}
+
 function pushRadioStateToOverlay() {
+  radioTuneFromRadios();
   window.companion.sendToOverlay({
     type: 'radio-state',
     radios,
@@ -1106,6 +1179,7 @@ function showLoadErrors() {
   }
   showLoadErrors();
   await loadSettings();
+  setupRadio();
   await populateAirportDropdowns();
   populateStandAirports();
   await populateDisplays();

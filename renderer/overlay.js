@@ -434,6 +434,16 @@ window.companion.onOverlayCommand((command) => {
     unreadCount += incoming.length;
     renderMessagePanel();
     for (const m of incoming) showToast(m);
+  } else if (command.type === 'radio-tx') {
+    // in-app radio: transmit light
+    document.getElementById('radioPill').hidden = false;
+    document.getElementById('barDotTx').className = 'radio-dot' + (command.transmitting ? ' tx' : '');
+    if (command.transmitting) document.getElementById('barRadioText').textContent = `Transmitting ${command.freq || ''}`;
+  } else if (command.type === 'radio-rx') {
+    // in-app radio: the controller's last words, readable without leaving the game
+    const text = `${command.from}: ${command.text}`;
+    document.getElementById('radioPill').hidden = false;
+    document.getElementById('barRadioText').textContent = text;
   } else if (command.type === 'radio-state') {
     radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing, primaryRadio: command.primaryRadio };
     if (!radioPanel.hidden) renderRadioPanel();
