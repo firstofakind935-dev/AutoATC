@@ -2,8 +2,8 @@
   {
     "name": "Barths Center",
     "tokenEnv": "BOT_TOWER_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": "1507182218731323515",
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059975134969886",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -18,13 +18,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496421431708352523",
+    "station": "IBCC"
   },
   {
     "name": "Rockford Center",
     "tokenEnv": "BOT_IRCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561051626268135575",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -39,13 +41,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496415609318015026",
+    "station": "IRCC"
   },
   {
     "name": "Rockford Approach",
     "tokenEnv": "BOT_IRFD_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561051673097412790",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -60,13 +64,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496948100886036701",
+    "station": "IRFD APP"
   },
   {
     "name": "Rockford Departures",
     "tokenEnv": "BOT_IRFD_DEP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561051879415353535",
     "logChannelId": null,
     "persona": {
       "position": "Departure",
@@ -81,13 +87,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497995338802532472",
+    "station": "IRFD DEP"
   },
   {
     "name": "Rockford Tower",
     "tokenEnv": "BOT_IRFD_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561051947732177026",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -102,13 +110,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496415273769766973",
+    "station": "IRFD TWR"
   },
   {
     "name": "Rockford Ground",
     "tokenEnv": "BOT_IRFD_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561051985200025620",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -123,13 +133,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492503136785662134",
+    "station": "IRFD GND"
   },
   {
     "name": "Rockford Delivery",
     "tokenEnv": "BOT_IRFD_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561052031546957854",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -144,13 +156,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1519356392908132373",
+    "station": "IRFD DEL"
   },
   {
     "name": "Mellor Approach",
     "tokenEnv": "BOT_IMLR_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561053990475792455",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -165,13 +179,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497996014936915978",
+    "station": "IMLR APP"
   },
   {
     "name": "Mellor Tower",
     "tokenEnv": "BOT_IMLR_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561054042862391506",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -186,13 +202,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492506019513761882",
+    "station": "IMLR TWR"
   },
   {
     "name": "Mellor Ground",
     "tokenEnv": "BOT_IMLR_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561054090186981447",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -207,13 +225,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496948505183260813",
+    "station": "IMLR GND"
   },
   {
     "name": "Mellor Delivery",
     "tokenEnv": "BOT_IMLR_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561054131605733557",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -228,13 +248,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1519356462458081491",
+    "station": "IMLR DEL"
   },
   {
     "name": "Garry Tower",
     "tokenEnv": "BOT_IGAR_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561054360970989788",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -249,13 +271,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492506290709200926",
+    "station": "IGAR TWR"
   },
   {
     "name": "Boltic Tower",
     "tokenEnv": "BOT_IBLT_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561054458400473108",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -270,13 +294,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496754489498144829",
+    "station": "IBLT TWR"
   },
   {
     "name": "Training Control",
     "tokenEnv": "BOT_IRTC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055047612239984",
     "logChannelId": null,
     "persona": {
       "position": "Training",
@@ -291,13 +317,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496754723850813461",
+    "station": "IRTC"
   },
   {
     "name": "Tokyo Center",
     "tokenEnv": "BOT_IOCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055158274629863",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -312,13 +340,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496415936914133012",
+    "station": "IOCC"
   },
   {
     "name": "Tokyo Approach",
     "tokenEnv": "BOT_ITKO_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055232103030944",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -333,13 +363,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496415665618161798",
+    "station": "ITKO APP"
   },
   {
     "name": "Tokyo Departures",
     "tokenEnv": "BOT_ITKO_DEP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055265413922846",
     "logChannelId": null,
     "persona": {
       "position": "Departure",
@@ -354,13 +386,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497996237293621450",
+    "station": "ITKO DEP"
   },
   {
     "name": "Tokyo Tower",
     "tokenEnv": "BOT_ITKO_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055319289761854",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -375,13 +409,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496948849716101180",
+    "station": "ITKO TWR"
   },
   {
     "name": "Tokyo Ground",
     "tokenEnv": "BOT_ITKO_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055403456856084",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -396,13 +432,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492506821657890908",
+    "station": "ITKO GND"
   },
   {
     "name": "Tokyo Delivery",
     "tokenEnv": "BOT_ITKO_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055504652836874",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -417,13 +455,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1519356545249444062",
+    "station": "ITKO DEL"
   },
   {
     "name": "Saba Tower",
     "tokenEnv": "BOT_IDCS_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055654834208839",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -438,13 +478,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492507035210616925",
+    "station": "IDCS TWR"
   },
   {
     "name": "Bird Tower",
     "tokenEnv": "BOT_IBRD_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055733842190417",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -459,13 +501,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496782812785938473",
+    "station": "IBRD TWR"
   },
   {
     "name": "Perth Center",
     "tokenEnv": "BOT_IPCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055777198702685",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -480,13 +524,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496416613543579839",
+    "station": "IPCC"
   },
   {
     "name": "Perth Arrivals",
     "tokenEnv": "BOT_IPPH_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055855489843280",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -501,13 +547,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1537526926489550899",
+    "station": "IPPH APP"
   },
   {
     "name": "Perth Tower",
     "tokenEnv": "BOT_IPPH_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055920283324426",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -522,13 +570,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492509636719415498",
+    "station": "IPPH TWR"
   },
   {
     "name": "Perth Ground",
     "tokenEnv": "BOT_IPPH_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561055968480067645",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -543,13 +593,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496416077620580362",
+    "station": "IPPH GND"
   },
   {
     "name": "Perth Delivery",
     "tokenEnv": "BOT_IPPH_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056000877007060",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -564,13 +616,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1519356602807750806",
+    "station": "IPPH DEL"
   },
   {
     "name": "Lukla Tower",
     "tokenEnv": "BOT_ILKL_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056055209758832",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -585,13 +639,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492509866445639801",
+    "station": "ILKL TWR"
   },
   {
     "name": "Grindavik Center",
     "tokenEnv": "BOT_IGCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056282025394247",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -606,13 +662,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496417020630138920",
+    "station": "IGCC"
   },
   {
     "name": "Keflavik Approach",
     "tokenEnv": "BOT_IKFL_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056343354380319",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -627,13 +685,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496949335592796422",
+    "station": "IKFL APP"
   },
   {
     "name": "Keflavik Tower",
     "tokenEnv": "BOT_IKFL_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056452049903706",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -648,13 +708,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496416898030768128",
+    "station": "IKFL TWR"
   },
   {
     "name": "Keflavik Ground",
     "tokenEnv": "BOT_IKFL_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056481296519188",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -669,13 +731,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492510299537018940",
+    "station": "IKFL GND"
   },
   {
     "name": "Keflavik Delivery",
     "tokenEnv": "BOT_IKFL_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056507192148129",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -690,13 +754,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1519356917338607746",
+    "station": "IKFL DEL"
   },
   {
     "name": "Pingyeri Tower",
     "tokenEnv": "BOT_ITEY_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056860948271234",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -711,13 +777,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1494933502725062657",
+    "station": "ITEY TWR"
   },
   {
     "name": "Cyprus Center",
     "tokenEnv": "BOT_ICCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561056947569033257",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -732,13 +800,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496419865991315518",
+    "station": "ICCC"
   },
   {
     "name": "Larnaca Approach",
     "tokenEnv": "BOT_ILAR_APP_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057013868396637",
     "logChannelId": null,
     "persona": {
       "position": "Approach",
@@ -753,13 +823,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497997668939464745",
+    "station": "ILAR APP"
   },
   {
     "name": "Larnaca Tower",
     "tokenEnv": "BOT_ILAR_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057501359906957",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -774,13 +846,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492508335021228102",
+    "station": "ILAR TWR"
   },
   {
     "name": "Larnaca Ground",
     "tokenEnv": "BOT_ILAR_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057543353139380",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -795,13 +869,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496784213230227526",
+    "station": "ILAR GND"
   },
   {
     "name": "Mcconnell Tower",
     "tokenEnv": "BOT_IIAB_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057661175341188",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -816,13 +892,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492509165073993749",
+    "station": "IIAB TWR"
   },
   {
     "name": "Paphos Tower",
     "tokenEnv": "BOT_IPAP_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057758931849268",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -837,13 +915,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492508691973406760",
+    "station": "IPAP TWR"
   },
   {
     "name": "Barra Tower",
     "tokenEnv": "BOT_IBAR_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057789571502172",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -858,13 +938,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492509009842929786",
+    "station": "IBAR TWR"
   },
   {
     "name": "Henstridge Tower",
     "tokenEnv": "BOT_IHEN_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561057869116473434",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -879,13 +961,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1498829089342099466",
+    "station": "IHEN TWR"
   },
   {
     "name": "Izolirani Center",
     "tokenEnv": "BOT_IZCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561058439076257883",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -900,13 +984,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496420560048095342",
+    "station": "IZCC"
   },
   {
     "name": "Izolirani Tower",
     "tokenEnv": "BOT_IZOL_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561058519283933314",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -921,13 +1007,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492507423213228185",
+    "station": "IZOL TWR"
   },
   {
     "name": "Izolirani Ground",
     "tokenEnv": "BOT_IZOL_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561058568977784932",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -942,13 +1030,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496950234927075358",
+    "station": "IZOL GND"
   },
   {
     "name": "Izoliranii Delivery",
     "tokenEnv": "BOT_IZOL_DEL_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561058600238059612",
     "logChannelId": null,
     "persona": {
       "position": "Delivery",
@@ -963,13 +1053,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497998041083543583",
+    "station": "IZOL DEL"
   },
   {
     "name": "Al Najaf Tower",
     "tokenEnv": "BOT_IJAF_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059142607708321",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -984,13 +1076,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492507890341249116",
+    "station": "IJAF TWR"
   },
   {
     "name": "Scrampton Tower",
     "tokenEnv": "BOT_ISCM_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059196911222794",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1005,13 +1099,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496784760054354092",
+    "station": "ISCM TWR"
   },
   {
     "name": "Sauthemptona Center",
     "tokenEnv": "BOT_EGCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059321868066876",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -1026,13 +1122,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496420923375616020",
+    "station": "EGCC"
   },
   {
     "name": "Sauthemptona Tower",
     "tokenEnv": "BOT_ISAU_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059399735443536",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1047,13 +1145,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492510535940444170",
+    "station": "ISAU TWR"
   },
   {
     "name": "Sauthemptona Ground",
     "tokenEnv": "BOT_ISAU_GND_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059434653028524",
     "logChannelId": null,
     "persona": {
       "position": "Ground",
@@ -1068,13 +1168,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496950455765565582",
+    "station": "ISAU GND"
   },
   {
     "name": "Sauthemptona Apron",
     "tokenEnv": "BOT_ISAU_APRON_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561059469440454686",
     "logChannelId": null,
     "persona": {
       "position": "Apron",
@@ -1089,13 +1191,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1497998259682148586",
+    "station": "ISAU APRON"
   },
   {
     "name": "Barths Tower",
     "tokenEnv": "BOT_IBTH_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060022568353813",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1110,13 +1214,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492510761141145691",
+    "station": "IBTH TWR"
   },
   {
     "name": "Skopelos Center",
     "tokenEnv": "BOT_ISCC_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060087001514014",
     "logChannelId": null,
     "persona": {
       "position": "Center",
@@ -1131,13 +1237,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496421849528275065",
+    "station": "ISCC"
   },
   {
     "name": "Skopelos Tower",
     "tokenEnv": "BOT_ISKP_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060145545355364",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1152,13 +1260,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492511024459419829",
+    "station": "ISKP TWR"
   },
   {
     "name": "Carrier Tower",
     "tokenEnv": "BOT_USS_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060181138215174",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1173,13 +1283,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492511116956401734",
+    "station": "USS TWR"
   },
   {
     "name": "Carrier Apron",
     "tokenEnv": "BOT_USS_APRON_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060219143065783",
     "logChannelId": null,
     "persona": {
       "position": "Apron",
@@ -1194,13 +1306,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496786800608411729",
+    "station": "USS APRON"
   },
   {
     "name": "Carrier Tower",
     "tokenEnv": "BOT_HMS_TWR_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060266492301322",
     "logChannelId": null,
     "persona": {
       "position": "Tower",
@@ -1215,13 +1329,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1492511623523602492",
+    "station": "HMS TWR"
   },
   {
     "name": "Carrier Apron",
     "tokenEnv": "BOT_HMS_APRON_TOKEN",
-    "guildId": "1507182217393340426",
-    "voiceChannelId": null,
+    "guildId": "1561048151794913450",
+    "voiceChannelId": "1561060292711030824",
     "logChannelId": null,
     "persona": {
       "position": "Apron",
@@ -1236,13 +1352,15 @@
         "provider": "openai",
         "model": "qwen2.5:3b"
       }
-    }
+    },
+    "mainVoiceChannelId": "1496787256835440812",
+    "station": "HMS APRON"
   },
   {
     "name": "Bot Manager",
     "type": "botmanager",
     "tokenEnv": "BOT_MANAGER_TOKEN",
-    "guildId": "1507182217393340426",
+    "guildId": "1561048151794913450",
     "flightPlansChannelId": null
   }
 ]

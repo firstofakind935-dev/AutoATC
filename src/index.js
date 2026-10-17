@@ -53,11 +53,13 @@ async function main() {
 
 /**
  * Every bot's "add to server" link, in one block in the logs. Discord only lets a server admin add a bot (one
- * authorization per bot - a bot can't add other bots), so this saves looking up each one's client id. INVITE_GUILD_ID
- * pre-selects the server. Waits up to a minute for the bots to finish logging in.
+ * authorization per bot - a bot can't add other bots), so this saves looking up each one's client id. The server is the one
+ * the bots are configured for (INVITE_GUILD_ID overrides it). Waits up to a minute for the bots to finish logging in.
  */
 async function printInviteLinks(bots, fleetConfig) {
-  const guildId = /^\d{15,22}$/.test(process.env.INVITE_GUILD_ID || '') ? process.env.INVITE_GUILD_ID : null;
+  // the server the bots are configured for (config/bots.json guildId), unless INVITE_GUILD_ID says otherwise
+  const configured = fleetConfig.find((c) => c.guildId)?.guildId;
+  const guildId = [process.env.INVITE_GUILD_ID, configured].find((g) => /^\d{15,22}$/.test(g || '')) || null;
   const until = Date.now() + 60_000;
   while (Date.now() < until && bots.some((b) => b.client && !b.client.isReady())) await new Promise((r) => setTimeout(r, 2000));
   const lines = [];
@@ -67,7 +69,7 @@ async function printInviteLinks(bots, fleetConfig) {
     const url = inviteUrl({ applicationId: c.application?.id || c.user.id, type: fleetConfig[i].type || 'atc' }, guildId);
     lines.push(`  ${fleetConfig[i].name}: ${url}`);
   });
-  console.log(`\n===== INVITE LINKS (${bots.length} bots${guildId ? `, server ${guildId}` : ' - set INVITE_GUILD_ID to pre-select the server'}) =====\n` +
+  console.log(`\n===== INVITE LINKS (${bots.length} bots${guildId ? `, server ${guildId}` : ''}) =====\n` +
     `Open each link while logged into Discord as a server admin and click Authorize.\n${lines.join('\n')}\n===== END INVITE LINKS =====\n`);
 }
 
