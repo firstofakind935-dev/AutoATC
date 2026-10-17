@@ -378,6 +378,24 @@ Parked at a stand at Rockford (IRFD), Tokyo (ITKO) or Perth (IPPH): in the Posit
 and your heading is read and checked against the line's direction - it warns if it doesn't fit ("right stand?"). The stand data comes from
 the radar's ground charts (`data/stands.json`, rebuilt with `scripts/build-stands.js`); other airports' charts have no stand numbers yet.
 
+## In-app radio (talk to ATC without Discord)
+
+The **Radio** card connects to the monitor's radio hub (the Monitor URL in Settings) as soon as the app starts. Every
+station on the frequency list has an AI controller there - no Discord bots, so no 50-bots-per-server limit.
+
+- **Talk:** hold your push-to-talk key (default **Right Ctrl**; pick another key or mouse button 4/5 in the Radio card).
+  It works while the game has focus (Windows). You transmit on your **primary radio's** active frequency; the overlay
+  shows a red light while you're transmitting. Or hold **Hold to talk** in the window.
+- **Listen:** you hear every radio that's switched on - the controller's replies and other pilots, live. Only one
+  person can transmit on a frequency at a time; if it's busy, the log says who is talking.
+- **Tune** with the overlay's **Radios** panel (or the FMS): swap the standby frequency to active on your primary radio.
+  The card shows who's on the frequency ("TX 121.000 - Rockford Tower").
+- The transcript of everything said on your frequencies scrolls in the card; the controller's last words also show on
+  the overlay's top bar.
+- Say who you're calling first ("Rockford Tower, N42Y, ...") - on the few frequencies two stations share, that picks
+  which one answers. Your callsign (Settings) is shown to the controller and to other pilots.
+- A human controller connected to the hub on a frequency takes it over; the AI stays quiet there.
+
 ## Automatic tracking (nothing to set up)
 
 Start tracking and fly. Ported from the tracker (`test-pim-vpilot`), where it was tested in flight:
