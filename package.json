@@ -1,12 +1,13 @@
 {
   "name": "autoatc-companion",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Screen-tracking companion app - reads a pilot's own PTFS window (HUD text + minimap) and reports an estimated position to the AutoATC monitor service.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pilot": "electron pilot-main.js"
+    "pilot": "electron pilot-main.js",
+    "dist": "electron-builder --win --publish never"
   },
   "dependencies": {
     "@techstark/opencv-js": "4.10.0-release.1",
@@ -15,6 +16,62 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "electron": "^32.0.0"
+    "electron": "^32.0.0",
+    "electron-builder": "25.1.8"
+  },
+  "productName": "AutoATC Companion",
+  "author": "AutoATC",
+  "build": {
+    "appId": "com.autoatc.companion",
+    "productName": "AutoATC Companion",
+    "copyright": "AutoATC",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**",
+      "renderer/**",
+      "remote/**",
+      "data/**",
+      "package.json",
+      "!**/*.test.js"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**",
+      "node_modules/tesseract.js/**",
+      "node_modules/tesseract.js-core/**",
+      "lib/ocrProcess.js",
+      "lib/ocr.js"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "AutoATC-Companion-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AutoATC Companion",
+      "uninstallDisplayName": "AutoATC Companion",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/firstofakind935-dev/AutoATC.git"
   }
 }

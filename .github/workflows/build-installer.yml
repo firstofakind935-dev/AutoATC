@@ -1,0 +1,57 @@
+# Builds the Windows installer for the AutoATC Companion app and publishes it as a download:
+#   https://github.com/firstofakind935-dev/AutoATC/releases/latest/download/AutoATC-Companion-Setup.exe
+# Runs on every push to this branch (companion-app), or by hand from the Actions tab.
+# Built on Windows so the Windows parts of the native libraries (push-to-talk / key input) are the ones packaged.
+name: Companion installer
+
+on:
+  push:
+    branches: [companion-app]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: companion-installer
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Version 1.0.<build number>
+        run: npm pkg set version=1.0.${{ github.run_number }}
+
+      - name: Build installer
+        run: npx electron-builder --win --x64 --publish never
+
+      - name: Keep the installer with this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoATC-Companion-Setup
+          path: dist/AutoATC-Companion-Setup.exe
+
+      - name: Publish as the latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: companion-v1.0.${{ github.run_number }}
+          name: AutoATC Companion 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: dist/AutoATC-Companion-Setup.exe
+          body: |
+            **Download:** AutoATC-Companion-Setup.exe below, run it, and follow the installer.
+            Windows may warn that the app is from an unknown publisher (it isn't code-signed): click **More info** -> **Run anyway**.
+
+            Built from ${{ github.sha }}.

@@ -374,7 +374,8 @@ const ocrPending = new Map();
 function getOcrProcess() {
   if (ocrProcess) return ocrProcess;
   ocrProcess = fork(path.join(__dirname, 'lib', 'ocrProcess.js'), [], {
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    // OCR_CACHE_DIR: where Tesseract keeps its language data - the installed app's own folder isn't writable
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', OCR_CACHE_DIR: app.getPath('userData') },
   });
   ocrProcess.on('message', ({ id, text, error }) => {
     const pending = ocrPending.get(id);

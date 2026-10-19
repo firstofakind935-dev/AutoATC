@@ -4,7 +4,8 @@
 // overlay window (renderer/overlay.js); this file arms/disarms it and
 // reacts to what it reports back over IPC.
 
-let settings = { callsign: '', monitorUrl: '', monitorApiKey: '', intervalSec: 5, regions: {} };
+// The event's monitor is preset, so a pilot only enters a callsign (it can still be changed in Settings).
+let settings = { callsign: '', monitorUrl: 'https://cpdlc.up.railway.app', monitorApiKey: '', intervalSec: 5, regions: {} };
 let airports = [];
 let displays = [];
 let overlayInfo = null; // { id, bounds, scaleFactor } for the currently-shown overlay
@@ -56,6 +57,7 @@ function syncBar() {
 async function loadSettings() {
   const saved = await window.companion.loadSettings();
   settings = { ...settings, ...saved };
+  if (!settings.monitorUrl) settings.monitorUrl = 'https://cpdlc.up.railway.app'; // an old empty setting
   // Corrections saved on an older map frame were measured against positions that have since moved (frame 2: the
   // exact game frame), so they would push every fix off by the old error - drop them.
   // Tracking v2 (feature matching, automatic minimap): automatic minimap fixes are on by default now - the old opt-in

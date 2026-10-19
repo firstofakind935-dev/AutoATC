@@ -10,6 +10,24 @@ never talks to Discord directly. It just POSTs a position estimate to the
 Monitor service's `/api/position` endpoint (see the main README's Monitor
 section).
 
+## Install (pilots)
+
+1. Download **[AutoATC-Companion-Setup.exe](https://github.com/firstofakind935-dev/AutoATC/releases/latest/download/AutoATC-Companion-Setup.exe)**
+   (Windows 10/11, 64-bit).
+2. Run it. Windows may say the app is from an unknown publisher (it isn't code-signed yet): click **More info** ->
+   **Run anyway**. Pick where to install, or keep the default.
+3. Start **AutoATC Companion** from the desktop or Start menu. Enter your **callsign** in Settings and save - the
+   server is already filled in.
+4. Start PTFS, then press **Start tracking**. To talk to ATC, hold **Right Ctrl** (push-to-talk; changeable in the
+   Radio card) and speak on the frequency tuned on your primary radio.
+
+To update, download and run the installer again - your settings are kept. To remove it: Windows Settings -> Apps ->
+AutoATC Companion -> Uninstall.
+
+Every push to the `companion-app` branch builds a new installer automatically (GitHub Actions,
+`.github/workflows/build-installer.yml`) and publishes it as the latest release. To build one yourself on Windows:
+`npm ci` then `npm run dist` (the installer lands in `dist/`).
+
 ## Why dead reckoning, not just minimap tracking
 
 The game's HUD shows heading, speed and altitude as clean, easily-OCR'd
