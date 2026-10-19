@@ -28,6 +28,26 @@ Every push to the `companion-app` branch builds a new installer automatically (G
 `.github/workflows/build-installer.yml`) and publishes it as the latest release. To build one yourself on Windows:
 `npm ci` then `npm run dist` (the installer lands in `dist/`).
 
+## Android radio app (APK)
+
+For flying PTFS on a phone or tablet: talk to the controllers with a floating push-to-talk button over the game.
+
+1. On the phone, download **[AutoATC-Radio.apk](https://github.com/firstofakind935-dev/AutoATC/releases/download/android-latest/AutoATC-Radio.apk)**
+   and open it. Android asks to allow installing apps from your browser - allow it, then **Install**.
+2. Open **AutoATC Radio**, enter your callsign, pick **COM1** (talk + listen) and optionally **COM2** (listen only).
+3. Tap **Start radio** and allow the microphone. Tap **Allow floating talk button** once and switch it on for
+   AutoATC Radio.
+4. Switch to PTFS. Hold the round **PTT** button to talk (green = ready, orange = waiting for the frequency,
+   red = transmitting); drag it by its grip. Stop the radio from the notification.
+
+The app is in `android/` (Kotlin, no layouts, OkHttp for the WebSocket) and speaks the same `/radio` protocol as the
+PC companion. `.github/workflows/build-apk.yml` builds it on every push to `android/` and replaces the
+`android-latest` release. For updates to install over an older build, every build must be signed with the same
+key: create one (`keytool -genkeypair -keystore release.jks -alias autoatc -keyalg RSA -validity 10000`) and add the
+repository secrets `ANDROID_KEYSTORE_B64` (`base64 -w0 release.jks`), `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Without them each build gets a throwaway debug key, so the old app
+has to be uninstalled first.
+
 ## Why dead reckoning, not just minimap tracking
 
 The game's HUD shows heading, speed and altitude as clean, easily-OCR'd

@@ -1,0 +1,72 @@
+# Builds the Android radio app (android/) and publishes AutoATC-Radio.apk as a GitHub release.
+# Download link: https://github.com/<owner>/<repo>/releases/download/android-latest/AutoATC-Radio.apk
+#
+# Signing: every build must use the same key or phones refuse the update. If the repository secrets
+# ANDROID_KEYSTORE_B64 (base64 of a .jks), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD
+# are set they are used; otherwise the APK is signed with a throwaway debug key (fine for testing, but each build
+# then has a different key, so phones must uninstall the old app before installing a new build).
+name: Build Android APK
+
+on:
+  push:
+    branches: [companion-app]
+    paths: ['android/**', '.github/workflows/build-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Signing key from secrets (if set)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          K_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          K_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$K_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$K_PASS" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: gradle assembleRelease --no-daemon
+
+      - name: Rename
+        run: cp android/app/build/outputs/apk/release/app-release.apk AutoATC-Radio.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutoATC-Radio
+          path: AutoATC-Radio.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: AutoATC Radio for Android (build ${{ github.run_number }})
+          body: |
+            Android radio app for AutoATC. Download AutoATC-Radio.apk on your phone, open it and allow "install unknown apps" when asked.
+            Built from ${{ github.sha }}.
+          files: AutoATC-Radio.apk
+          make_latest: false
