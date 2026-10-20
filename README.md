@@ -36,29 +36,6 @@ Pilots talk to ATC through the companion / pilot app (push-to-talk, see `compani
    there. Closing the page hands back too. One controller per frequency; a controller can hold several and pick which
    one to transmit on.
 
-## Controller applications (/apply)
-
-Human controllers for the event apply at `https://cpdlc.up.railway.app/apply/`. They sign in with Discord, which
-reads their roles and join date in the servers listed below (OAuth2 scope `guilds.members.read`, nothing else),
-and answer the interview questions once: one application per Discord account. Reviewers (listed by Discord user id)
-read the applications at `/apply/review`, where they set a status (new / interview / accepted / waitlist / rejected),
-add private notes, or delete an application so that person can apply again. The questions live in
-`monitor/apply/config.js`.
-
-Set on the **cpdlc** (monitor) service:
-
-| Variable | What |
-| --- | --- |
-| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | From a Discord application (Developer Portal → OAuth2). Add the redirect `https://cpdlc.up.railway.app/apply/callback`. |
-| `APPLY_GUILDS` | The servers to read, e.g. `111…:AutoATC:required,222…:PTFS`. `required` means you must be a member to apply. |
-| `APPLY_ADMIN_IDS` | Comma-separated Discord user ids of the reviewers. |
-| `APPLY_SESSION_SECRET` | Any long random string (keeps people signed in across restarts). |
-| `APPLY_BOT_TOKEN` | Optional. A bot that is in those servers, so role ids show as role names. |
-| `APPLY_OPEN` | `false` closes applications. |
-
-Attach a **volume** to the cpdlc service (any mount path). Applications are saved there; without one they are lost on
-every redeploy, and the review page warns about it.
-
 ## How the human handoff works today
 
 The bot does **not** yet know how to detect a real human controller taking
