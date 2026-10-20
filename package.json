@@ -1,0 +1,19 @@
+{
+  "name": "autoatc-controller-applications",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Controller applications for AutoATC events: Discord sign-in, one application per account, review page.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
+  }
+}
