@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Halloween Controller Applications</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/apply/static/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <span class="eyebrow">AutoATC · Halloween event · 31 Oct · Server 1 (console &amp; iPhone)</span>
+    <h1>Controller Applications</h1>
+    <p class="lede">Apply to control on the human-controlled server. Sign in with Discord so we can see your roles and how long you've been in our servers. Each Discord account can apply once, so check your answers before you send them.</p>
+  </header>
+
+  <div id="flash" class="banner warn" hidden></div>
+
+  <section id="signedOut" class="card" hidden>
+    <h2>Sign in</h2>
+    <p>We read your Discord name, your roles and your join date in our servers. We can't see your messages or other servers.</p>
+    <div class="actions"><a class="btn discord" href="/apply/login">Sign in with Discord</a></div>
+  </section>
+
+  <section id="who" class="card" hidden>
+    <div class="me">
+      <img id="avatar" alt="">
+      <div style="min-width:0">
+        <div class="name" id="displayName"></div>
+        <div class="sub" id="accountSub"></div>
+      </div>
+      <div class="actions">
+        <a class="btn" id="reviewLink" href="/apply/review" hidden>Review applications</a>
+        <button type="button" id="logout">Sign out</button>
+      </div>
+    </div>
+    <div class="guilds" id="guilds"></div>
+  </section>
+
+  <div id="blocked" class="banner warn" hidden></div>
+  <div id="done" class="banner good" hidden></div>
+
+  <section id="formCard" class="card" hidden>
+    <h2>Interview questions</h2>
+    <form id="form" novalidate></form>
+  </section>
+</div>
+<script src="/apply/static/apply.js"></script>
+</body>
+</html>

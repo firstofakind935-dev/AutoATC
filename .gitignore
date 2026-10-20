@@ -4,3 +4,4 @@ config/bots.json
 npm-debug.log*
 *.log
 .DS_Store
+data/apply/

@@ -6,6 +6,7 @@ const { WebSocketServer } = require('ws');
 const { createPublicApiRouter } = require('./publicApi');
 const { createFleetInvites, invitePage } = require('./fleetInvites');
 const { createRadioHub } = require('./radio');
+const { createApplyRouter } = require('./apply');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -505,6 +506,8 @@ app.use('/developers', express.static(path.join(__dirname, 'developers')));
 // The human controllers' radio console (monitor/console/): take frequencies over from the AI. Not behind the
 // dashboard login - taking over needs the CONTROLLER_KEY instead (see radio.js).
 app.use('/console', express.static(path.join(__dirname, 'console')));
+// Controller applications for the event (monitor/apply/): Discord sign-in, one application per account, review page.
+app.use('/apply', createApplyRouter());
 
 // /radar is the 24SPY-based radar (a modified fork of 24SPY by tiaguinho_2009,
 // non-commercial licence - see public/radar/LICENSE.md and README). The older
