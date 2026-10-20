@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 const path = require('path');
 const express = require('express');
-const { QUESTIONS, loadConfig } = require('./config');
+const { QUESTIONS, POSITIONS, loadConfig } = require('./config');
 const { createStore } = require('./store');
 
 const API = 'https://discord.com/api/v10';
@@ -161,6 +161,14 @@ function createApplyRouter({ env = process.env, fetchImpl = globalThis.fetch, lo
     };
   }
 
+  // what an applicant is told once the roster is published
+  function outcomeOf(a) {
+    const pos = POSITIONS.find((p) => p.id === a.position);
+    if (pos && a.status === 'accepted') return { result: 'position', position: pos.label };
+    if (a.status === 'waitlist') return { result: 'waitlist' };
+    return { result: 'none' };
+  }
+
   const missingRequired = (p) => p.guilds.filter((g) => g.required && !g.member).map((g) => g.name);
 
   // ---- pages
@@ -232,6 +240,7 @@ function createApplyRouter({ env = process.env, fetchImpl = globalThis.fetch, lo
       profile,
       missing: profile ? missingRequired(profile) : [],
       application: application ? { submittedAt: application.submittedAt, answers: application.answers } : null,
+      outcome: application && store.meta().rosterPublished ? outcomeOf(application) : null,
     });
   });
 
@@ -269,7 +278,39 @@ function createApplyRouter({ env = process.env, fetchImpl = globalThis.fetch, lo
   }
 
   router.get('/api/admin/applications', requireAdmin, (req, res) => {
-    res.json({ questions: QUESTIONS, statuses: STATUSES, persistent: store.persistent, applications: store.list() });
+    res.json({ questions: QUESTIONS, statuses: STATUSES, positions: POSITIONS, persistent: store.persistent,
+      rosterPublished: !!store.meta().rosterPublished, applications: store.list() });
+  });
+
+  // publishing shows each applicant their outcome on /apply
+  router.post('/api/admin/roster', sameOrigin, requireAdmin, (req, res) => {
+    const published = !!(req.body && req.body.published);
+    store.setMeta({ rosterPublished: published, rosterPublishedAt: published ? new Date().toISOString() : null, rosterPublishedBy: req.uid });
+    log.info(`[apply] roster ${published ? 'published' : 'unpublished'} by ${req.uid}`);
+    res.json({ rosterPublished: published });
+  });
+
+  // everything, one row per application, for a spreadsheet
+  router.get('/api/admin/export.csv', requireAdmin, (req, res) => {
+    const cell = (v) => {
+      const t = Array.isArray(v) ? v.join(' > ') : v === undefined || v === null ? '' : String(v);
+      const safe = /^[=+\-@\t\r]/.test(t) ? `'${t}` : t; // keep spreadsheets from running formulas
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+    const guildCols = cfg.guilds.flatMap((g) => [`${g.name}: joined`, `${g.name}: roles`]);
+    const head = ['Discord name', 'Username', 'Discord id', 'Account created', 'Applied', 'Status', 'Position', 'Notes', ...guildCols, ...QUESTIONS.map((q) => q.label)];
+    const rows = store.list().map((a) => {
+      const d = a.discord;
+      const guilds = cfg.guilds.flatMap((g) => {
+        const m = (d.guilds || []).find((x) => x.id === g.id);
+        return m && m.member ? [m.joinedAt, m.roles.map((r) => r.name || r.id).join(', ')] : ['not a member', ''];
+      });
+      const pos = POSITIONS.find((p) => p.id === a.position);
+      return [d.displayName, d.username, d.id, d.createdAt, a.submittedAt, a.status, pos ? pos.label : '', a.note, ...guilds, ...QUESTIONS.map((q) => a.answers[q.id])];
+    });
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.set('Content-Disposition', 'attachment; filename="controller-applications.csv"');
+    res.send('\ufeff' + [head, ...rows].map((r) => r.map(cell).join(',')).join('\r\n'));
   });
 
   router.post('/api/admin/applications/:uid', sameOrigin, requireAdmin, (req, res) => {
@@ -282,6 +323,16 @@ function createApplyRouter({ env = process.env, fetchImpl = globalThis.fetch, lo
     if (note !== undefined) {
       if (typeof note !== 'string' || note.length > 2000) return res.status(400).json({ error: 'note must be text up to 2000 characters' });
       patch.note = note;
+    }
+    const { position } = req.body || {};
+    if (position !== undefined) {
+      if (position !== null && !POSITIONS.some((p) => p.id === position)) return res.status(400).json({ error: 'unknown position' });
+      const holder = position && store.list().find((x) => x.position === position && x.uid !== req.params.uid);
+      if (holder) {
+        const label = POSITIONS.find((p) => p.id === position).label;
+        return res.status(409).json({ error: `${label} is already given to ${holder.discord.displayName}. Take it off them first.` });
+      }
+      patch.position = position;
     }
     patch.reviewedBy = req.uid;
     patch.reviewedAt = new Date().toISOString();

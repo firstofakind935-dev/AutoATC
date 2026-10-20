@@ -16,6 +16,7 @@
 
   let data = null;
   let filter = 'all';
+  let justSaved = null; // shows "Saved." on that card after the re-render
 
   function flash(t) { $('flash').textContent = t; $('flash').hidden = !t; }
 
@@ -46,6 +47,31 @@
       const n = [0, 1, 2].map((i) => data.applications.filter((a) => (a.answers[rankQ.id] || [])[i] === o).length);
       t.append(el('tr', {}, el('td', { text: o }), ...n.map((x) => el('td', { class: 'n', text: String(x) }))));
     }
+  }
+
+  const posLabel = (id) => (data.positions.find((p) => p.id === id) || {}).label || '';
+  const rankQ = () => data.questions.find((q) => q.type === 'rank');
+  const pickRank = (a, id) => { const q = rankQ(); const i = q ? (a.answers[q.id] || []).indexOf(posLabel(id)) : -1; return i + 1; };
+
+  function renderRoster() {
+    const t = $('roster');
+    t.replaceChildren(el('tr', {}, el('th', { text: 'Position' }), el('th', { text: 'Controller' }), el('th', { text: 'Their pick' }), el('th', { text: 'Status' })));
+    let filled = 0;
+    for (const p of data.positions) {
+      const a = data.applications.find((x) => x.position === p.id);
+      if (a) filled++;
+      const r = a ? pickRank(a, p.id) : 0;
+      t.append(el('tr', {},
+        el('td', { text: p.label }),
+        el('td', { text: a ? a.discord.displayName : '—' }),
+        el('td', { class: 'n', text: a ? (r ? ['1st', '2nd', '3rd'][r - 1] || `${r}th` : 'not picked') : '' }),
+        el('td', {}, a ? el('span', { class: `status ${a.status}`, text: a.status }) : el('span', { class: 'hint', text: 'open' }))));
+    }
+    const unaccepted = data.applications.filter((a) => a.position && a.status !== 'accepted').length;
+    $('rosterHint').textContent = `${filled} of ${data.positions.length} positions filled. Rockford Approach + Departure is only needed with a 10th controller.`
+      + (unaccepted ? ` ${unaccepted} assigned controller${unaccepted === 1 ? ' is' : 's are'} not marked accepted yet, so they won't see their position.` : '')
+      + (data.rosterPublished ? ' Published: applicants can see their result on /apply.' : ' Not published: applicants don\'t see anything yet.');
+    $('publish').textContent = data.rosterPublished ? 'Unpublish roster' : 'Publish roster';
   }
 
   function guildBlock(g) {
@@ -79,6 +105,13 @@
 
     const status = el('select', { 'aria-label': `Status for ${d.displayName}` });
     for (const s of data.statuses) status.append(el('option', { value: s, text: s, selected: a.status === s }));
+    const pos = el('select', { 'aria-label': `Position for ${d.displayName}` }, el('option', { value: '', text: 'No position' }));
+    for (const p of data.positions) {
+      const holder = data.applications.find((x) => x.position === p.id && x.uid !== a.uid);
+      const r = pickRank(a, p.id);
+      pos.append(el('option', { value: p.id, selected: a.position === p.id,
+        text: `${p.label}${r ? ` (their ${['1st', '2nd', '3rd'][r - 1] || `${r}th`})` : ''}${holder ? ` · given to ${holder.discord.displayName}` : ''}` }));
+    }
     const note = el('textarea', { 'aria-label': `Reviewer notes for ${d.displayName}`, maxlength: 2000, placeholder: 'Notes for the team (applicants never see these)' });
     note.value = a.note || '';
     const msg = el('span', { class: 'note', role: 'status' });
@@ -86,12 +119,11 @@
     save.addEventListener('click', async () => {
       save.disabled = true;
       try {
-        const updated = await api('POST', `/apply/api/admin/applications/${a.uid}`, { status: status.value, note: note.value });
+        const updated = await api('POST', `/apply/api/admin/applications/${a.uid}`, { status: status.value, note: note.value, position: pos.value || null });
         Object.assign(a, updated);
-        msg.className = 'note'; msg.textContent = 'Saved.';
-        renderSummary();
-        top.querySelector('.status').className = `status ${a.status}`;
-        top.querySelector('.status').textContent = a.status;
+        justSaved = a.uid;
+        render(); // every card's position list and the roster change
+        return;
       } catch (e) { msg.className = 'note bad'; msg.textContent = e.message; }
       save.disabled = false;
     });
@@ -112,17 +144,19 @@
       } catch (e) { msg.className = 'note bad'; msg.textContent = e.message; confirm.hidden = true; }
     });
 
+    if (justSaved === a.uid) { msg.textContent = 'Saved.'; justSaved = null; }
     const reviewed = a.reviewedAt ? el('span', { class: 'hint', text: `Last updated ${date(a.reviewedAt)}` }) : null;
     return el('section', { class: 'card app' }, top,
       el('div', { class: 'guilds' }, ...(d.guilds || []).map(guildBlock)),
       el('details', {}, el('summary', { text: 'Answers' }), answers),
-      el('div', { class: 'review-row' }, status, note),
+      el('div', { class: 'review-row' }, el('div', { style: 'display:grid;gap:8px' }, status, pos), note),
       el('div', { class: 'actions' }, save, reset, msg, reviewed),
       confirm);
   }
 
   function render() {
     renderSummary();
+    renderRoster();
     const q = $('search').value.trim().toLowerCase();
     const firstGuild = (a) => (a.discord.guilds || [])[0];
     let list = data.applications.filter((a) => filter === 'all' || a.status === filter);
@@ -145,9 +179,19 @@
     }
     if (!data.persistent) flash('Applications are not on a volume yet, so a redeploy erases them. Attach a volume to this service on Railway.');
     $('summary').hidden = false;
+    $('rosterCard').hidden = false;
     render();
   }
 
+  $('publish').addEventListener('click', async () => {
+    $('publish').disabled = true;
+    try {
+      const r = await api('POST', '/apply/api/admin/roster', { published: !data.rosterPublished });
+      data.rosterPublished = r.rosterPublished;
+      renderRoster();
+    } catch (e) { flash(e.message); }
+    $('publish').disabled = false;
+  });
   $('search').addEventListener('input', render);
   $('sort').addEventListener('change', render);
   load();

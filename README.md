@@ -6,6 +6,12 @@ once: one application per Discord account. Reviewers (listed by Discord user id)
 `/apply/review`, where they set a status (new / interview / accepted / waitlist / rejected), add private notes, see
 how many people want each position, or delete an application so that person can apply again.
 
+Reviewers decide who controls where: each application has a position picker (one person per position), and the
+Roster table shows every position, who has it and whether it was one of their picks. **Download CSV** exports every
+application (Discord details, roles and join dates, answers, status, position, notes) for a spreadsheet. Nothing is
+shown to applicants until a reviewer presses **Publish roster**; then accepted applicants with a position see it on
+`/apply`, waitlisted ones are told they're on the waitlist, and everyone else that they don't have a position.
+
 - Applicant page: `/apply/`
 - Review page: `/apply/review`
 - Questions and positions: `apply/config.js`

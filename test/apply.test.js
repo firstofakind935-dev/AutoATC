@@ -14,12 +14,13 @@ const GUILD_B = '1100000000000000002';
 
 function fakeDiscord({ inGuildA = true } = {}) {
   const calls = [];
+  const state = { user: USER };
   const json = (status, body) => ({ ok: status < 300, status, json: async () => body });
   const fetchImpl = async (url, opts = {}) => {
     calls.push(url);
     if (url.endsWith('/oauth2/token')) return json(200, { access_token: 'tok' });
     if (url.endsWith('/oauth2/token/revoke')) return json(200, {});
-    if (url.endsWith('/users/@me')) return json(200, USER);
+    if (url.endsWith('/users/@me')) return json(200, state.user);
     if (url.endsWith(`/users/@me/guilds/${GUILD_A}/member`)) return inGuildA ? json(200, { roles: ['900', '901'], joined_at: '2025-01-15T00:00:00Z', nick: null }) : json(404, {});
     if (url.endsWith(`/users/@me/guilds/${GUILD_B}/member`)) return json(404, {});
     if (url.endsWith(`/guilds/${GUILD_A}/roles`)) {
@@ -28,7 +29,7 @@ function fakeDiscord({ inGuildA = true } = {}) {
     }
     return json(500, {});
   };
-  return { fetchImpl, calls };
+  return { fetchImpl, calls, state };
 }
 
 async function start({ inGuildA } = {}) {
@@ -146,4 +147,46 @@ test('config and helpers', () => {
   assert.deepStrictEqual(parseGuilds(`${GUILD_A}:AutoATC:required, bad:x ,${GUILD_B}`), [
     { id: GUILD_A, name: 'AutoATC', required: true }, { id: GUILD_B, name: `Server ${GUILD_B}`, required: false }]);
   assert.strictEqual(accountCreatedAt('175928847299117063'), '2016-04-30T11:18:25.796Z'); // Discord's documented example
+});
+
+test('reviewers give positions (one person each), publish the roster, export CSV', async () => {
+  const { base, server, discord } = await start();
+  try {
+    const sid = await signIn(base);
+    const answers = goodAnswers(); answers.roblox = '=HYPERLINK("x")';
+    await fetch(`${base}/apply/api/submit`, { method: 'POST', headers: { cookie: sid, 'Content-Type': 'application/json' }, body: JSON.stringify({ answers }) });
+    const admin = `apply_sid=${makeSession('s3cret', '300000000000000009')}`;
+    const post = (url, body) => fetch(`${base}${url}`, { method: 'POST', headers: { cookie: admin, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+    assert.strictEqual((await post(`/apply/api/admin/applications/${USER.id}`, { position: 'nowhere' })).status, 400);
+    assert.strictEqual((await post(`/apply/api/admin/applications/${USER.id}`, { position: 'itko', status: 'accepted' })).status, 200);
+
+    // nothing shown to the applicant until the roster is published
+    let me = await (await fetch(`${base}/apply/api/me`, { headers: { cookie: sid } })).json();
+    assert.strictEqual(me.outcome, null);
+    assert.deepStrictEqual(await (await post('/apply/api/admin/roster', { published: true })).json(), { rosterPublished: true });
+    me = await (await fetch(`${base}/apply/api/me`, { headers: { cookie: sid } })).json();
+    assert.deepStrictEqual(me.outcome, { result: 'position', position: 'Tokyo (ITKO)' });
+
+    // a second applicant can't be given a position someone already has
+    discord.state.user = { id: '300000000000000002', username: 'second', global_name: 'Second', avatar: null };
+    const sid2 = await signIn(base);
+    await fetch(`${base}/apply/api/submit`, { method: 'POST', headers: { cookie: sid2, 'Content-Type': 'application/json' }, body: JSON.stringify({ answers: goodAnswers() }) });
+    const taken = await post('/apply/api/admin/applications/300000000000000002', { position: 'itko' });
+    assert.strictEqual(taken.status, 409);
+    assert.match((await taken.json()).error, /already given to Skyhawk/);
+    assert.strictEqual((await post('/apply/api/admin/applications/300000000000000002', { position: 'ipph', status: 'waitlist' })).status, 200);
+    me = await (await fetch(`${base}/apply/api/me`, { headers: { cookie: sid2 } })).json();
+    assert.deepStrictEqual(me.outcome, { result: 'waitlist' }); // a position only counts once they're accepted
+
+    const list = await (await fetch(`${base}/apply/api/admin/applications`, { headers: { cookie: admin } })).json();
+    assert.strictEqual(list.rosterPublished, true);
+    assert.strictEqual(list.positions.length, 10);
+
+    const csv = await (await fetch(`${base}/apply/api/admin/export.csv`, { headers: { cookie: admin } })).text();
+    assert.ok(csv.includes('"Tokyo (ITKO)"'));
+    assert.ok(csv.includes(`"'=HYPERLINK(""x"")"`), 'formula-looking answers are defused');
+    assert.ok(csv.includes('"Controller, Member"'));
+    assert.strictEqual((await fetch(`${base}/apply/api/admin/export.csv`, { headers: { cookie: sid } })).status, 403);
+  } finally { server.close(); }
 });

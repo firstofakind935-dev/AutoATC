@@ -159,7 +159,11 @@
 
     if (me.application) {
       $('done').hidden = false;
-      $('done').textContent = `Application received on ${date(me.application.submittedAt)}. The event team will contact you on Discord.`;
+      const o = me.outcome;
+      $('done').textContent = !o ? `Application received on ${date(me.application.submittedAt)}. The event team will contact you on Discord.`
+        : o.result === 'position' ? `You're controlling ${o.position} at the event. The event team will brief you on Discord.`
+        : o.result === 'waitlist' ? "The roster is out and you're on the waitlist. We'll message you on Discord if a position opens up."
+        : "The roster is out and you don't have a position this time. Thanks for applying.";
       return;
     }
     if (!me.open) { $('blocked').hidden = false; $('blocked').textContent = 'Applications are closed.'; return; }

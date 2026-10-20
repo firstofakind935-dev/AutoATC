@@ -21,8 +21,12 @@ function createStore(dir) {
     fs.renameSync(tmp, file);
   }
 
+  if (!state.meta || typeof state.meta !== 'object') state.meta = {};
+
   return {
     persistent,
+    meta: () => state.meta,
+    setMeta(patch) { Object.assign(state.meta, patch); save(); return state.meta; },
     file,
     get: (uid) => state.applications[uid] || null,
     list: () => Object.values(state.applications).sort((a, b) => String(a.submittedAt).localeCompare(String(b.submittedAt))),

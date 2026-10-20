@@ -83,7 +83,7 @@ dl.answers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; ma
 dl.answers dt { font-size: 13px; font-weight: 600; color: var(--dim); }
 dl.answers dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 details > summary { cursor: pointer; font-weight: 600; }
-.review-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; align-items: start; }
+.review-row { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 10px; align-items: start; }
 @media (max-width: 640px) { .review-row { grid-template-columns: minmax(0, 1fr); } .me { grid-template-columns: 48px minmax(0, 1fr); } .me .actions { grid-column: 1 / -1; } }
 .confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--warn); background: var(--warn-bg); border-radius: 4px; }
 .tally { width: 100%; border-collapse: collapse; font-size: 14px; }

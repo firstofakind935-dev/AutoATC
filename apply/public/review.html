@@ -36,6 +36,18 @@
     </details>
   </section>
 
+  <section id="rosterCard" class="card" hidden>
+    <div class="toolbar" style="justify-content:space-between">
+      <h2>Roster</h2>
+      <div class="actions">
+        <a class="btn" href="/apply/api/admin/export.csv">Download CSV</a>
+        <button type="button" id="publish" class="primary">Publish roster</button>
+      </div>
+    </div>
+    <p class="hint" id="rosterHint"></p>
+    <div class="table-wrap"><table class="tally" id="roster"></table></div>
+  </section>
+
   <div class="apps" id="apps"></div>
 </div>
 <script src="/apply/static/review.js"></script>
