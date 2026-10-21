@@ -40,12 +40,18 @@
     <div class="toolbar" style="justify-content:space-between">
       <h2>Roster</h2>
       <div class="actions">
+        <button type="button" id="copyDiscord">Copy for Discord</button>
         <a class="btn" href="/apply/api/admin/export.csv">Download CSV</a>
         <button type="button" id="publish" class="primary">Publish roster</button>
       </div>
     </div>
     <p class="hint" id="rosterHint"></p>
     <div class="table-wrap"><table class="tally" id="roster"></table></div>
+    <div id="discordBox" class="q" hidden>
+      <label for="discordText">Paste this into Discord. Each line pings that controller.</label>
+      <textarea id="discordText" rows="12" spellcheck="false" style="font-family:var(--mono);font-size:13px"></textarea>
+      <span class="note" id="copyNote" role="status"></span>
+    </div>
   </section>
 
   <div class="apps" id="apps"></div>

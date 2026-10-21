@@ -183,6 +183,37 @@
     render();
   }
 
+  // Accepted controllers and their positions as a Discord message; <@id> pings them when pasted.
+  function discordRoster() {
+    const accepted = data.applications.filter((a) => a.status === 'accepted');
+    const lines = ['**Halloween event controller roster (Server 1)**', ''];
+    for (const p of data.positions) {
+      const a = accepted.find((x) => x.position === p.id);
+      if (a) lines.push(`**${p.label}**: <@${a.uid}>`);
+    }
+    const spare = accepted.filter((a) => !a.position);
+    if (spare.length) lines.push('', `**Standby**: ${spare.map((a) => `<@${a.uid}>`).join(' ')}`);
+    const open = data.positions.filter((p) => !accepted.some((a) => a.position === p.id) && p.id !== 'rfdapp');
+    if (open.length) lines.push('', `Still open: ${open.map((p) => p.label).join(', ')}`);
+    return { text: lines.join('\n'), count: accepted.filter((a) => a.position).length };
+  }
+
+  $('copyDiscord').addEventListener('click', async () => {
+    const { text, count } = discordRoster();
+    const box = $('discordText');
+    box.value = text;
+    $('discordBox').hidden = false;
+    const note = $('copyNote');
+    if (!count) { note.className = 'note warn'; note.textContent = 'Nobody is accepted with a position yet: mark people accepted and give them a position first.'; return; }
+    try {
+      await navigator.clipboard.writeText(text);
+      note.className = 'note'; note.textContent = `Copied ${count} controller${count === 1 ? '' : 's'}. Paste it into Discord.`;
+    } catch {
+      box.focus(); box.select();
+      note.className = 'note'; note.textContent = 'Selected: press Ctrl+C (or Cmd+C) to copy.';
+    }
+  });
+
   $('publish').addEventListener('click', async () => {
     $('publish').disabled = true;
     try {
