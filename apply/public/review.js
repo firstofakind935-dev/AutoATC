@@ -200,10 +200,9 @@
     box.value = text;
     $('discordBox').hidden = false;
     const note = $('copyNote');
-    if (!count) { note.className = 'note warn'; note.textContent = 'Nobody is accepted with a position yet: mark people accepted and give them a position first.'; return; }
     try {
       await navigator.clipboard.writeText(text);
-      note.className = 'note'; note.textContent = `Copied ${count} controller${count === 1 ? '' : 's'}. Paste it into Discord.`;
+      note.className = 'note'; note.textContent = count ? `Copied the roster with ${count} controller${count === 1 ? '' : 's'}. Paste it into Discord.` : 'Copied the roster (every position is still Open). Paste it into Discord.';
     } catch {
       box.focus(); box.select();
       note.className = 'note'; note.textContent = 'Selected: press Ctrl+C (or Cmd+C) to copy.';
