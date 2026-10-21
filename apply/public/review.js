@@ -191,8 +191,6 @@
       const a = accepted.find((x) => x.position === p.id);
       lines.push(`**${p.label}**: ${a ? `<@${a.uid}>` : 'Open'}`);
     }
-    const spare = accepted.filter((a) => !a.position);
-    if (spare.length) lines.push('', `**Standby**: ${spare.map((a) => `<@${a.uid}>`).join(' ')}`);
     return { text: lines.join('\n'), count: accepted.filter((a) => a.position).length };
   }
 
