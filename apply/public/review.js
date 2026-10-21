@@ -183,18 +183,16 @@
     render();
   }
 
-  // Accepted controllers and their positions as a Discord message; <@id> pings them when pasted.
+  // The full roster as a Discord message: every position, with the accepted controller (<@id> pings them) or Open.
   function discordRoster() {
     const accepted = data.applications.filter((a) => a.status === 'accepted');
     const lines = ['**Halloween event controller roster (Server 1)**', ''];
     for (const p of data.positions) {
       const a = accepted.find((x) => x.position === p.id);
-      if (a) lines.push(`**${p.label}**: <@${a.uid}>`);
+      lines.push(`**${p.label}**: ${a ? `<@${a.uid}>` : 'Open'}`);
     }
     const spare = accepted.filter((a) => !a.position);
     if (spare.length) lines.push('', `**Standby**: ${spare.map((a) => `<@${a.uid}>`).join(' ')}`);
-    const open = data.positions.filter((p) => !accepted.some((a) => a.position === p.id) && p.id !== 'rfdapp');
-    if (open.length) lines.push('', `Still open: ${open.map((p) => p.label).join(', ')}`);
     return { text: lines.join('\n'), count: accepted.filter((a) => a.position).length };
   }
 
