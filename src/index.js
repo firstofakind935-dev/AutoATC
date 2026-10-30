@@ -8,6 +8,7 @@ const { makeLogger } = require('./utils/logger');
 const { startPositionSync } = require('./flightradar365/positionSync');
 const { inviteUrl } = require('../monitor/fleetInvites');
 const { startRadioWorker } = require('./radio/radioWorker');
+const { warmUpStt } = require('./speech/stt');
 
 const logger = makeLogger('fleet');
 const STARTUP_GAP_MS = 1500;
@@ -27,6 +28,14 @@ async function main() {
   // The in-app radio (companion / pilot app push-to-talk): every station on the frequency list answers there, with or
   // without a Discord bot - see src/radio/. RADIO_ENABLED=false turns it off.
   if (process.env.RADIO_ENABLED !== 'false') startRadioWorker();
+
+  // A self-hosted speech server (speaches) loses its model whenever it restarts; check every 10 minutes and have it
+  // download the model again, so pilots are never met with silence.
+  const keepSttReady = () => warmUpStt()
+    .then((checked) => { if (checked) logger.info('Speech recognition model is ready'); })
+    .catch((e) => logger.warn(`Speech recognition model not ready yet: ${e.message}`));
+  keepSttReady();
+  setInterval(keepSttReady, 10 * 60 * 1000).unref();
 
   if (fleetConfig.length === 0) {
     logger.warn('No bot has its token env var set - staying up idle. Add one in your host\'s env vars and redeploy.');

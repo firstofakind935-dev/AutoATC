@@ -15,4 +15,18 @@ async function transcribeAudio(wavBuffer) {
   });
 }
 
-module.exports = { transcribeAudio };
+/**
+ * With a self-hosted STT server, make sure its model is downloaded before anyone calls (a restarted speaches
+ * container has none). Safe to call when it's already there. No-op for OpenAI's API.
+ */
+async function warmUpStt() {
+  if (!process.env.STT_BASE_URL) return false;
+  await openaiWhisper.ensureModel({
+    apiKey: process.env.STT_API_KEY || process.env.OPENAI_API_KEY,
+    baseUrl: process.env.STT_BASE_URL,
+    model: process.env.STT_MODEL || 'whisper-1',
+  });
+  return true;
+}
+
+module.exports = { transcribeAudio, warmUpStt };

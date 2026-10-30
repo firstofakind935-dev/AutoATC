@@ -27,7 +27,42 @@ const AVIATION_PROMPT =
   'phraseology: taxi, pushback, cleared for takeoff, cleared to land, ' +
   'runway, hold short, roger, wilco, squawk, contact.';
 
-async function transcribe(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model = 'gpt-4o-mini-transcribe', language } = {}) {
+// A self-hosted speaches server forgets downloaded models when its container restarts without a volume, and then
+// answers 404 "Model ... is not installed locally". It downloads one on POST /v1/models/<id>; we ask for that
+// (once at a time per model) and retry, so the radio recovers by itself instead of going deaf.
+const downloads = new Map(); // `${baseUrl}|${model}` -> Promise
+
+function isMissingModel(status, body) {
+  return status === 404 && /not installed locally/i.test(body);
+}
+
+function ensureModel({ apiKey, baseUrl, model, fetchImpl = fetch }) {
+  const key = `${baseUrl}|${model}`;
+  if (downloads.has(key)) return downloads.get(key);
+  const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+  const job = fetchImpl(`${baseUrl.replace(/\/+$/, '')}/v1/models/${model}`, { method: 'POST', headers })
+    .then(async (r) => {
+      // 409 / "already" = it was there after all
+      if (!r.ok && r.status !== 409) throw new Error(`downloading ${model} failed (${r.status}): ${await r.text().catch(() => '')}`);
+      return true;
+    })
+    .finally(() => downloads.delete(key));
+  downloads.set(key, job);
+  return job;
+}
+
+async function transcribe(wavBuffer, opts = {}) {
+  const { apiKey, baseUrl = DEFAULT_BASE_URL, model = 'gpt-4o-mini-transcribe', fetchImpl = fetch } = opts;
+  try {
+    return await transcribeOnce(wavBuffer, opts);
+  } catch (e) {
+    if (!e.missingModel) throw e;
+    await ensureModel({ apiKey, baseUrl, model, fetchImpl });
+    return transcribeOnce(wavBuffer, opts);
+  }
+}
+
+async function transcribeOnce(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model = 'gpt-4o-mini-transcribe', language, fetchImpl = fetch } = {}) {
   const form = new FormData();
   form.append('file', new Blob([wavBuffer], { type: 'audio/wav' }), 'utterance.wav');
   form.append('model', model);
@@ -37,7 +72,7 @@ async function transcribe(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model
   const headers = {};
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
-  const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/audio/transcriptions`, {
+  const response = await fetchImpl(`${baseUrl.replace(/\/+$/, '')}/v1/audio/transcriptions`, {
     method: 'POST',
     headers,
     body: form,
@@ -45,11 +80,13 @@ async function transcribe(wavBuffer, { apiKey, baseUrl = DEFAULT_BASE_URL, model
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    throw new Error(`Transcription request to ${baseUrl} failed (${response.status}): ${body}`);
+    const err = new Error(`Transcription request to ${baseUrl} failed (${response.status}): ${body}`);
+    err.missingModel = isMissingModel(response.status, body);
+    throw err;
   }
 
   const data = await response.json();
   return (data.text || '').trim();
 }
 
-module.exports = { transcribe, DEFAULT_BASE_URL };
+module.exports = { transcribe, ensureModel, DEFAULT_BASE_URL };
