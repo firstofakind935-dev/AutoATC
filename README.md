@@ -41,6 +41,10 @@ For flying PTFS on a phone or tablet: talk to the controllers with a floating pu
    orange = waiting for the frequency, red = transmitting, grey = not connected). Drag the thin handle on its left
    to move it. When ATC talks, their words show beside it for a few seconds. Stop the radio from the notification.
 
+**Updates:** the app checks GitHub when it opens and every hour while the radio runs. When a new build is out it
+shows **Update available** (and a notification); tapping it downloads the new APK and Android asks to confirm the
+install - one tap, Android never installs apps silently outside the Play Store.
+
 The app is in `android/` (Kotlin, no layouts, OkHttp for the WebSocket) and speaks the same `/radio` protocol as the
 PC companion. `.github/workflows/build-apk.yml` builds it on every push to `android/` and replaces the
 `android-latest` release. For updates to install over an older build, every build must be signed with the same

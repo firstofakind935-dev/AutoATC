@@ -65,6 +65,7 @@ class RadioService : Service(), RadioClient.Listener {
             RadioState.running = true
         }
         client?.connect(prefs.server, prefs.callsign)
+        scheduleUpdateCheck()
         retune()
         showBubble()
         RadioState.changed()
@@ -107,6 +108,34 @@ class RadioService : Service(), RadioClient.Listener {
     private fun refreshNotification() {
         if (!RadioState.running) return
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification())
+    }
+
+    // ---- updates: check now and every hour; tell the pilot with a notification (installing needs the app screen) ---
+    private val updateHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var updateScheduled = false
+    private val updateCheck = object : Runnable {
+        override fun run() {
+            Updater.check(this@RadioService) { found -> if (found != null) notifyUpdate(found) }
+            updateHandler.postDelayed(this, 60 * 60 * 1000L)
+        }
+    }
+
+    private fun scheduleUpdateCheck() {
+        if (updateScheduled) return
+        updateScheduled = true
+        updateHandler.post(updateCheck)
+    }
+
+    private fun notifyUpdate(u: Updater.Update) {
+        val open = PendingIntent.getActivity(this, 2, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val b = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this)
+        val n = b.setContentTitle("AutoATC Radio update available")
+            .setContentText("Build ${u.build} is out - tap to update")
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(2, n)
     }
 
     fun showBubble() {
@@ -200,6 +229,8 @@ class RadioService : Service(), RadioClient.Listener {
 
     // ---- shutdown --------------------------------------------------------------------------------------------------
     private fun shutdown() {
+        updateHandler.removeCallbacks(updateCheck)
+        updateScheduled = false
         if (keyed) ptt(false)
         bubble?.hide()
         bubble = null

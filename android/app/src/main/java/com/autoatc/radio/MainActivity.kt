@@ -40,6 +40,8 @@ class MainActivity : Activity() {
     private lateinit var overlay: Button
     private lateinit var talk: Button
     private lateinit var log: TextView
+    private lateinit var updateBtn: Button
+    private var update: Updater.Update? = null
 
     private var com1Items: List<String?> = emptyList()
     private var com2Items: List<String?> = emptyList()
@@ -55,8 +57,22 @@ class MainActivity : Activity() {
         setContentView(build())
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Updater.onInstallStatus(this, intent)?.let { RadioState.addLog(it) }
+    }
+
+    private fun checkForUpdate() {
+        Updater.check(this) { found ->
+            update = found
+            updateBtn.visibility = if (found != null) View.VISIBLE else View.GONE
+            if (found != null) updateBtn.text = "Update available (build ${found.build}) - tap to install"
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        checkForUpdate()
         RadioState.listen(refresh)
         RadioService.instance?.showBubble() // overlay permission may have just been granted
         update()
@@ -80,6 +96,15 @@ class MainActivity : Activity() {
         col.addView(TextView(this).apply { text = "AutoATC Radio"; textSize = 22f; setTextColor(Color.rgb(80, 220, 140)) })
         status = TextView(this).apply { textSize = 14f; setPadding(0, dp(4), 0, 0) }
         col.addView(status)
+        updateBtn = Button(this).apply {
+            visibility = View.GONE
+            setOnClickListener {
+                val u = update ?: return@setOnClickListener
+                isEnabled = false
+                Updater.install(this@MainActivity, u) { line -> text = line; RadioState.addLog(line); if (line.startsWith("Update failed")) isEnabled = true }
+            }
+        }
+        col.addView(updateBtn)
 
         col.addView(label("Callsign"))
         callsign = EditText(this).apply {
