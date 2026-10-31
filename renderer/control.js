@@ -1029,9 +1029,21 @@ function setupRadio() {
   });
   window.AppRadio.on('log', (e) => {
     if (e.kind === 'warn') { addLine(`!! ${e.text}`); return; }
+    if (e.kind === 'broadcast') { addLine(`** ALL AIRCRAFT (${e.from}): ${e.text}`); return; }
     if (e.live) return; // the transcript follows
     addLine(`${e.freq}  ${e.from || '?'}: ${e.text}`);
     if (e.kind === 'atc') window.companion.sendToOverlay({ type: 'radio-rx', freq: e.freq, from: e.from, text: e.text });
+  });
+
+  // broadcasts and "ATC didn't hear you" also show over the game
+  window.AppRadio.on('broadcast', (text, from) => window.companion.sendToOverlay({ type: 'radio-alert', text: `ALL AIRCRAFT (${from}): ${text}`, long: true }));
+  window.AppRadio.on('notice', (text) => window.companion.sendToOverlay({ type: 'radio-alert', text }));
+  // typing to ATC: the fallback when the radio can't hear you
+  document.getElementById('radioSayForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const input = document.getElementById('radioSayText');
+    const text = input.value.trim();
+    if (text && window.AppRadio.say(text)) input.value = '';
   });
 
   const select = document.getElementById('pttKeySelect');

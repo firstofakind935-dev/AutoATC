@@ -299,3 +299,6 @@ input[type="checkbox"] {
 .update-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
   padding: 10px 14px; margin-bottom: 14px; border-radius: 8px; border: 1px solid var(--accent, #2f7d57); }
 .update-bar[hidden] { display: none; }
+
+.radio-say { display: flex; gap: 8px; margin-top: 10px; }
+.radio-say input { flex: 1; min-width: 0; }
