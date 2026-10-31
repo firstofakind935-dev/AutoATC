@@ -23,12 +23,13 @@ class Prefs(context: Context) {
     var volume: Float
         get() = p.getFloat("volume", 1f)
         set(v) = p.edit().putFloat("volume", v).apply()
-    var bubbleX: Int
-        get() = p.getInt("bubbleX", 24)
-        set(v) = p.edit().putInt("bubbleX", v).apply()
-    var bubbleY: Int
-        get() = p.getInt("bubbleY", 320)
-        set(v) = p.edit().putInt("bubbleY", v).apply()
+    /** Floating button: distance from the screen's right edge and from the top, in px; -1 = default (top right). */
+    var bubbleRight: Int
+        get() = p.getInt("bubbleRight", -1)
+        set(v) = p.edit().putInt("bubbleRight", v).apply()
+    var bubbleTop: Int
+        get() = p.getInt("bubbleTop", -1)
+        set(v) = p.edit().putInt("bubbleTop", v).apply()
 
     companion object {
         const val DEFAULT_SERVER = "https://cpdlc.up.railway.app"

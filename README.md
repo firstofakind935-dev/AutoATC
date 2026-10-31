@@ -37,8 +37,9 @@ For flying PTFS on a phone or tablet: talk to the controllers with a floating pu
 2. Open **AutoATC Radio**, enter your callsign, pick **COM1** (talk + listen) and optionally **COM2** (listen only).
 3. Tap **Start radio** and allow the microphone. Tap **Allow floating talk button** once and switch it on for
    AutoATC Radio.
-4. Switch to PTFS. Hold the round **PTT** button to talk (green = ready, orange = waiting for the frequency,
-   red = transmitting); drag it by its grip. Stop the radio from the notification.
+4. Switch to PTFS. A small round **PTT** button floats at the top right: hold it to talk (green = ready,
+   orange = waiting for the frequency, red = transmitting, grey = not connected). Drag the thin handle on its left
+   to move it. When ATC talks, their words show beside it for a few seconds. Stop the radio from the notification.
 
 The app is in `android/` (Kotlin, no layouts, OkHttp for the WebSocket) and speaks the same `/radio` protocol as the
 PC companion. `.github/workflows/build-apk.yml` builds it on every push to `android/` and replaces the
