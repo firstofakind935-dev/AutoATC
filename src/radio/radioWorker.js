@@ -87,15 +87,25 @@ function startRadioWorker({ monitorUrl = process.env.MONITOR_URL, apiKey = proce
     const onFreq = byFreq.get(msg.freq);
     if (!onFreq && !msg.listenOnly) return;
     const freq = msg.freq;
+    const typed = typeof msg.text === 'string'; // the pilot typed it (the hub already showed it to the frequency)
     let transcript;
-    try {
-      transcript = await transcribeAudio(pcmToWav(Buffer.from(msg.audio, 'base64'), { sampleRate: SAMPLE_RATE, channels: 1, bitsPerSample: 16 }));
-    } catch (err) {
-      logger.error(`Transcription failed on ${freq}: ${err.message}`);
+    if (typed) {
+      transcript = msg.text;
+    } else {
+      try {
+        transcript = await transcribeAudio(pcmToWav(Buffer.from(msg.audio, 'base64'), { sampleRate: SAMPLE_RATE, channels: 1, bitsPerSample: 16 }));
+      } catch (err) {
+        logger.error(`Transcription failed on ${freq}: ${err.message}`);
+        // tell the pilot, so they say it again or type it instead of waiting for an answer that never comes
+        send({ type: 'unheard', id: msg.id, freq, reason: 'radio problem' });
+        return;
+      }
+    }
+    if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) {
+      if (!typed && !msg.listenOnly) send({ type: 'unheard', id: msg.id, freq, reason: 'nothing understood' });
       return;
     }
-    if (!transcript || transcript.trim().length < MIN_TRANSCRIPT_LENGTH) return;
-    send({ type: 'transcript', id: msg.id, freq, from: msg.from, text: transcript });
+    if (!typed) send({ type: 'transcript', id: msg.id, freq, from: msg.from, text: transcript });
     logger.info(`${freq} ${msg.from}${msg.listenOnly ? ' (human-controlled)' : ''}: ${transcript}`);
     if (msg.listenOnly) {
       // A human controller has this frequency: only keep the AI up to date, so it carries on from here if the

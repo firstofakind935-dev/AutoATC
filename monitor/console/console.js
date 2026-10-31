@@ -166,4 +166,28 @@
 
   renderHeld();
   if (saved.callsign) $('connect').click();
+
+  // ---- broadcast to every connected pilot ----
+  const SERVER1 = 'AI ATC is having problems. Please leave this server now and join Server 1. Contact ATC there on Discord.';
+  let pending = null;
+  function askBroadcast(text) {
+    text = text.trim();
+    if (!text) return;
+    pending = text;
+    $('bcConfirmText').textContent = `Send to every pilot: "${text}"`;
+    $('bcConfirm').hidden = false;
+  }
+  $('bcForm').addEventListener('submit', (ev) => { ev.preventDefault(); askBroadcast($('bcText').value); });
+  $('bcServer1').addEventListener('click', () => askBroadcast(SERVER1));
+  $('bcNo').addEventListener('click', () => { pending = null; $('bcConfirm').hidden = true; });
+  $('bcYes').addEventListener('click', () => {
+    if (!pending) return;
+    R.broadcast(pending);
+    pending = null;
+    $('bcConfirm').hidden = true;
+    $('bcText').value = '';
+  });
+  R.on('broadcast-sent', (text, n) => { $('bcNote').textContent = `Sent to ${n} pilot${n === 1 ? '' : 's'}.`; log(`BROADCAST: ${text} (${n} pilots)`, 'bc'); });
+  R.on('broadcast', (text, from) => log(`BROADCAST from ${from}: ${text}`, 'bc'));
+  R.on('status', (state) => { for (const id of ['bcSend', 'bcServer1']) $(id).disabled = state !== 'connected'; });
 })();

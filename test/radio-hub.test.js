@@ -134,3 +134,48 @@ test('human controllers take over and hand back: the AI only listens meanwhile, 
     for (const w of [pilot, worker, human]) w.close();
   } finally { done(); }
 });
+
+test('typed calls reach the frequency and the AI; a lost transmission is reported to its sender; broadcasts reach everyone', async () => {
+  const { open, done } = await setup({ controllerKey: 'ck' });
+  try {
+    const worker = await open('/radio/worker', { headers: { authorization: 'Bearer k' } });
+    worker.send(JSON.stringify({ type: 'hello', stations: [{ freq: '121.000', station: 'IRFD TWR', callsign: 'Rockford Tower' }] }));
+    const a = await open('/radio?callsign=N42Y');
+    const b = await open('/radio?callsign=DAL123');
+    const c = await open('/radio?callsign=AAL1');
+    await tick();
+    for (const p of [a, b]) p.send(JSON.stringify({ type: 'tune', tx: '121.000', rx: ['121.000'] }));
+    c.send(JSON.stringify({ type: 'tune', tx: '118.100', rx: ['118.100'] }));
+    await tick();
+
+    a.send(JSON.stringify({ type: 'say', text: '  Rockford Tower,   N42Y ready for departure  ' }));
+    await tick();
+    assert.deepStrictEqual(json(b, 'rx-text').map((m) => [m.from, m.text, m.typed]), [['N42Y', 'Rockford Tower, N42Y ready for departure', true]]);
+    assert.strictEqual(json(c, 'rx-text').length, 0); // other frequency
+    const typed = json(worker, 'utterance')[0];
+    assert.strictEqual(typed.text, 'Rockford Tower, N42Y ready for departure');
+    assert.strictEqual(typed.audio, undefined);
+
+    // a spoken call the worker couldn't transcribe: only its sender is told
+    a.send(JSON.stringify({ type: 'ptt', on: true }));
+    await tick();
+    a.send(Buffer.alloc(16000 * 2)); // 0.5 s
+    a.send(JSON.stringify({ type: 'ptt', on: false }));
+    await tick();
+    const spoken = json(worker, 'utterance')[1];
+    worker.send(JSON.stringify({ type: 'unheard', id: spoken.id, freq: '121.000', reason: 'radio problem' }));
+    await tick();
+    assert.match(json(a, 'rx-notice')[0].text, /did not receive/);
+    assert.strictEqual(json(b, 'rx-notice').length, 0);
+
+    // broadcast: controllers only, to every pilot on every frequency
+    a.send(JSON.stringify({ type: 'broadcast', text: 'pilots cannot broadcast' }));
+    const ctl = await open('/radio?role=controller&callsign=EventLead&key=ck');
+    await tick();
+    ctl.send(JSON.stringify({ type: 'broadcast', text: 'AI ATC is down. Move to Server 1.' }));
+    await tick();
+    for (const p of [a, b, c]) assert.deepStrictEqual(json(p, 'broadcast').map((m) => [m.from, m.text]), [['EventLead', 'AI ATC is down. Move to Server 1.']]);
+    assert.strictEqual(json(ctl, 'broadcast-sent')[0].pilots, 3);
+    for (const ws of [worker, a, b, c, ctl]) ws.close();
+  } finally { done(); }
+});

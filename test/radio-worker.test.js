@@ -149,3 +149,51 @@ test('while a human controller has the frequency the brain only listens - and re
     pilot.close(); human.close();
   } finally { worker.stop(); hub.close(); server.close(); }
 });
+
+test('speech recognition down: the pilot is told; a typed call is answered without it; voice down still sends text', async (t) => {
+  const stt = require('../src/speech/stt');
+  const tts = require('../src/speech/tts');
+  const llm = require('../src/ai/llmProvider');
+  t.mock.method(stt, 'transcribeAudio', async () => { throw new Error('speaches 502'); });
+  t.mock.method(tts, 'synthesizeSpeech', async () => { throw new Error('speaches 502'); });
+  t.mock.method(llm, 'generateAtcReplyWithFallback', async (args) => {
+    assert.match(args.history.at(-1).content, /typed ready for departure/);
+    return 'N42Y, runway 25L, cleared for takeoff';
+  });
+  delete require.cache[require.resolve('../src/radio/radioWorker')];
+  delete require.cache[require.resolve('../src/radio/ControllerBrain')];
+  const { startRadioWorker, loadStations } = require('../src/radio/radioWorker');
+  const { createRadioHub } = require('../monitor/radio');
+  const hub = createRadioHub({ workerKey: 'k', logger: { info() {} } });
+  const server = http.createServer();
+  server.on('upgrade', (req, socket, head) => { if (!hub.handleUpgrade(req, socket, head)) socket.destroy(); });
+  await new Promise((r) => server.listen(0, r));
+  const port = server.address().port;
+  const worker = startRadioWorker({ monitorUrl: `http://127.0.0.1:${port}`, apiKey: 'k', stations: loadStations() });
+  const wait = async (pred) => { for (let i = 0; i < 60 && !pred(); i++) await new Promise((r) => setTimeout(r, 50)); };
+  try {
+    const pilot = new WebSocket(`ws://127.0.0.1:${port}/radio?callsign=N42Y`);
+    const inbox = [];
+    pilot.on('message', (d, bin) => { if (!bin) inbox.push(JSON.parse(d.toString())); });
+    await new Promise((r) => pilot.on('open', r));
+    await new Promise((r) => setTimeout(r, 200));
+    pilot.send(JSON.stringify({ type: 'tune', tx: '121.000' }));
+    pilot.send(JSON.stringify({ type: 'ptt', on: true }));
+    await new Promise((r) => setTimeout(r, 50));
+    pilot.send(Buffer.alloc(16000 * 2));
+    pilot.send(JSON.stringify({ type: 'ptt', on: false }));
+    await wait(() => inbox.some((m) => m.type === 'rx-notice'));
+    assert.match(inbox.find((m) => m.type === 'rx-notice').text, /type your message/);
+
+    pilot.send(JSON.stringify({ type: 'say', text: 'Rockford Tower, N42Y, typed ready for departure' }));
+    await wait(() => inbox.some((m) => m.type === 'rx-clip'));
+    const clip = inbox.find((m) => m.type === 'rx-clip');
+    assert.strictEqual(clip.text, 'N42Y, runway 25L, cleared for takeoff');
+    assert.strictEqual(clip.audio, null); // no voice: the apps read the text out themselves
+    pilot.close();
+  } finally {
+    worker.stop();
+    hub.close();
+    server.close();
+  }
+});

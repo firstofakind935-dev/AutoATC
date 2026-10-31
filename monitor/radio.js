@@ -9,6 +9,9 @@
 //   -> {type:'ptt', on:true}  <- {type:'ptt', granted, freq, reason?}   one transmitter per frequency, like a radio
 //   -> binary: PCM 16-bit LE, mono, 16 kHz, while the PTT is granted
 //   -> {type:'ptt', on:false}
+//   -> {type:'say', text}   a typed call on the transmit frequency (when the radio can't hear you): shown to the
+//                           frequency as rx-text and answered like a spoken one
+//   <- {type:'rx-notice', freq, text}   ATC didn't get your transmission (its speech recognition failed): say again or type it
 //   <- {type:'rx-start', stream, freq, from}  <- binary [uint16 LE stream][PCM]  <- {type:'rx-end', stream}
 //   <- {type:'rx-clip', freq, from, text, mime, audio(base64)}   a controller's reply
 //   <- {type:'rx-text', freq, from, text}                       what a pilot said (transcribed), for subtitles
@@ -16,11 +19,15 @@
 // Worker <-> hub:
 //   -> {type:'hello', stations:[{freq, station, callsign}]}
 //   <- {type:'utterance', id, freq, from, audio(base64 PCM 16k mono)}
+//      (or {type:'utterance', id, freq, from, text} for a typed call - no audio)
 //   -> {type:'transcript', id, freq, text}      -> {type:'reply', id, freq, from, text, mime, audio(base64)}
+//   -> {type:'unheard', id, freq, reason}       the transmission couldn't be transcribed
 // Human controllers (/radio?role=controller&callsign=...&key=CONTROLLER_KEY - the console at /console):
 //   -> {type:'takeover', freq}   the AI stops answering there at once; the controller gets the frequency's recent
 //                                transcript <- {type:'history', freq, lines:[{at, from, text}]} and transmits on it
 //   -> {type:'handback', freq}   back to the AI (also when the controller disconnects)
+//   -> {type:'broadcast', text}  to every connected pilot on every frequency <- {type:'broadcast', from, text, at}
+//                                (apps show it as a banner and read it out with the device's own voice)
 // While a human holds a frequency, transmissions there are still transcribed (listenOnly) - for the transcript, and
 // so the AI knows what happened when it gets the frequency back.
 
@@ -34,6 +41,8 @@ const PTT_TIMEOUT_MS = (MAX_UTTERANCE_S + 2) * 1000; // a stuck transmitter free
 const MIN_UTTERANCE_BYTES = SAMPLE_RATE * 2 * 0.3; // shorter than 0.3 s: a click, not a call
 const HISTORY_LINES = 40; // per frequency, sent to a controller who takes it over
 const HISTORY_MS = 20 * 60 * 1000;
+const MAX_SAY_CHARS = 300;
+const UTTERANCE_TTL_MS = 2 * 60 * 1000; // how long we remember who sent an utterance, to tell them if it was lost
 
 const normFreq = (f) => {
   const n = Number(f);
@@ -56,6 +65,14 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
   let nextId = 1;
   let nextStream = 1;
   let nextUtterance = 1;
+  const sentBy = new Map(); // utterance id -> {pilotId, freq, at}
+
+  function forward(worker, utterance, pilot) {
+    sentBy.set(utterance.id, { pilotId: pilot.id, freq: utterance.freq, at: Date.now() });
+    for (const [id, u] of sentBy) if (Date.now() - u.at > UTTERANCE_TTL_MS) sentBy.delete(id);
+    send(worker.ws, utterance);
+  }
+  const NOT_HEARD = 'ATC did not receive that (radio problem). Say again, or type your message.';
 
   const send = (ws, msg) => { if (ws.readyState === 1) ws.send(typeof msg === 'string' || Buffer.isBuffer(msg) ? msg : JSON.stringify(msg)); };
   const listeners = (freq, exceptId = null) => [...pilots.values()].filter((p) => p.id !== exceptId && p.rx.has(freq));
@@ -89,10 +106,33 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
     // with a human on the frequency (or a controller talking) the AI only listens: it transcribes, never answers
     const listenOnly = pilot.role === 'controller' || humans.has(t.freq);
     const worker = anyWorkerFor(t.freq);
-    if (!worker) return;
+    if (!worker) {
+      if (!listenOnly) send(pilot.ws, { type: 'rx-notice', freq: t.freq, text: 'No AI controller is connected right now.' });
+      return;
+    }
     const id = nextUtterance++;
-    send(worker.ws, { type: 'utterance', id, freq: t.freq, from: pilot.callsign, speaker: pilot.role, listenOnly,
-      audio: Buffer.concat(t.chunks).toString('base64') });
+    forward(worker, { type: 'utterance', id, freq: t.freq, from: pilot.callsign, speaker: pilot.role, listenOnly,
+      audio: Buffer.concat(t.chunks).toString('base64') }, pilot);
+  }
+
+  // a typed call: everyone on the frequency sees it, and the AI answers it like a spoken one
+  function say(pilot, text) {
+    const freq = pilot.tx;
+    const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_SAY_CHARS);
+    if (!freq) return send(pilot.ws, { type: 'rx-notice', freq: null, text: 'Tune a frequency first.' });
+    if (!clean) return;
+    if (pilot.role === 'controller' && (humans.get(freq) || {}).id !== pilot.id) {
+      return send(pilot.ws, { type: 'rx-notice', freq, text: 'Take the frequency over first.' });
+    }
+    remember(freq, pilot.callsign, clean);
+    for (const l of listeners(freq)) send(l.ws, { type: 'rx-text', freq, from: pilot.callsign, text: clean, typed: true });
+    const listenOnly = pilot.role === 'controller' || humans.has(freq);
+    const worker = anyWorkerFor(freq);
+    if (!worker) {
+      if (!listenOnly) send(pilot.ws, { type: 'rx-notice', freq, text: 'No AI controller is connected right now.' });
+      return;
+    }
+    forward(worker, { type: 'utterance', id: nextUtterance++, freq, from: pilot.callsign, speaker: pilot.role, listenOnly, text: clean }, pilot);
   }
 
   function onPilotMessage(pilot, data, isBinary) {
@@ -140,6 +180,16 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
         announceStations();
       }
       send(pilot.ws, { type: 'handback', freq, ok: true });
+    } else if (msg.type === 'broadcast' && pilot.role === 'controller') {
+      const text = String(msg.text || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+      if (!text) return;
+      const out = { type: 'broadcast', from: pilot.callsign, text, at: new Date().toISOString() };
+      let n = 0;
+      for (const p of pilots.values()) { send(p.ws, out); if (p.role !== 'controller') n++; }
+      send(pilot.ws, { type: 'broadcast-sent', text, pilots: n });
+      logger.info(`[radio] broadcast from ${pilot.callsign} to ${n} pilots: ${text}`);
+    } else if (msg.type === 'say') {
+      say(pilot, msg.text);
     } else if (msg.type === 'ptt') {
       if (msg.on) {
         const freq = pilot.tx;
@@ -172,7 +222,13 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
       worker.stations = new Map(msg.stations.map((s) => [normFreq(s.freq), { freq: normFreq(s.freq), station: s.station, callsign: s.callsign }]).filter(([f]) => f));
       logger.info(`[radio] controller worker serving ${worker.stations.size} frequencies`);
       announceStations();
+    } else if (msg.type === 'unheard') {
+      const u = sentBy.get(msg.id);
+      sentBy.delete(msg.id);
+      const pilot = u && pilots.get(u.pilotId);
+      if (pilot) send(pilot.ws, { type: 'rx-notice', freq: u.freq, text: NOT_HEARD });
     } else if (msg.type === 'transcript') {
+      sentBy.delete(msg.id);
       const freq = normFreq(msg.freq);
       if (freq && msg.text) {
         remember(freq, msg.from || null, String(msg.text));

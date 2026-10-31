@@ -49,6 +49,12 @@
   .l-atc { color: var(--ai); } .l-ctl { color: var(--human); } .l-warn { color: var(--warn); } .l-hist { color: var(--dim); }
   .hint { color: var(--dim); font-size: 12.5px; margin: 6px 0 0; }
   kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: 12px; }
+  section.broadcast { grid-column: 1 / -1; }
+  #bcText { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; resize: vertical; }
+  .bc-row, .bc-confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .bc-confirm { padding: 8px 10px; border: 1px solid var(--warn); border-radius: 6px; }
+  .bc-confirm[hidden] { display: none; }
+  #log .bc { color: var(--warn); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -74,6 +80,22 @@
     <div id="held"><span class="hint">Take a station over to transmit on it.</span></div>
     <button id="ptt" disabled>Hold to talk (or hold <kbd>Space</kbd>)</button>
     <div id="log"></div>
+  </section>
+  <section class="broadcast">
+    <h2>Broadcast to all pilots</h2>
+    <form id="bcForm">
+      <textarea id="bcText" maxlength="500" rows="2" placeholder="e.g. AI ATC is down. Leave this server and join Server 1, contact ATC on Discord."></textarea>
+      <div class="bc-row">
+        <button class="primary" id="bcSend" type="submit" disabled>Send to everyone</button>
+        <button id="bcServer1" type="button" disabled>Move everyone to Server 1</button>
+        <span class="hint" id="bcNote">Every connected pilot, on every frequency, sees it on screen and hears it read out.</span>
+      </div>
+      <div class="bc-confirm" id="bcConfirm" hidden>
+        <span id="bcConfirmText"></span>
+        <button class="primary" id="bcYes" type="button">Send it</button>
+        <button id="bcNo" type="button">Cancel</button>
+      </div>
+    </form>
   </section>
 </main>
 <script src="radio.js"></script>
