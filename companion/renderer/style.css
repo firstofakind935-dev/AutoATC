@@ -295,3 +295,6 @@ input[type="checkbox"] {
 #pttBtn { user-select: none; touch-action: none; }
 #pttBtn.transmitting { background: #c0392b; border-color: #c0392b; }
 .ptt-set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
+
+.radio-say { display: flex; gap: 8px; margin-top: 10px; }
+.radio-say input { flex: 1; min-width: 0; }

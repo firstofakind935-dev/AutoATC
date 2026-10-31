@@ -444,6 +444,13 @@ window.companion.onOverlayCommand((command) => {
     const text = `${command.from}: ${command.text}`;
     document.getElementById('radioPill').hidden = false;
     document.getElementById('barRadioText').textContent = text;
+  } else if (command.type === 'radio-alert') {
+    // a broadcast to all pilots, or "ATC didn't hear you": a banner over the game
+    clearTimeout(toastTimer);
+    toast.textContent = command.text;
+    toast.classList.toggle('broadcast', true);
+    toast.style.display = 'block';
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, command.long ? 20000 : 8000);
   } else if (command.type === 'radio-state') {
     radioState = { radios: command.radios, squawk: command.squawk, identing: command.identing, primaryRadio: command.primaryRadio };
     if (!radioPanel.hidden) renderRadioPanel();
