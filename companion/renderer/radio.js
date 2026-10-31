@@ -21,7 +21,7 @@
   let volume = 1;
   const streams = new Map(); // stream id -> {freq, from, at (next play time)}
   let clipChain = Promise.resolve();
-  const listeners = { status: [], log: [], stations: [], ptt: [], control: [], history: [] };
+  const listeners = { status: [], log: [], stations: [], ptt: [], control: [], history: [], notice: [], broadcast: [], 'broadcast-sent': [] };
   let stations = [];
 
   const emit = (kind, ...args) => listeners[kind].forEach((fn) => { try { fn(...args); } catch (e) { console.error(e); } });
@@ -99,8 +99,32 @@
       emit('log', { kind: 'text', freq: msg.freq, from: msg.from, text: msg.text });
     } else if (msg.type === 'rx-clip') {
       emit('log', { kind: 'atc', freq: msg.freq, from: msg.from, text: msg.text });
-      if (msg.audio) playClip(msg.audio);
+      // the controller's voice didn't come through (server voice down): read the words out with this computer's voice
+      if (msg.audio) playClip(msg.audio, msg.text); else speakText(msg.text);
+    } else if (msg.type === 'rx-notice') {
+      emit('log', { kind: 'warn', text: msg.text });
+      emit('notice', msg.text, msg.freq);
+    } else if (msg.type === 'broadcast') {
+      emit('log', { kind: 'broadcast', from: msg.from, text: msg.text });
+      emit('broadcast', msg.text, msg.from);
+      speakText(`Attention all aircraft. ${msg.text}`);
+    } else if (msg.type === 'broadcast-sent') {
+      emit('broadcast-sent', msg.text, msg.pilots);
     }
+  }
+
+  // Fallback voice: the computer's own text-to-speech (works offline), queued after any reply still playing.
+  function speakText(text) {
+    if (!text || !window.speechSynthesis) return;
+    clipChain = clipChain.then(() => new Promise((resolve) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      u.volume = Math.min(1, volume);
+      u.onend = resolve;
+      u.onerror = resolve;
+      window.speechSynthesis.speak(u);
+      setTimeout(resolve, 20000); // never hold the queue
+    }));
   }
 
   function onAudio(buf) {
@@ -123,7 +147,7 @@
     s.at = startAt + audio.duration;
   }
 
-  function playClip(base64) {
+  function playClip(base64, text) {
     clipChain = clipChain.then(async () => {
       const ctx = audioOut();
       const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -137,7 +161,7 @@
         src.onended = resolve;
         src.start();
       });
-    }).catch((err) => emit('log', { kind: 'warn', text: `Could not play a reply: ${err.message}` }));
+    }).catch(() => speakText(text)); // couldn't play the voice: say the words instead
   }
 
   // ---- transmitting --------------------------------------------------------------------------------------------
@@ -197,6 +221,15 @@
     setPtt,
     takeover: (freq) => sendJson({ type: 'takeover', freq }),
     handback: (freq) => sendJson({ type: 'handback', freq }),
+    // a typed call on the transmit frequency, for when ATC can't hear you
+    say(text) {
+      if (!ws || ws.readyState !== 1) { emit('log', { kind: 'warn', text: 'Radio not connected.' }); return false; }
+      if (!tuned.tx) { emit('log', { kind: 'warn', text: 'No frequency on your primary radio.' }); return false; }
+      sendJson({ type: 'say', text });
+      return true;
+    },
+    // controllers only: a message to every connected pilot
+    broadcast: (text) => sendJson({ type: 'broadcast', text }),
     setVolume: (v) => { volume = Math.max(0, Math.min(2, Number(v) || 0)); },
     stationOn,
     get stations() { return stations; },
