@@ -49,15 +49,25 @@ function airportCode(value) {
 
 /** Validates a filing; returns {plan} or {error}. */
 function validate(body) {
-  const callsign = clean(body && body.callsign, 12).toUpperCase().replace(/[\s-]/g, '');
+  const callsign = clean(body && body.callsign, 24).toUpperCase().replace(/[\s-]/g, '');
   const aircraft = clean(body && body.aircraft, 30).toUpperCase();
   const dep = airportCode(body && body.dep);
   const arr = airportCode(body && body.arr);
-  if (!/^[A-Z0-9]{2,10}$/.test(callsign)) return { error: 'Callsign: letters and numbers only, like DAL123 or N42Y.' };
+  if (!/^[A-Z0-9]{2,16}$/.test(callsign)) return { error: 'Callsign: letters and numbers only, like DAL123, N42Y or Speedbird 123.' };
   if (!/^[A-Z0-9][A-Z0-9 \-/]{1,29}$/.test(aircraft)) return { error: 'Aircraft type: like A320, B738 or Cessna 172.' };
   if (!/^[A-Z]{4}$/.test(dep)) return { error: 'Departure: an airport code like IRFD (or a name like Rockford).' };
   if (!/^[A-Z]{4}$/.test(arr)) return { error: 'Arrival: an airport code like ITKO (or a name like Tokyo).' };
-  return { plan: { callsign, aircraft, dep, arr } };
+  // optional extras (the Discord channel's format has them): gate, IFR/VFR, the route they asked for, cruise level
+  const extra = {};
+  const gate = clean(body && body.gate, 12);
+  if (gate) extra.gate = gate;
+  const rules = clean(body && body.rules, 10).toUpperCase();
+  if (/^(IFR|VFR)$/.test(rules)) extra.rules = rules;
+  const filedRoute = clean(body && body.filedRoute, 80);
+  if (filedRoute) extra.filedRoute = filedRoute;
+  const cruise = clean(body && body.cruise, 12);
+  if (cruise) extra.cruise = cruise;
+  return { plan: { callsign, aircraft, dep, arr, ...extra } };
 }
 
 function createFlightPlans({ file = null, historyFile = null, settingsFile = null, now = () => Date.now() } = {}) {
@@ -144,7 +154,7 @@ function createFlightPlans({ file = null, historyFile = null, settingsFile = nul
     const at = new Date(now()).toISOString();
     const plan = {
       ...v.plan,
-      route: ROUTE,
+      route: v.plan.rules === 'VFR' ? 'VFR' : ROUTE,
       squawk: existing ? existing.squawk : newSquawk(),
       filedAt: existing ? existing.filedAt : at,
       updatedAt: at,

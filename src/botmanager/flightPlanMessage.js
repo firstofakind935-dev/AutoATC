@@ -7,6 +7,11 @@ const LABELS = {
   aircraft: ['aircraft', 'aircraft type', 'type', 'acft', 'plane', 'ac'],
   dep: ['departure', 'departing', 'dep', 'from', 'origin', 'departure airport', 'leaving'],
   arr: ['arrival', 'arriving', 'arr', 'to', 'destination', 'dest', 'arrival airport', 'going to'],
+  // optional extras, passed on to the AI
+  gate: ['gate', 'stand', 'parking', 'gate number', 'stand number'],
+  rules: ['flight rules', 'rules', 'flight type'],
+  filedRoute: ['route', 'filed route', 'routing'],
+  cruise: ['altitude', 'cruise', 'cruising altitude', 'cruise altitude', 'flight level', 'fl'],
 };
 
 const clean = (s) => String(s || '').replace(/[*_`~>|]/g, ' ').replace(/<[@#:!&][^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

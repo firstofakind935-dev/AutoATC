@@ -11,6 +11,9 @@ test('reads the usual ways people write a flight plan', () => {
   assert.deepStrictEqual(norm(parseFlightPlanMessage('DAL123 B738 IRFD-ITKO')), want);
   assert.deepStrictEqual(norm(parseFlightPlanMessage('cs: dal123 / type: b738 / from: irfd / to: itko')), want);
   assert.strictEqual(parseFlightPlanMessage('Departing: Greater Rockford').dep, 'Greater Rockford'); // names resolve on the monitor
+  // the event's own channel format
+  const event = parseFlightPlanMessage('Discord:ryaaneo\nCallsign: Channex 961\nAircraft: A320\nGate: 10\nDeparting: IRFD\nArriving: IPPH\nFlight rules: IFR\nRoute: GPS Direct\nexample flight plan');
+  assert.deepStrictEqual(event, { callsign: 'Channex 961', aircraft: 'A320', gate: '10', dep: 'IRFD', arr: 'IPPH', rules: 'IFR', filedRoute: 'GPS Direct' });
   const chat = parseFlightPlanMessage('anyone flying to tokyo tonight?');
   assert.ok(['callsign', 'aircraft', 'dep', 'arr'].filter((k) => chat[k]).length < 2, 'chat is not a flight plan');
 });
@@ -43,6 +46,13 @@ test('Bot Manager files a channel post for its author, replies with the squawk, 
     assert.deepStrictEqual(a.reactions, ['✅']);
     assert.match(a.replies[0], /\*\*DAL123\*\* filed: IRFD → ITKO, B738.*Squawk \*\*\d{4}\*\*/s);
     assert.deepStrictEqual(store.leaderboard().map((p) => [p.name, p.flights]), [['Skyhawk', 1]]);
+
+    const ev = msg('Discord:ryaaneo\nCallsign: Channex 961\nAircraft: A320\nGate: 10\nDeparting: IRFD\nArriving: IPPH\nFlight rules: IFR\nRoute: GPS Direct', 'm7');
+    await bot._onFlightPlanMessage(ev);
+    assert.match(ev.replies[0], /\*\*CHANNEX961\*\* filed: IRFD → IPPH, A320/);
+    const filed = store.list().find((p) => p.callsign === 'CHANNEX961');
+    assert.deepStrictEqual([filed.gate, filed.rules, filed.filedRoute, filed.route], ['10', 'IFR', 'GPS Direct', 'RADAR VECTORS']);
+    await bot._onFlightPlanDeleted({ id: 'm7' });
 
     const half = msg('Callsign: N42Y\nAircraft: C172', 'm2');
     await bot._onFlightPlanMessage(half);

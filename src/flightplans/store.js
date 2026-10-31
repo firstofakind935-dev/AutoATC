@@ -65,8 +65,9 @@ async function getEventFlightPlans() {
   if (!r.ok) throw new Error(`event flight plans: ${r.status}`);
   const d = await r.json();
   return (d.plans || []).map((p) => ({
-    callsign: p.callsign, aircraft: p.aircraft, dep_icao: p.dep, arr_icao: p.arr, flight_rules: 'IFR',
-    route: 'radar vectors', squawk: p.squawk,
+    callsign: p.callsign, aircraft: p.aircraft, dep_icao: p.dep, arr_icao: p.arr, flight_rules: p.rules || 'IFR',
+    route: p.rules === 'VFR' ? 'VFR' : 'radar vectors', squawk: p.squawk, cruise_alt: p.cruise || null,
+    remarks: [p.gate && `at gate ${p.gate}`, p.filedRoute && `asked for route "${p.filedRoute}" (clear via radar vectors)`].filter(Boolean).join('; ') || null,
   }));
 }
 
