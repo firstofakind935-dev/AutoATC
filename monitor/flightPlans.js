@@ -140,6 +140,14 @@ function createFlightPlans({ file = null, historyFile = null, now = () => Date.n
     }
     return { status: 204 };
   }
+  /** An admin closes a plan (flown, or abandoned): off the list, but it stays on the pilot's flight count. */
+  function close(callsign) {
+    const p = plans.get(String(callsign || '').toUpperCase());
+    if (!p) return { status: 404, error: 'No flight plan for that callsign.' };
+    plans.delete(p.callsign);
+    save();
+    return { status: 204 };
+  }
   /** Flights per pilot, most first: [{id, name, flights, last}] */
   function leaderboard() {
     const by = new Map();
@@ -153,11 +161,11 @@ function createFlightPlans({ file = null, historyFile = null, now = () => Date.n
     return [...by.values()].sort((a, b) => b.flights - a.flights || String(b.last.at).localeCompare(String(a.last.at)));
   }
   const mine = (pilotId) => [...plans.values()].filter((p) => p.pilot && p.pilot.id === pilotId).map((p) => p.callsign);
-  return { list, file: file_, cancel, leaderboard, mine, size: () => plans.size };
+  return { list, file: file_, cancel, close, leaderboard, mine, size: () => plans.size };
 }
 
 // ---- HTTP -------------------------------------------------------------------------------------------------------
-function createFlightPlanRouter(store, { limitPerMinute = 20, login = null } = {}) {
+function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, adminKey = null } = {}) {
   // with Discord sign-in set up, filing needs it (that's what makes the per-pilot flight count work)
   const userOf = (req) => (login ? login.userOf(req) : null);
   const needsLogin = () => !!(login && login.configured);
@@ -190,6 +198,18 @@ function createFlightPlanRouter(store, { limitPerMinute = 20, login = null } = {
     const r = store.file(req.body || {}, token(req), user);
     if (r.error) return res.status(r.status).json({ error: r.error });
     res.status(r.status).json({ plan: r.plan, token: r.token });
+  });
+  // admins (the admin console, header x-admin-key = ADMIN_KEY or CONTROLLER_KEY) close any plan
+  router.post('/:callsign/close', (req, res) => {
+    const key = adminKey && (typeof adminKey === 'function' ? adminKey() : adminKey);
+    if (!key) return res.status(503).json({ error: 'Set ADMIN_KEY (or CONTROLLER_KEY) on the server first.' });
+    const given = String(req.get('x-admin-key') || '');
+    if (given.length !== key.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key))) {
+      return res.status(403).json({ error: 'Wrong admin key.' });
+    }
+    const r = store.close(req.params.callsign);
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    res.status(204).end();
   });
   router.delete('/:callsign', (req, res) => {
     if (rateLimited(req)) return res.status(429).json({ error: 'Too many requests. Wait a minute.' });

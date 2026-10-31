@@ -517,7 +517,7 @@ const flightPlans = createFlightPlans({
 // Sign in with Discord (monitor/discordLogin.js): filing a flight plan needs it once DISCORD_CLIENT_ID/SECRET are set.
 const discordLogin = createDiscordLogin();
 app.use('/auth/discord', discordLogin.router);
-app.use('/api/flightplans', createFlightPlanRouter(flightPlans, { login: discordLogin }));
+app.use('/api/flightplans', createFlightPlanRouter(flightPlans, { login: discordLogin, adminKey: process.env.ADMIN_KEY || process.env.CONTROLLER_KEY || null }));
 app.use('/fpl', express.static(path.join(__dirname, 'fpl')));
 // Radar tracking for phone pilots: the Android app sends screenshots, the server reads the minimap
 // (monitor/tracker/ - the companion's own tracker, on a worker thread) and files the position like the companion does.

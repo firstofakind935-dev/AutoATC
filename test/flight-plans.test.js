@@ -90,3 +90,25 @@ test('with Discord sign-in: filing needs it, plans belong to the account, flight
     assert.deepStrictEqual(board.map((p) => [p.name, p.flights]), [['Bob', 1], ['Amy', 1]]); // a tie goes to the latest flight
   } finally { server.close(); }
 });
+
+test('admins close any plan with the admin key; a closed flight still counts', async () => {
+  const express = require('../monitor/node_modules/express');
+  const { createFlightPlanRouter } = require('../monitor/flightPlans');
+  const { createDiscordLogin } = require('../monitor/discordLogin');
+  const login = createDiscordLogin({ env: { DISCORD_CLIENT_ID: '1', DISCORD_CLIENT_SECRET: '2', SESSION_SECRET: 's' }, log: { warn() {} } });
+  const store = createFlightPlans();
+  const app = express();
+  app.use(express.json());
+  app.use('/api/flightplans', createFlightPlanRouter(store, { login, adminKey: 'ak' }));
+  const server = await new Promise((r) => { const s = app.listen(0, () => r(s)); });
+  const base = `http://127.0.0.1:${server.address().port}/api/flightplans`;
+  try {
+    await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: `atc_sid=${login.makeSession({ id: '1', name: 'Amy' })}` }, body: JSON.stringify({ callsign: 'DAL1', aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' }) });
+    assert.strictEqual((await fetch(`${base}/DAL1/close`, { method: 'POST' })).status, 403);
+    assert.strictEqual((await fetch(`${base}/DAL1/close`, { method: 'POST', headers: { 'x-admin-key': 'nope' } })).status, 403);
+    assert.strictEqual((await fetch(`${base}/DAL1/close`, { method: 'POST', headers: { 'x-admin-key': 'ak' } })).status, 204);
+    assert.strictEqual((await (await fetch(base)).json()).plans.length, 0);
+    assert.deepStrictEqual((await (await fetch(`${base}/leaderboard`)).json()).pilots.map((p) => [p.name, p.flights]), [['Amy', 1]]);
+    assert.strictEqual((await fetch(`${base}/DAL1/close`, { method: 'POST', headers: { 'x-admin-key': 'ak' } })).status, 404);
+  } finally { server.close(); }
+});

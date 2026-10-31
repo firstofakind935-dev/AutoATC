@@ -74,6 +74,12 @@
       <thead><tr><th>Freq</th><th>Station</th><th></th><th>Listen</th><th>Talk</th></tr></thead>
       <tbody id="stations"></tbody>
     </table></div>
+    <h2 style="margin-top:14px">Flight plans</h2>
+    <div class="stations" style="max-height:30vh"><table>
+      <thead><tr><th>Callsign</th><th>Type</th><th>Route</th><th>Squawk</th><th>Pilot</th><th></th></tr></thead>
+      <tbody id="plans"><tr><td colspan="6" class="hint">Loading…</td></tr></tbody>
+    </table></div>
+    <p class="hint" id="planNote">Close a plan when the flight is done (it still counts for the pilot).</p>
     <p class="hint">As admin you can <b>talk on any frequency</b> without taking it over: the AI keeps controlling it and hears what you said.
       To make the AI go quiet on a frequency, use the <a href="index.html">controller console</a>'s Take over.</p>
   </section>

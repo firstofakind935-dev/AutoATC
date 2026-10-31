@@ -140,5 +140,35 @@
   window.addEventListener('keyup', (e) => { if (e.code === 'Space' && !typing(e)) { e.preventDefault(); R.setPtt(false); } });
   window.addEventListener('blur', () => R.setPtt(false));
 
+  // ---- flight plans: close any of them (POST /api/flightplans/<callsign>/close with the admin key) ----
+  async function loadPlans() {
+    let plans = [];
+    try { plans = (await (await fetch('/api/flightplans', { cache: 'no-store' })).json()).plans || []; } catch { return; }
+    const body = $('plans');
+    body.textContent = '';
+    const cell = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; return td; };
+    if (!plans.length) { const tr = document.createElement('tr'); const td = cell('No open flight plans.', 'hint'); td.colSpan = 6; tr.append(td); body.append(tr); }
+    for (const p of plans) {
+      const tr = document.createElement('tr');
+      const act = cell('');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Close';
+      btn.addEventListener('click', async () => {
+        if (btn.dataset.armed !== '1') { btn.dataset.armed = '1'; btn.textContent = 'Confirm close'; setTimeout(() => { btn.dataset.armed = ''; btn.textContent = 'Close'; }, 4000); return; }
+        btn.disabled = true;
+        const r = await fetch(`/api/flightplans/${encodeURIComponent(p.callsign)}/close`, { method: 'POST', headers: { 'x-admin-key': $('key').value } });
+        const d = r.ok ? {} : await r.json().catch(() => ({}));
+        $('planNote').textContent = r.ok ? `${p.callsign} closed.` : (d.error || 'Could not close it.');
+        loadPlans();
+      });
+      act.append(btn);
+      tr.append(cell(p.callsign, 'f'), cell(p.aircraft), cell(`${p.dep} → ${p.arr}`), cell(p.squawk, 'f'), cell(p.filedBy || ''), act);
+      body.append(tr);
+    }
+  }
+  loadPlans();
+  setInterval(loadPlans, 15000);
+
   if ($('callsign').value && $('key').value) $('connect').click();
 })();
