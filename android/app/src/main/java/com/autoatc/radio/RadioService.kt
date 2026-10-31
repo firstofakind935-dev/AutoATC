@@ -140,7 +140,7 @@ class RadioService : Service(), RadioClient.Listener {
 
     fun showBubble() {
         if (bubble != null || !Settings.canDrawOverlays(this)) return
-        bubble = OverlayBubble(this, prefs) { down -> ptt(down) }.also { it.show() }
+        bubble = OverlayBubble(this, prefs, { down -> ptt(down) }, { retune() }).also { it.show() }
     }
 
     /** COM1 transmits and listens; COM2 only listens. */

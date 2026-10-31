@@ -72,6 +72,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        shownStations = null // COM1/COM2 may have been changed from the floating button meanwhile
         checkForUpdate()
         RadioState.listen(refresh)
         RadioService.instance?.showBubble() // overlay permission may have just been granted

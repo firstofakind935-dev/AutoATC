@@ -21,7 +21,7 @@ import android.widget.TextView
  * to move it. When a controller talks, their words show beside it for a few seconds. Never takes focus, so the game
  * keeps every other touch.
  */
-class OverlayBubble(private val context: Context, private val prefs: Prefs, private val onPtt: (Boolean) -> Unit) {
+class OverlayBubble(private val context: Context, private val prefs: Prefs, private val onPtt: (Boolean) -> Unit, private val onTuned: () -> Unit = {}) {
     private val wm = context.getSystemService(WindowManager::class.java)
     private val density = context.resources.displayMetrics.density
     private fun dp(v: Int) = (v * density).toInt()
@@ -74,6 +74,21 @@ class OverlayBubble(private val context: Context, private val prefs: Prefs, priv
         layoutParams = LinearLayout.LayoutParams(dp(46), dp(46))
     }
 
+    // the frequency button under the talk button: opens the station list over the game
+    private val freqPanel = FrequencyPanel(context, prefs) { onTuned(); update() }
+    private val freqBtn = TextView(context).apply {
+        gravity = Gravity.CENTER
+        setTextColor(Color.WHITE)
+        textSize = 10f
+        setPadding(dp(6), dp(3), dp(6), dp(3))
+        background = GradientDrawable().apply { cornerRadius = dp(10).toFloat(); setColor(Color.argb(200, 20, 30, 25)) }
+        setOnClickListener { freqPanel.toggle(params.x, params.y) }
+    }
+    private val buttonCol = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER_HORIZONTAL
+    }
+
     private val refresh: () -> Unit = { update() }
     private val hideInfo = Runnable { info.visibility = View.GONE }
     private var shown = false
@@ -82,7 +97,9 @@ class OverlayBubble(private val context: Context, private val prefs: Prefs, priv
     init {
         root.addView(info)
         root.addView(gripArea)
-        root.addView(button)
+        buttonCol.addView(button)
+        buttonCol.addView(freqBtn, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
+        root.addView(buttonCol)
         setupTouch()
         lastAtcShown = RadioState.lastAtc
         update()
@@ -121,6 +138,7 @@ class OverlayBubble(private val context: Context, private val prefs: Prefs, priv
         }
         buttonBg.setColor(color)
         button.text = if (RadioState.tx == RadioState.Tx.TRANSMITTING) "TX" else "PTT"
+        freqBtn.text = prefs.com1?.let { "$it ▾" } ?: "FREQ ▾"
         // a new controller message: show it beside the button for a few seconds
         val atc = RadioState.lastAtc
         if (atc != null && atc != lastAtcShown) {
@@ -142,6 +160,7 @@ class OverlayBubble(private val context: Context, private val prefs: Prefs, priv
     fun hide() {
         if (!shown) return
         RadioState.unlisten(refresh)
+        freqPanel.close()
         main.removeCallbacks(hideInfo)
         onPtt(false)
         try { wm.removeView(root) } catch (_: Exception) {}

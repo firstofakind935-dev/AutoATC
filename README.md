@@ -39,7 +39,8 @@ For flying PTFS on a phone or tablet: talk to the controllers with a floating pu
    AutoATC Radio.
 4. Switch to PTFS. A small round **PTT** button floats at the top right: hold it to talk (green = ready,
    orange = waiting for the frequency, red = transmitting, grey = not connected). Drag the thin handle on its left
-   to move it. When ATC talks, their words show beside it for a few seconds. Stop the radio from the notification.
+   to move it. Tap the small frequency tag under it to pick a station without leaving the game. When ATC talks,
+   their words show beside it for a few seconds. Stop the radio from the notification.
 
 **Updates:** the app checks GitHub when it opens and every hour while the radio runs. When a new build is out it
 shows **Update available** (and a notification); tapping it downloads the new APK and Android asks to confirm the
