@@ -224,7 +224,27 @@ class RadioService : Service(), RadioClient.Listener {
     override fun onClip(freq: String, from: String, text: String, mp3: ByteArray?) {
         RadioState.lastAtc = "$from: $text"
         RadioState.addLog("$freq  $from: $text")
-        if (mp3 != null) audio?.playClip(mp3)
+        // no audio = the server's voice is down: the phone reads the words out instead
+        if (mp3 != null) audio?.playClip(mp3, text) else audio?.speak(text)
+    }
+
+    override fun onNotice(text: String) {
+        RadioState.lastAtc = text
+        RadioState.addLog("!! $text")
+    }
+
+    override fun onBroadcast(from: String, text: String) {
+        RadioState.lastAtc = "ALL AIRCRAFT: $text"
+        RadioState.addLog("** ALL AIRCRAFT ($from): $text")
+        audio?.speak("Attention all aircraft. $text")
+    }
+
+    /** A typed call to ATC on COM1 (when they can't hear you). */
+    fun say(text: String): Boolean {
+        val c = client ?: return false
+        if (!c.connected) { RadioState.addLog("!! Radio not connected"); return false }
+        if (prefs.com1 == null) { RadioState.addLog("!! Pick a COM1 frequency first"); return false }
+        return c.say(text)
     }
 
     // ---- shutdown --------------------------------------------------------------------------------------------------

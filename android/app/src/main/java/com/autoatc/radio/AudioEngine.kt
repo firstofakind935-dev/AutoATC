@@ -17,6 +17,25 @@ import java.util.concurrent.LinkedBlockingQueue
  * the phone's media volume, so it plays alongside the game.
  */
 class AudioEngine(private val context: Context) {
+    // The phone's own voice, for replies that arrive without audio (server voice down) or won't play.
+    private var tts: android.speech.tts.TextToSpeech? = null
+    private var ttsReady = false
+    init {
+        tts = android.speech.tts.TextToSpeech(context.applicationContext) { status ->
+            ttsReady = status == android.speech.tts.TextToSpeech.SUCCESS
+            if (ttsReady) tts?.language = java.util.Locale.US
+        }
+    }
+    private var spoken = 0
+
+    /** Reads text out with the phone's voice, after anything already queued. */
+    fun speak(text: String) {
+        val t = tts ?: return
+        if (!ttsReady || text.isBlank()) return
+        val params = android.os.Bundle().apply { putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, volume) }
+        t.speak(text, android.speech.tts.TextToSpeech.QUEUE_ADD, params, "atc-${spoken++}")
+    }
+
     companion object {
         const val RATE = 16000
         private const val CHUNK_BYTES = RATE * 2 / 50 // 20 ms
@@ -82,20 +101,20 @@ class AudioEngine(private val context: Context) {
     fun playLive(pcm: ByteArray) { liveQueue.offer(pcm) }
 
     // ---- controllers' replies -------------------------------------------------------------------------------------
-    private val clips = ArrayDeque<File>()
+    private val clips = ArrayDeque<Pair<File, String>>()
     private var player: MediaPlayer? = null
     private var clipCount = 0
 
-    /** Queues an MP3 reply (main thread). */
-    fun playClip(mp3: ByteArray) {
+    /** Queues an MP3 reply (main thread); if it won't play, `text` is read out instead. */
+    fun playClip(mp3: ByteArray, text: String) {
         val f = File(context.cacheDir, "clip-${clipCount++ % 20}.mp3")
         f.writeBytes(mp3)
-        clips.addLast(f)
+        clips.addLast(f to text)
         if (player == null) nextClip()
     }
 
     private fun nextClip() {
-        val f = clips.removeFirstOrNull() ?: run { player = null; return }
+        val (f, text) = clips.removeFirstOrNull() ?: run { player = null; return }
         val mp = MediaPlayer()
         player = mp
         try {
@@ -103,11 +122,12 @@ class AudioEngine(private val context: Context) {
             mp.setDataSource(f.absolutePath)
             mp.setVolume(volume, volume)
             mp.setOnCompletionListener { it.release(); nextClip() }
-            mp.setOnErrorListener { p, _, _ -> p.release(); nextClip(); true }
+            mp.setOnErrorListener { p, _, _ -> p.release(); speak(text); nextClip(); true }
             mp.prepare()
             mp.start()
         } catch (e: Exception) {
             mp.release()
+            speak(text)
             nextClip()
         }
     }
@@ -121,5 +141,7 @@ class AudioEngine(private val context: Context) {
         player?.release()
         player = null
         clips.clear()
+        tts?.shutdown()
+        tts = null
     }
 }

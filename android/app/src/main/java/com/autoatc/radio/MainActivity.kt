@@ -158,6 +158,24 @@ class MainActivity : Activity() {
         }
         col.addView(talk, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(80)).apply { topMargin = dp(8) })
 
+        col.addView(label("Type to ATC (if they can't hear you)"))
+        val sayRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val sayText = EditText(this).apply {
+            hint = "e.g. Rockford Tower, DAL123, ready for departure"
+            isSingleLine = true
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        sayRow.addView(sayText, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        sayRow.addView(Button(this).apply {
+            text = "Send"
+            setOnClickListener {
+                val t = sayText.text.toString().trim()
+                if (t.isNotEmpty() && RadioService.instance?.say(t) == true) sayText.setText("")
+                else if (RadioService.instance == null) RadioState.addLog("!! Start the radio first")
+            }
+        })
+        col.addView(sayRow)
+
         col.addView(label("Volume"))
         col.addView(SeekBar(this).apply {
             max = 100

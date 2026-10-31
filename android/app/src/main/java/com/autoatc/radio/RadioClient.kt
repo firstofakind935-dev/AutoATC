@@ -32,6 +32,10 @@ class RadioClient(private val listener: Listener) {
         fun onRxEnd(stream: Int)
         fun onText(freq: String, from: String?, text: String)
         fun onClip(freq: String, from: String, text: String, mp3: ByteArray?)
+        /** ATC didn't get a transmission (or another radio problem the pilot should know about). */
+        fun onNotice(text: String)
+        /** A controller's message to every pilot. */
+        fun onBroadcast(from: String, text: String)
     }
 
     private val http = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).readTimeout(0, TimeUnit.MILLISECONDS).build()
@@ -108,6 +112,8 @@ class RadioClient(private val listener: Listener) {
             "rx-start" -> listener.onRxStart(msg.optInt("stream"), msg.optString("freq"), msg.optString("from"))
             "rx-end" -> listener.onRxEnd(msg.optInt("stream"))
             "rx-text" -> listener.onText(msg.optString("freq"), msg.optString("from").ifBlank { null }, msg.optString("text"))
+            "rx-notice" -> listener.onNotice(msg.optString("text"))
+            "broadcast" -> listener.onBroadcast(msg.optString("from"), msg.optString("text"))
             "rx-clip" -> {
                 val audio = msg.optString("audio")
                 val mp3 = if (audio.isNotBlank()) android.util.Base64.decode(audio, android.util.Base64.DEFAULT) else null
@@ -140,6 +146,12 @@ class RadioClient(private val listener: Listener) {
     private fun sendTune() {
         val msg = JSONObject().put("type", "tune").put("tx", tx ?: JSONObject.NULL).put("rx", JSONArray((rx + listOfNotNull(tx)).distinct()))
         ws?.send(msg.toString())
+    }
+
+    /** A typed call on the transmit frequency, for when ATC can't hear you. */
+    fun say(text: String): Boolean {
+        val w = ws ?: return false
+        return w.send(JSONObject().put("type", "say").put("text", text).toString())
     }
 
     fun ptt(on: Boolean) { ws?.send(JSONObject().put("type", "ptt").put("on", on).toString()) }

@@ -12,6 +12,13 @@
     <!-- installing updates from GitHub (Updater.kt); Android still asks the pilot to confirm each one -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- the phone's text-to-speech engine, for reading ATC out when the server voice is down (Android 11+ needs this) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
