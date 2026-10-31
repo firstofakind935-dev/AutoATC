@@ -58,6 +58,8 @@
   </section>
   <div class="me" id="me" hidden><img id="meAvatar" alt=""><span>Filing as <b id="meName"></b></span><button class="mini" id="logout" type="button">Sign out</button></div>
 
+  <section id="closedNote" hidden><p><b>Flight plan filing is closed right now.</b> Plans already filed still stand.</p></section>
+
   <section id="formCard">
     <form id="form" novalidate>
       <label>Callsign <input id="callsign" placeholder="DAL123" maxlength="10" autocomplete="off" required></label>
@@ -153,7 +155,10 @@
       mineList = d.mine || [];
       const login = d.login || {};
       $('signin').hidden = !(login.required && !login.user);
-      $('formCard').hidden = !!(login.required && !login.user);
+      const closed = d.filingOpen === false;
+      $('closedNote').hidden = !closed;
+      $('formCard').hidden = closed || !!(login.required && !login.user);
+      if (closed) $('signin').hidden = true;
       $('me').hidden = !login.user;
       if (login.user) { $('meName').textContent = login.user.name; $('meAvatar').hidden = !login.user.avatar; if (login.user.avatar) $('meAvatar').src = login.user.avatar; }
       render(d.plans || []);

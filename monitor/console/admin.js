@@ -141,9 +141,28 @@
   window.addEventListener('blur', () => R.setPtt(false));
 
   // ---- flight plans: close any of them (POST /api/flightplans/<callsign>/close with the admin key) ----
+  let filingOpen = true;
+  function showFiling() {
+    $('filingState').textContent = filingOpen ? 'Filing: open' : 'Filing: closed';
+    $('filingState').className = `pill ${filingOpen ? 'ok' : 'bad'}`;
+    $('filingToggle').textContent = filingOpen ? 'Close filing' : 'Open filing';
+  }
+  $('filingToggle').addEventListener('click', async () => {
+    const r = await fetch('/api/flightplans/filing', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': $('key').value }, body: JSON.stringify({ open: !filingOpen }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $('planNote').textContent = d.error || 'Could not change it.'; return; }
+    filingOpen = d.filingOpen;
+    showFiling();
+    $('planNote').textContent = filingOpen ? 'Pilots can file flight plans again.' : 'New flight plans are refused. Filed plans stay.';
+  });
+
   async function loadPlans() {
     let plans = [];
-    try { plans = (await (await fetch('/api/flightplans', { cache: 'no-store' })).json()).plans || []; } catch { return; }
+    try {
+      const d = await (await fetch('/api/flightplans', { cache: 'no-store' })).json();
+      plans = d.plans || [];
+      if (typeof d.filingOpen === 'boolean') { filingOpen = d.filingOpen; showFiling(); }
+    } catch { return; }
     const body = $('plans');
     body.textContent = '';
     const cell = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; return td; };

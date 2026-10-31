@@ -513,6 +513,7 @@ const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '.
 const flightPlans = createFlightPlans({
   file: process.env.FLIGHTPLAN_FILE || path.join(dataDir, 'flightplans.json'),
   historyFile: path.join(dataDir, 'flight-history.json'), // flights per pilot: keep it on a volume
+  settingsFile: path.join(dataDir, 'flightplan-settings.json'), // filing open/closed
 });
 // Sign in with Discord (monitor/discordLogin.js): filing a flight plan needs it once DISCORD_CLIENT_ID/SECRET are set.
 const discordLogin = createDiscordLogin();

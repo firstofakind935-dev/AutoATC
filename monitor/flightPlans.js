@@ -42,7 +42,22 @@ function validate(body) {
   return { plan: { callsign, aircraft, dep, arr } };
 }
 
-function createFlightPlans({ file = null, historyFile = null, now = () => Date.now() } = {}) {
+function createFlightPlans({ file = null, historyFile = null, settingsFile = null, now = () => Date.now() } = {}) {
+  // whether new flight plans are accepted (admins switch it in the admin console); kept across restarts
+  let filingOpen = true;
+  if (settingsFile) {
+    try { filingOpen = JSON.parse(fs.readFileSync(settingsFile, 'utf8')).filingOpen !== false; } catch { /* first run */ }
+  }
+  function setFilingOpen(open) {
+    filingOpen = !!open;
+    if (settingsFile) {
+      try {
+        fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+        fs.writeFileSync(settingsFile, JSON.stringify({ filingOpen }));
+      } catch { /* keep it in memory */ }
+    }
+    return filingOpen;
+  }
   const plans = new Map(); // callsign -> {callsign, aircraft, dep, arr, route, squawk, filedAt, updatedAt, token, pilot?}
   if (file) {
     try {
@@ -101,6 +116,7 @@ function createFlightPlans({ file = null, historyFile = null, now = () => Date.n
     if (v.error) return { status: 400, error: v.error };
     prune();
     const existing = plans.get(v.plan.callsign);
+    if (!existing && !filingOpen) return { status: 403, error: 'Flight plan filing is closed right now.' };
     // yours if you filed it signed in as the same Discord account, or (without sign-in) from the same browser
     const mine = existing && (existing.pilot ? !!user && existing.pilot.id === user.id : existing.token === token);
     if (existing && !mine) {
@@ -161,7 +177,7 @@ function createFlightPlans({ file = null, historyFile = null, now = () => Date.n
     return [...by.values()].sort((a, b) => b.flights - a.flights || String(b.last.at).localeCompare(String(a.last.at)));
   }
   const mine = (pilotId) => [...plans.values()].filter((p) => p.pilot && p.pilot.id === pilotId).map((p) => p.callsign);
-  return { list, file: file_, cancel, close, leaderboard, mine, size: () => plans.size };
+  return { list, file: file_, cancel, close, leaderboard, mine, setFilingOpen, filingOpen: () => filingOpen, size: () => plans.size };
 }
 
 // ---- HTTP -------------------------------------------------------------------------------------------------------
@@ -188,6 +204,7 @@ function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, admi
       airports: AIRPORTS.map(([icao, name]) => ({ icao, name })),
       login: { required: needsLogin(), user: u ? { id: u.id, name: u.name, avatar: u.avatar } : null },
       mine: u ? store.mine(u.id) : [],
+      filingOpen: store.filingOpen(),
     });
   });
   router.get('/leaderboard', (req, res) => res.json({ pilots: store.leaderboard().slice(0, 100) }));
@@ -199,14 +216,25 @@ function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, admi
     if (r.error) return res.status(r.status).json({ error: r.error });
     res.status(r.status).json({ plan: r.plan, token: r.token });
   });
-  // admins (the admin console, header x-admin-key = ADMIN_KEY or CONTROLLER_KEY) close any plan
-  router.post('/:callsign/close', (req, res) => {
+  // admins (the admin console, header x-admin-key = ADMIN_KEY or CONTROLLER_KEY)
+  function isAdmin(req, res) {
     const key = adminKey && (typeof adminKey === 'function' ? adminKey() : adminKey);
-    if (!key) return res.status(503).json({ error: 'Set ADMIN_KEY (or CONTROLLER_KEY) on the server first.' });
+    if (!key) { res.status(503).json({ error: 'Set ADMIN_KEY (or CONTROLLER_KEY) on the server first.' }); return false; }
     const given = String(req.get('x-admin-key') || '');
     if (given.length !== key.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key))) {
-      return res.status(403).json({ error: 'Wrong admin key.' });
+      res.status(403).json({ error: 'Wrong admin key.' });
+      return false;
     }
+    return true;
+  }
+  // open or close filing: {open: true|false}
+  router.post('/filing', (req, res) => {
+    if (!isAdmin(req, res)) return;
+    res.json({ filingOpen: store.setFilingOpen(!!(req.body && req.body.open)) });
+  });
+  // close one plan
+  router.post('/:callsign/close', (req, res) => {
+    if (!isAdmin(req, res)) return;
     const r = store.close(req.params.callsign);
     if (r.error) return res.status(r.status).json({ error: r.error });
     res.status(204).end();

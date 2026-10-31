@@ -112,3 +112,28 @@ test('admins close any plan with the admin key; a closed flight still counts', a
     assert.strictEqual((await fetch(`${base}/DAL1/close`, { method: 'POST', headers: { 'x-admin-key': 'ak' } })).status, 404);
   } finally { server.close(); }
 });
+
+test('admins close and reopen filing; filed plans stay and can still be cancelled', async () => {
+  const express = require('../monitor/node_modules/express');
+  const { createFlightPlanRouter } = require('../monitor/flightPlans');
+  const store = createFlightPlans();
+  const app = express();
+  app.use(express.json());
+  app.use('/api/flightplans', createFlightPlanRouter(store, { adminKey: 'ak' }));
+  const server = await new Promise((r) => { const s = app.listen(0, () => r(s)); });
+  const base = `http://127.0.0.1:${server.address().port}/api/flightplans`;
+  const file = (callsign, token = '') => fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-plan-token': token }, body: JSON.stringify({ callsign, aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' }) });
+  const filing = (open, key = 'ak') => fetch(`${base}/filing`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': key }, body: JSON.stringify({ open }) });
+  try {
+    const { token } = await (await file('DAL1')).json();
+    assert.strictEqual((await filing(false, 'nope')).status, 403);
+    assert.deepStrictEqual(await (await filing(false)).json(), { filingOpen: false });
+    assert.strictEqual((await (await fetch(base)).json()).filingOpen, false);
+    const refused = await file('DAL2');
+    assert.strictEqual(refused.status, 403);
+    assert.match((await refused.json()).error, /closed/);
+    assert.strictEqual((await fetch(`${base}/DAL1`, { method: 'DELETE', headers: { 'x-plan-token': token } })).status, 204, 'cancelling still works');
+    await filing(true);
+    assert.strictEqual((await file('DAL2')).status, 201);
+  } finally { server.close(); }
+});
