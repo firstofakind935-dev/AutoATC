@@ -17,7 +17,7 @@ let inFlight = null;
  * context block in that case rather than fail the whole reply.
  */
 async function getFlightPlanContext() {
-  if (!process.env.FLIGHTRADAR365_BOT_KEY) return null;
+  if (!process.env.FLIGHTRADAR365_BOT_KEY && !process.env.MONITOR_URL) return null;
 
   const now = Date.now();
   if (cache.text !== null && now < cache.expiresAt) {
@@ -56,16 +56,39 @@ function extractRows(response) {
   return [];
 }
 
+// The event's own flight plans, filed at <monitor>/fpl (monitor/flightPlans.js): callsign, type, dep, arr; route
+// always radar vectors, with an assigned squawk.
+async function getEventFlightPlans() {
+  const base = (process.env.MONITOR_URL || '').replace(/\/+$/, '');
+  if (!base) return [];
+  const r = await fetch(`${base}/api/flightplans`, { headers: process.env.MONITOR_API_KEY ? { Authorization: `Bearer ${process.env.MONITOR_API_KEY}` } : {} });
+  if (!r.ok) throw new Error(`event flight plans: ${r.status}`);
+  const d = await r.json();
+  return (d.plans || []).map((p) => ({
+    callsign: p.callsign, aircraft: p.aircraft, dep_icao: p.dep, arr_icao: p.arr, flight_rules: 'IFR',
+    route: 'radar vectors', squawk: p.squawk,
+  }));
+}
+
 async function fetchAndFormat() {
-  const response = await getFlightPlans();
-  const rows = extractRows(response).slice(0, MAX_ROWS);
+  // both sources, each optional: one failing (flightradar365 currently answers 401) doesn't hide the other
+  const [event, fr365] = await Promise.all([
+    getEventFlightPlans().catch((err) => { logger.warn(`Failed to fetch event flight plans: ${err.message}`); return []; }),
+    process.env.FLIGHTRADAR365_BOT_KEY
+      ? getFlightPlans().then(extractRows).catch((err) => { logger.warn(`Failed to fetch flight plans: ${err.message}`); return []; })
+      : [],
+  ]);
+  const seen = new Set();
+  const rows = [...event, ...fr365].filter((r) => r && r.callsign && !seen.has(String(r.callsign).toUpperCase()) && seen.add(String(r.callsign).toUpperCase())).slice(0, MAX_ROWS);
   if (rows.length === 0) return null;
 
   const lines = rows.filter((row) => row.callsign).map(formatRow);
   if (lines.length === 0) return null;
 
   return [
-    'Known filed flight plans (match the pilot\'s spoken callsign against these; if none match, proceed with just the transmission):',
+    'Known filed flight plans (match the pilot\'s spoken callsign against these; if none match, proceed with just the transmission). ' +
+      'A plan with route "radar vectors" is cleared to its destination via radar vectors: e.g. "DAL123, cleared to Tokyo via radar vectors, ' +
+      'climb and maintain 4000, departure runway as assigned, squawk 4521" - use the plan\'s own squawk:',
     ...lines,
   ].join('\n');
 }

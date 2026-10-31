@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File a Flight Plan</title>
+<style>
+  :root {
+    --bg: #0f141c; --panel: #161d28; --line: #263142; --fg: #e6ebf5; --dim: #8b97a8;
+    --accent: #38bdf8; --good: #34d399; --bad: #f87171; --strip: #1d2a1f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f6fa; --panel: #ffffff; --line: #dde3ec; --fg: #172033; --dim: #5d6b80; --accent: #0284c7; --good: #059669; --bad: #b91c1c; --strip: #eef7ee; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  h1 { margin: 0; font-size: 26px; }
+  h2 { margin: 0 0 10px; font-size: 14px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; }
+  p { margin: 0; }
+  .dim { color: var(--dim); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+  @media (max-width: 700px) { form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+  input { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%; text-transform: uppercase; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button { font: inherit; font-weight: 600; color: inherit; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 9px 16px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .msg.bad { color: var(--bad); }
+  .filed { border: 1px solid var(--good); background: var(--strip); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
+  .filed .big { font-size: 18px; font-weight: 700; }
+  .squawk { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px; font-weight: 700; letter-spacing: .08em; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  td.mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  tr.mine td { font-weight: 700; }
+  .mini { padding: 3px 9px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>File a Flight Plan</h1>
+    <p class="dim">AutoATC Halloween event. File before you call for clearance. ATC clears you to your destination via radar vectors and gives you the squawk code below.</p>
+  </header>
+
+  <section>
+    <form id="form" novalidate>
+      <label>Callsign <input id="callsign" placeholder="DAL123" maxlength="10" autocomplete="off" required></label>
+      <label>Aircraft type <input id="aircraft" placeholder="A320" maxlength="30" list="types" autocomplete="off" required></label>
+      <label>Departure <input id="dep" placeholder="IRFD" maxlength="4" list="airports" autocomplete="off" required></label>
+      <label>Arrival <input id="arr" placeholder="ITKO" maxlength="4" list="airports" autocomplete="off" required></label>
+      <div class="actions">
+        <button class="primary" id="submit" type="submit">File flight plan</button>
+        <span class="msg" id="msg" role="status"></span>
+      </div>
+    </form>
+    <datalist id="airports"></datalist>
+    <datalist id="types">
+      <option value="A320"><option value="A321"><option value="A330"><option value="A350"><option value="A380">
+      <option value="B737"><option value="B738"><option value="B747"><option value="B757"><option value="B777"><option value="B787">
+      <option value="CRJ7"><option value="E175"><option value="ATR72"><option value="DHC6"><option value="C172"><option value="F16">
+    </datalist>
+    <div class="filed" id="filed" hidden style="margin-top:14px"></div>
+  </section>
+
+  <section>
+    <h2>Filed flight plans</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Callsign</th><th>Type</th><th>From</th><th>To</th><th>Route</th><th>Squawk</th><th></th></tr></thead>
+        <tbody id="plans"><tr><td colspan="7" class="dim">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let airports = [];
+  const tokens = (() => { try { return JSON.parse(localStorage.getItem('fpl-tokens') || '{}'); } catch { return {}; } })();
+  const saveTokens = () => { try { localStorage.setItem('fpl-tokens', JSON.stringify(tokens)); } catch { /* private mode */ } };
+  const name = (icao) => (airports.find((a) => a.icao === icao) || {}).name || icao;
+  const td = (text, cls) => { const c = document.createElement('td'); c.textContent = text; if (cls) c.className = cls; return c; };
+
+  function render(plans) {
+    const body = $('plans');
+    body.replaceChildren();
+    if (!plans.length) { const r = document.createElement('tr'); r.append(td('No flight plans yet.', 'dim')); r.firstChild.colSpan = 7; body.append(r); }
+    for (const p of plans) {
+      const r = document.createElement('tr');
+      const mine = !!tokens[p.callsign];
+      if (mine) r.className = 'mine';
+      r.append(td(p.callsign, 'mono'), td(p.aircraft), td(p.dep), td(p.arr), td('Radar vectors'), td(p.squawk, 'mono'));
+      const last = document.createElement('td');
+      if (mine) {
+        const edit = document.createElement('button'); edit.className = 'mini'; edit.type = 'button'; edit.textContent = 'Edit';
+        edit.onclick = () => { $('callsign').value = p.callsign; $('aircraft').value = p.aircraft; $('dep').value = p.dep; $('arr').value = p.arr; $('callsign').focus(); };
+        const del = document.createElement('button'); del.className = 'mini'; del.type = 'button'; del.textContent = 'Cancel';
+        del.onclick = () => cancel(p.callsign);
+        last.append(edit, document.createTextNode(' '), del);
+      }
+      r.append(last);
+      body.append(r);
+    }
+  }
+
+  async function load() {
+    try {
+      const d = await (await fetch('/api/flightplans', { cache: 'no-store' })).json();
+      if (!airports.length) {
+        airports = d.airports || [];
+        for (const a of airports) { const o = document.createElement('option'); o.value = a.icao; o.label = a.name; $('airports').append(o); }
+      }
+      render(d.plans || []);
+    } catch { /* try again on the next refresh */ }
+  }
+
+  function showFiled(p) {
+    const box = $('filed');
+    box.replaceChildren();
+    const big = document.createElement('div'); big.className = 'big';
+    big.textContent = `${p.callsign} filed: ${name(p.dep)} (${p.dep}) to ${name(p.arr)} (${p.arr}), ${p.aircraft}`;
+    const sq = document.createElement('div');
+    sq.append('Squawk ', Object.assign(document.createElement('span'), { className: 'squawk', textContent: p.squawk }));
+    const next = document.createElement('div'); next.className = 'dim';
+    next.textContent = `Route: radar vectors. Call ${name(p.dep)} Delivery (or Ground/Tower if there's no Delivery) for your clearance.`;
+    box.append(big, sq, next);
+    box.hidden = false;
+  }
+
+  $('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const body = { callsign: $('callsign').value, aircraft: $('aircraft').value, dep: $('dep').value, arr: $('arr').value };
+    const key = body.callsign.toUpperCase().replace(/[\s-]/g, '');
+    $('submit').disabled = true;
+    $('msg').className = 'msg'; $('msg').textContent = 'Filing…';
+    try {
+      const r = await fetch('/api/flightplans', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-plan-token': tokens[key] || '' }, body: JSON.stringify(body) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not file. Try again.');
+      tokens[d.plan.callsign] = d.token; saveTokens();
+      $('msg').textContent = r.status === 201 ? 'Filed.' : 'Updated.';
+      showFiled(d.plan);
+      load();
+    } catch (e) { $('msg').className = 'msg bad'; $('msg').textContent = e.message; }
+    $('submit').disabled = false;
+  });
+
+  async function cancel(callsign) {
+    const r = await fetch(`/api/flightplans/${encodeURIComponent(callsign)}`, { method: 'DELETE', headers: { 'x-plan-token': tokens[callsign] || '' } });
+    if (r.ok || r.status === 404) { delete tokens[callsign]; saveTokens(); $('filed').hidden = true; $('msg').className = 'msg'; $('msg').textContent = `${callsign} cancelled.`; }
+    else { const d = await r.json().catch(() => ({})); $('msg').className = 'msg bad'; $('msg').textContent = d.error || 'Could not cancel.'; }
+    load();
+  }
+
+  load();
+  setInterval(load, 20000);
+})();
+</script>
+</body>
+</html>
