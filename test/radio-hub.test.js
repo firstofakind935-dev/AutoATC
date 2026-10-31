@@ -6,8 +6,8 @@ const http = require('node:http');
 const WebSocket = require('../monitor/node_modules/ws');
 const { createRadioHub } = require('../monitor/radio');
 
-async function setup({ controllerKey = null } = {}) {
-  const hub = createRadioHub({ workerKey: 'k', controllerKey, logger: { info() {} } });
+async function setup({ controllerKey = null, adminKey = null } = {}) {
+  const hub = createRadioHub({ workerKey: 'k', controllerKey, adminKey, logger: { info() {} } });
   const server = http.createServer();
   server.on('upgrade', (req, socket, head) => { if (!hub.handleUpgrade(req, socket, head)) socket.destroy(); });
   await new Promise((r) => server.listen(0, r));
@@ -177,5 +177,34 @@ test('typed calls reach the frequency and the AI; a lost transmission is reporte
     for (const p of [a, b, c]) assert.deepStrictEqual(json(p, 'broadcast').map((m) => [m.from, m.text]), [['EventLead', 'AI ATC is down. Move to Server 1.']]);
     assert.strictEqual(json(ctl, 'broadcast-sent')[0].pilots, 3);
     for (const ws of [worker, a, b, c, ctl]) ws.close();
+  } finally { done(); }
+});
+
+test('admins talk on any frequency without taking it over; a wrong admin key or a plain controller cannot', async () => {
+  const { open, done } = await setup({ controllerKey: 'ck', adminKey: 'ak' });
+  try {
+    const worker = await open('/radio/worker', { headers: { authorization: 'Bearer k' } });
+    worker.send(JSON.stringify({ type: 'hello', stations: [{ freq: '121.000', station: 'IRFD TWR', callsign: 'Rockford Tower' }] }));
+    const pilot = await open('/radio?callsign=DAL123');
+    await assert.rejects(open('/radio?role=controller&admin=1&callsign=ADM&key=ck'), /401/, 'the controller key is not the admin key');
+    const adm = await open('/radio?role=controller&admin=1&callsign=ADMIN&key=ak');
+    const ctl = await open('/radio?role=controller&callsign=Tower&key=ck');
+    await tick();
+    assert.ok(json(adm, 'role')[0].admin);
+    for (const p of [pilot, adm, ctl]) p.send(JSON.stringify({ type: 'tune', tx: '121.000', rx: ['121.000'] }));
+    await tick();
+    ctl.send(JSON.stringify({ type: 'ptt', on: true }));
+    await tick();
+    assert.strictEqual(json(ctl, 'ptt')[0].granted, false, 'a controller must take over first');
+    adm.send(JSON.stringify({ type: 'ptt', on: true }));
+    await tick();
+    assert.strictEqual(json(adm, 'ptt')[0].granted, true, 'an admin talks straight away');
+    adm.send(JSON.stringify({ type: 'ptt', on: false }));
+    adm.send(JSON.stringify({ type: 'say', text: 'DAL123, admin check, how do you read' }));
+    await tick();
+    assert.ok(json(pilot, 'rx-text').some((m) => m.from === 'ADMIN' && /admin check/.test(m.text)));
+    const typed = json(worker, 'utterance').find((u) => u.text);
+    assert.strictEqual(typed.listenOnly, true, 'the AI hears it but does not answer the admin');
+    for (const ws of [worker, pilot, adm, ctl]) ws.close();
   } finally { done(); }
 });

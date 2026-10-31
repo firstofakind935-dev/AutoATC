@@ -27,6 +27,9 @@
 //                                transcript <- {type:'history', freq, lines:[{at, from, text}]} and transmits on it
 //   -> {type:'handback', freq}   back to the AI (also when the controller disconnects)
 //   -> {type:'broadcast', text}  to every connected pilot on every frequency <- {type:'broadcast', from, text, at}
+// Admins (/radio?role=controller&admin=1&key=ADMIN_KEY - the admin console at /console/admin.html; ADMIN_KEY falls back
+// to CONTROLLER_KEY): everything a controller can do, plus transmit on ANY tuned frequency without taking it over
+// (the AI keeps answering there and hears what the admin said).  <- {type:'role', admin:true}
 //                                (apps show it as a banner and read it out with the device's own voice)
 // While a human holds a frequency, transmissions there are still transcribed (listenOnly) - for the transcript, and
 // so the AI knows what happened when it gets the frequency back.
@@ -49,7 +52,8 @@ const normFreq = (f) => {
   return Number.isFinite(n) && n >= 100 && n < 200 ? n.toFixed(3) : null;
 };
 
-function createRadioHub({ workerKey = null, controllerKey = null, logger = console } = {}) {
+function createRadioHub({ workerKey = null, controllerKey = null, adminKey = null, logger = console } = {}) {
+  const adminPass = adminKey || controllerKey; // with no ADMIN_KEY, the controller key unlocks admin too
   const pilots = new Map(); // id -> {id, ws, callsign, role, tx, rx:Set, ptt:{freq, stream, chunks, bytes, timer}|null}
   const workers = new Set(); // {ws, stations: Map(freq -> {freq, station, callsign})}
   const busy = new Map(); // freq -> pilot id transmitting
@@ -121,7 +125,7 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
     const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_SAY_CHARS);
     if (!freq) return send(pilot.ws, { type: 'rx-notice', freq: null, text: 'Tune a frequency first.' });
     if (!clean) return;
-    if (pilot.role === 'controller' && (humans.get(freq) || {}).id !== pilot.id) {
+    if (pilot.role === 'controller' && !pilot.admin && (humans.get(freq) || {}).id !== pilot.id) {
       return send(pilot.ws, { type: 'rx-notice', freq, text: 'Take the frequency over first.' });
     }
     remember(freq, pilot.callsign, clean);
@@ -194,7 +198,7 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
       if (msg.on) {
         const freq = pilot.tx;
         if (!freq) return send(pilot.ws, { type: 'ptt', granted: false, reason: 'no frequency tuned' });
-        if (pilot.role === 'controller' && (humans.get(freq) || {}).id !== pilot.id) {
+        if (pilot.role === 'controller' && !pilot.admin && (humans.get(freq) || {}).id !== pilot.id) {
           return send(pilot.ws, { type: 'ptt', granted: false, freq, reason: 'take the frequency over first' });
         }
         const holder = busy.get(freq);
@@ -260,15 +264,19 @@ function createRadioHub({ workerKey = null, controllerKey = null, logger = conso
     if (url.pathname === '/radio') {
       const callsign = String(url.searchParams.get('callsign') || '').trim().slice(0, 16) || 'UNKNOWN';
       const role = url.searchParams.get('role') === 'controller' ? 'controller' : 'pilot';
-      if (role === 'controller' && controllerKey && url.searchParams.get('key') !== controllerKey) {
+      const key = url.searchParams.get('key');
+      const wantsAdmin = role === 'controller' && url.searchParams.get('admin') === '1';
+      const ok = wantsAdmin ? (!adminPass || key === adminPass) : (role !== 'controller' || !controllerKey || key === controllerKey);
+      if (!ok) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
         return true;
       }
       wss.handleUpgrade(req, socket, head, (ws) => {
-        const pilot = { id: nextId++, ws, callsign, role, tx: null, rx: new Set(), ptt: null };
+        const pilot = { id: nextId++, ws, callsign, role, admin: wantsAdmin, tx: null, rx: new Set(), ptt: null };
         pilots.set(pilot.id, pilot);
         send(ws, { type: 'hello', id: pilot.id, sampleRate: SAMPLE_RATE, stations: stationList() });
+        if (wantsAdmin) { send(ws, { type: 'role', admin: true }); logger.info(`[radio] admin ${callsign} connected`); }
         ws.on('message', (d, b) => onPilotMessage(pilot, d, b));
         ws.on('close', () => {
           endPtt(pilot, 'disconnected');

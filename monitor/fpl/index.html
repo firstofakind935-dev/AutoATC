@@ -40,6 +40,9 @@
   td.mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
   tr.mine td { font-weight: 700; }
   .mini { padding: 3px 9px; font-size: 12px; }
+  .btn-discord { display: inline-block; background: #5865f2; color: #fff; font-weight: 600; padding: 9px 16px; border-radius: 6px; text-decoration: none; }
+  .me { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .me img { width: 28px; height: 28px; border-radius: 50%; }
 </style>
 </head>
 <body>
@@ -49,7 +52,13 @@
     <p class="dim">AutoATC Halloween event. File before you call for clearance. ATC clears you to your destination via radar vectors and gives you the squawk code below.</p>
   </header>
 
-  <section>
+  <section id="signin" hidden>
+    <p style="margin-bottom:10px">Sign in with Discord to file. Your flights are counted on the board below.</p>
+    <a class="btn-discord" href="/auth/discord/login?next=/fpl/">Sign in with Discord</a>
+  </section>
+  <div class="me" id="me" hidden><img id="meAvatar" alt=""><span>Filing as <b id="meName"></b></span><button class="mini" id="logout" type="button">Sign out</button></div>
+
+  <section id="formCard">
     <form id="form" novalidate>
       <label>Callsign <input id="callsign" placeholder="DAL123" maxlength="10" autocomplete="off" required></label>
       <label>Aircraft type <input id="aircraft" placeholder="A320" maxlength="30" list="types" autocomplete="off" required></label>
@@ -70,10 +79,20 @@
   </section>
 
   <section>
+    <h2>Flights per pilot</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Pilot</th><th>Flights</th><th>Last flight</th></tr></thead>
+        <tbody id="board"><tr><td colspan="4" class="dim">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
     <h2>Filed flight plans</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Callsign</th><th>Type</th><th>From</th><th>To</th><th>Route</th><th>Squawk</th><th></th></tr></thead>
+        <thead><tr><th>Callsign</th><th>Type</th><th>From</th><th>To</th><th>Squawk</th><th>Pilot</th><th></th></tr></thead>
         <tbody id="plans"><tr><td colspan="7" class="dim">Loading…</td></tr></tbody>
       </table>
     </div>
@@ -88,15 +107,29 @@
   const name = (icao) => (airports.find((a) => a.icao === icao) || {}).name || icao;
   const td = (text, cls) => { const c = document.createElement('td'); c.textContent = text; if (cls) c.className = cls; return c; };
 
+  let mineList = [];
+  const isMine = (callsign) => !!tokens[callsign] || mineList.includes(callsign);
+
+  function renderBoard(pilots) {
+    const body = $('board');
+    body.replaceChildren();
+    if (!pilots.length) { const r = document.createElement('tr'); r.append(td('No flights yet.', 'dim')); r.firstChild.colSpan = 4; body.append(r); return; }
+    pilots.slice(0, 50).forEach((p, i) => {
+      const r = document.createElement('tr');
+      r.append(td(String(i + 1)), td(p.name || 'Pilot'), td(String(p.flights), 'mono'), td(p.last ? `${p.last.callsign} ${p.last.dep}→${p.last.arr}` : ''));
+      body.append(r);
+    });
+  }
+
   function render(plans) {
     const body = $('plans');
     body.replaceChildren();
     if (!plans.length) { const r = document.createElement('tr'); r.append(td('No flight plans yet.', 'dim')); r.firstChild.colSpan = 7; body.append(r); }
     for (const p of plans) {
       const r = document.createElement('tr');
-      const mine = !!tokens[p.callsign];
+      const mine = isMine(p.callsign);
       if (mine) r.className = 'mine';
-      r.append(td(p.callsign, 'mono'), td(p.aircraft), td(p.dep), td(p.arr), td('Radar vectors'), td(p.squawk, 'mono'));
+      r.append(td(p.callsign, 'mono'), td(p.aircraft), td(p.dep), td(p.arr), td(p.squawk, 'mono'), td(p.filedBy || ''));
       const last = document.createElement('td');
       if (mine) {
         const edit = document.createElement('button'); edit.className = 'mini'; edit.type = 'button'; edit.textContent = 'Edit';
@@ -117,7 +150,15 @@
         airports = d.airports || [];
         for (const a of airports) { const o = document.createElement('option'); o.value = a.icao; o.label = a.name; $('airports').append(o); }
       }
+      mineList = d.mine || [];
+      const login = d.login || {};
+      $('signin').hidden = !(login.required && !login.user);
+      $('formCard').hidden = !!(login.required && !login.user);
+      $('me').hidden = !login.user;
+      if (login.user) { $('meName').textContent = login.user.name; $('meAvatar').hidden = !login.user.avatar; if (login.user.avatar) $('meAvatar').src = login.user.avatar; }
       render(d.plans || []);
+      const b = await (await fetch('/api/flightplans/leaderboard', { cache: 'no-store' })).json();
+      renderBoard(b.pilots || []);
     } catch { /* try again on the next refresh */ }
   }
 
@@ -159,6 +200,10 @@
     load();
   }
 
+  $('logout').addEventListener('click', async () => { await fetch('/auth/discord/logout', { method: 'POST' }); load(); });
+  const q = new URLSearchParams(location.search);
+  if (q.get('signin') === 'failed') { $('msg').className = 'msg bad'; $('msg').textContent = 'Discord sign-in failed. Try again.'; }
+  if (q.has('signin')) history.replaceState(null, '', '/fpl/');
   load();
   setInterval(load, 20000);
 })();

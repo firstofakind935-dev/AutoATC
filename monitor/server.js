@@ -8,6 +8,7 @@ const { createFleetInvites, invitePage } = require('./fleetInvites');
 const { createRadioHub } = require('./radio');
 const { createFlightPlans, createFlightPlanRouter } = require('./flightPlans');
 const { createPhoneTracker } = require('./tracker/phoneTracker');
+const { createDiscordLogin } = require('./discordLogin');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -508,10 +509,15 @@ app.use('/developers', express.static(path.join(__dirname, 'developers')));
 // dashboard login - taking over needs the CONTROLLER_KEY instead (see radio.js).
 app.use('/console', express.static(path.join(__dirname, 'console')));
 // Event flight plans (monitor/flightPlans.js): public form at /fpl, read by the AI controllers via /api/flightplans.
+const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..', 'data', 'runtime');
 const flightPlans = createFlightPlans({
-  file: process.env.FLIGHTPLAN_FILE || path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..', 'data', 'runtime'), 'flightplans.json'),
+  file: process.env.FLIGHTPLAN_FILE || path.join(dataDir, 'flightplans.json'),
+  historyFile: path.join(dataDir, 'flight-history.json'), // flights per pilot: keep it on a volume
 });
-app.use('/api/flightplans', createFlightPlanRouter(flightPlans));
+// Sign in with Discord (monitor/discordLogin.js): filing a flight plan needs it once DISCORD_CLIENT_ID/SECRET are set.
+const discordLogin = createDiscordLogin();
+app.use('/auth/discord', discordLogin.router);
+app.use('/api/flightplans', createFlightPlanRouter(flightPlans, { login: discordLogin }));
 app.use('/fpl', express.static(path.join(__dirname, 'fpl')));
 // Radar tracking for phone pilots: the Android app sends screenshots, the server reads the minimap
 // (monitor/tracker/ - the companion's own tracker, on a worker thread) and files the position like the companion does.
@@ -582,7 +588,7 @@ require('./flightradar365Push').startFromEnv(freshPositions);
 const wss = new WebSocketServer({ noServer: true });
 // CONTROLLER_KEY: what the human controllers enter in the console (/console) to take frequencies over. Without it
 // anyone could silence the AI - set it for the event.
-const radioHub = createRadioHub({ workerKey: INGEST_API_KEY, controllerKey: process.env.CONTROLLER_KEY || null, logger: { info: (...a) => console.log(...a) } });
+const radioHub = createRadioHub({ workerKey: INGEST_API_KEY, controllerKey: process.env.CONTROLLER_KEY || null, adminKey: process.env.ADMIN_KEY || null, logger: { info: (...a) => console.log(...a) } });
 server.on('upgrade', (req, socket, head) => {
   const pathname = (req.url || '').split('?')[0];
   if (pathname === '/ws') {

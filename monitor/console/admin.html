@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Radio Console</title>
+<style>
+  :root {
+    --bg: #0f141c; --panel: #161d28; --line: #263142; --fg: #e6ebf5; --dim: #8b97a8;
+    --accent: #38bdf8; --ai: #a78bfa; --human: #34d399; --tx: #ef4444; --warn: #fbbf24;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #f4f6fa; --panel: #ffffff; --line: #dde3ec; --fg: #172033; --dim: #5d6b80; --accent: #0284c7; --ai: #7c3aed; --human: #059669; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  input, button, textarea { font: inherit; color: inherit; }
+  input, textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; min-width: 0; }
+  button { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px 11px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .pill { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); font-size: 12px; white-space: nowrap; }
+  .pill.ok { color: var(--human); border-color: var(--human); }
+  .pill.bad { color: var(--tx); border-color: var(--tx); }
+  main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  section h2 { font-size: 14px; margin: 0 0 10px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .filter { flex: 1; }
+  .stations { max-height: 62vh; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 5px 4px; border-top: 1px solid var(--line); vertical-align: middle; text-align: left; }
+  th { font-size: 12px; color: var(--dim); font-weight: 600; border-top: 0; }
+  td.f { font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+  tr.talk td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  tr.busy td.f { color: var(--tx); font-weight: 700; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+  .tag.ai { color: var(--ai); border: 1px solid var(--ai); }
+  .tag.human { color: var(--human); border: 1px solid var(--human); }
+  #ptt { width: 100%; padding: 16px; font-size: 16px; margin: 6px 0 10px; }
+  #ptt.tx { background: var(--tx); border-color: var(--tx); color: #fff; }
+  #log { height: 38vh; overflow: auto; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  #log .atc { color: var(--ai); } #log .me { color: var(--human); } #log .warn { color: var(--warn); } #log .bc { color: var(--warn); font-weight: 700; }
+  textarea { width: 100%; resize: vertical; }
+  .hint { color: var(--dim); font-size: 12.5px; }
+  kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 12px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Admin Radio Console</h1>
+  <input id="callsign" placeholder="Your name" size="16">
+  <input id="key" type="password" placeholder="Admin key" size="14">
+  <button class="primary" id="connect">Connect</button>
+  <span class="pill" id="status">Not connected</span>
+  <span style="flex:1"></span>
+  <label class="hint">Volume <input id="volume" type="range" min="0" max="2" step="0.05" value="1"></label>
+  <a href="index.html" id="back">Controller console</a>
+</header>
+<main>
+  <section>
+    <h2>All frequencies</h2>
+    <div class="row">
+      <input class="filter" id="filter" placeholder="Filter: airport, station or frequency">
+      <button id="listenAll" type="button">Listen to all</button>
+      <button id="listenNone" type="button">Listen to none</button>
+    </div>
+    <div class="stations"><table>
+      <thead><tr><th>Freq</th><th>Station</th><th></th><th>Listen</th><th>Talk</th></tr></thead>
+      <tbody id="stations"></tbody>
+    </table></div>
+    <p class="hint">As admin you can <b>talk on any frequency</b> without taking it over: the AI keeps controlling it and hears what you said.
+      To make the AI go quiet on a frequency, use the <a href="index.html">controller console</a>'s Take over.</p>
+  </section>
+  <section>
+    <h2>Talk</h2>
+    <div class="hint" id="talkOn">Pick a frequency with <b>Talk</b>.</div>
+    <button id="ptt" disabled>Hold to talk (or hold <kbd>Space</kbd>)</button>
+    <form class="row" id="sayForm">
+      <input id="sayText" class="filter" maxlength="300" placeholder="Or type a message on that frequency">
+      <button type="submit" id="sayBtn" disabled>Send</button>
+    </form>
+    <div id="log"></div>
+    <h2 style="margin-top:14px">Broadcast to all pilots</h2>
+    <form id="bcForm">
+      <textarea id="bcText" maxlength="500" rows="2" placeholder="Every connected pilot sees and hears this"></textarea>
+      <div class="row" style="margin-top:6px">
+        <button class="primary" id="bcSend" type="submit" disabled>Send to everyone</button>
+        <span class="hint" id="bcNote"></span>
+      </div>
+    </form>
+  </section>
+</main>
+<script src="radio.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

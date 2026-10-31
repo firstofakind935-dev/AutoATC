@@ -147,6 +147,8 @@
     const callsign = $('callsign').value.trim();
     if (!callsign) { $('callsign').focus(); return; }
     save();
+    // "ADM" in the name: the admin console (it still needs the admin key - the name alone unlocks nothing)
+    if (/adm/i.test(callsign)) { location.href = 'admin.html'; return; }
     R.connect(location.origin, callsign, { role: 'controller', key: $('key').value });
   });
   $('filter').addEventListener('input', renderStations);
@@ -165,7 +167,7 @@
   window.addEventListener('blur', () => R.setPtt(false));
 
   renderHeld();
-  if (saved.callsign) $('connect').click();
+  if (saved.callsign && !/adm/i.test(saved.callsign)) $('connect').click();
 
   // ---- broadcast to every connected pilot ----
   const SERVER1 = 'AI ATC is having problems. Please leave this server now and join Server 1. Contact ATC there on Discord.';

@@ -55,3 +55,38 @@ test('the AI gets the event plans (and still works when flightradar365 is down)'
   assert.match(ctx, /DAL123, B738, IFR, IRFD to ITKO, squawk 4521, route: radar vectors/);
   assert.match(ctx, /via radar vectors/);
 });
+
+test('with Discord sign-in: filing needs it, plans belong to the account, flights are counted per pilot', async () => {
+  const express = require('../monitor/node_modules/express');
+  const { createFlightPlanRouter } = require('../monitor/flightPlans');
+  const { createDiscordLogin } = require('../monitor/discordLogin');
+  const login = createDiscordLogin({ env: { DISCORD_CLIENT_ID: '1', DISCORD_CLIENT_SECRET: '2', SESSION_SECRET: 's' }, log: { warn() {} } });
+  const store = createFlightPlans();
+  const app = express();
+  app.use(express.json());
+  app.use('/api/flightplans', createFlightPlanRouter(store, { login }));
+  const server = await new Promise((r) => { const s = app.listen(0, () => r(s)); });
+  const base = `http://127.0.0.1:${server.address().port}/api/flightplans`;
+  const as = (user) => ({ 'Content-Type': 'application/json', cookie: `atc_sid=${login.makeSession(user)}` });
+  const amy = { id: '111', name: 'Amy' }, bob = { id: '222', name: 'Bob' };
+  const post = (headers, body) => fetch(base, { method: 'POST', headers, body: JSON.stringify(body) });
+  try {
+    assert.strictEqual((await post({ 'Content-Type': 'application/json' }, { callsign: 'DAL1', aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' })).status, 401);
+    assert.strictEqual((await post(as(amy), { callsign: 'DAL1', aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' })).status, 201);
+    assert.strictEqual((await post(as(bob), { callsign: 'DAL1', aircraft: 'B738', dep: 'IRFD', arr: 'IMLR' })).status, 409, "Bob can't take Amy's plan");
+    assert.strictEqual((await post(as(amy), { callsign: 'DAL1', aircraft: 'A321', dep: 'IRFD', arr: 'ITKO' })).status, 200, 'Amy updates hers (not a new flight)');
+    assert.strictEqual((await post(as(amy), { callsign: 'DAL2', aircraft: 'A320', dep: 'ITKO', arr: 'IRFD' })).status, 201);
+    assert.strictEqual((await post(as(bob), { callsign: 'N42Y', aircraft: 'C172', dep: 'IMLR', arr: 'IRFD' })).status, 201);
+    const listed = await (await fetch(base, { headers: as(amy) })).json();
+    assert.deepStrictEqual(listed.mine.sort(), ['DAL1', 'DAL2']);
+    assert.strictEqual(listed.plans.find((p) => p.callsign === 'N42Y').filedBy, 'Bob');
+    assert.ok(!JSON.stringify(listed.plans).includes('111'), 'Discord ids are not published');
+    let board = (await (await fetch(`${base}/leaderboard`)).json()).pilots;
+    assert.deepStrictEqual(board.map((p) => [p.name, p.flights]), [['Amy', 2], ['Bob', 1]]);
+    // Bob can't cancel Amy's plan; Amy cancelling one takes it off her count
+    assert.strictEqual((await fetch(`${base}/DAL2`, { method: 'DELETE', headers: as(bob) })).status, 403);
+    assert.strictEqual((await fetch(`${base}/DAL2`, { method: 'DELETE', headers: as(amy) })).status, 204);
+    board = (await (await fetch(`${base}/leaderboard`)).json()).pilots;
+    assert.deepStrictEqual(board.map((p) => [p.name, p.flights]), [['Bob', 1], ['Amy', 1]]); // a tie goes to the latest flight
+  } finally { server.close(); }
+});

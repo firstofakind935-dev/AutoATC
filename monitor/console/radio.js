@@ -21,7 +21,7 @@
   let volume = 1;
   const streams = new Map(); // stream id -> {freq, from, at (next play time)}
   let clipChain = Promise.resolve();
-  const listeners = { status: [], log: [], stations: [], ptt: [], control: [], history: [], notice: [], broadcast: [], 'broadcast-sent': [] };
+  const listeners = { status: [], log: [], stations: [], ptt: [], control: [], history: [], notice: [], broadcast: [], 'broadcast-sent': [], admin: [] };
   let stations = [];
 
   const emit = (kind, ...args) => listeners[kind].forEach((fn) => { try { fn(...args); } catch (e) { console.error(e); } });
@@ -34,8 +34,8 @@
   }
 
   // ---- connection ----------------------------------------------------------------------------------------------
-  function connect(monitorUrl, callsign, { role = 'pilot', key = '' } = {}) {
-    const extra = role === 'controller' ? `&role=controller&key=${encodeURIComponent(key || '')}` : '';
+  function connect(monitorUrl, callsign, { role = 'pilot', key = '', admin = false } = {}) {
+    const extra = role === 'controller' ? `&role=controller&key=${encodeURIComponent(key || '')}${admin ? '&admin=1' : ''}` : '';
     const next = `${String(monitorUrl || '').replace(/^http/, 'ws').replace(/\/+$/, '')}/radio?callsign=${encodeURIComponent(callsign || 'UNKNOWN')}${extra}`;
     if (!monitorUrl) { status('off', 'Set the Monitor URL in settings to use the radio.'); return; }
     if (ws && url === next && ws.readyState <= 1) return;
@@ -108,6 +108,8 @@
       emit('log', { kind: 'broadcast', from: msg.from, text: msg.text });
       emit('broadcast', msg.text, msg.from);
       speakText(`Attention all aircraft. ${msg.text}`);
+    } else if (msg.type === 'role' && msg.admin) {
+      emit('admin');
     } else if (msg.type === 'broadcast-sent') {
       emit('broadcast-sent', msg.text, msg.pilots);
     }
