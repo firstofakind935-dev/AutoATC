@@ -15,13 +15,15 @@ const PERM = {
   MOVE_MEMBERS: 1n << 24n,
   USE_VAD: 1n << 25n,
   MANAGE_CHANNELS: 1n << 4n,
+  ADD_REACTIONS: 1n << 6n,
 };
 const VOICE = PERM.VIEW_CHANNEL | PERM.SEND_MESSAGES | PERM.READ_MESSAGE_HISTORY | PERM.CONNECT | PERM.SPEAK | PERM.USE_VAD;
 const PERMISSIONS = {
   atc: VOICE,
   atis: VOICE,
-  // moves pilots between the fleet's channels; Manage Channels lets scripts/create-voice-channels.js run with it
-  botmanager: VOICE | PERM.MOVE_MEMBERS | PERM.MANAGE_CHANNELS,
+  // moves pilots between the fleet's channels; Manage Channels lets scripts/create-voice-channels.js run with it;
+  // Add Reactions for the flight-plan channel (it reacts to each plan it files)
+  botmanager: VOICE | PERM.MOVE_MEMBERS | PERM.MANAGE_CHANNELS | PERM.ADD_REACTIONS,
 };
 
 function createFleetInvites() {
