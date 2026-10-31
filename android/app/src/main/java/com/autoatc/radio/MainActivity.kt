@@ -30,6 +30,8 @@ import android.widget.TextView
  * Built in code (no layouts) to keep the project small.
  */
 class MainActivity : Activity() {
+    companion object { private const val REQ_SCREEN = 3 }
+
     private lateinit var prefs: Prefs
     private lateinit var status: TextView
     private lateinit var callsign: EditText
@@ -41,6 +43,8 @@ class MainActivity : Activity() {
     private lateinit var talk: Button
     private lateinit var log: TextView
     private lateinit var updateBtn: Button
+    private lateinit var trackBtn: Button
+    private lateinit var trackText: TextView
     private var update: Updater.Update? = null
 
     private var com1Items: List<String?> = emptyList()
@@ -138,6 +142,20 @@ class MainActivity : Activity() {
         startStop = Button(this).apply { setOnClickListener { toggleRadio() } }
         col.addView(startStop, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) })
 
+        trackBtn = Button(this).apply {
+            setOnClickListener {
+                val svc = RadioService.instance
+                if (svc == null) { RadioState.addLog("!! Start the radio first"); return@setOnClickListener }
+                if (RadioState.trackingOn) { svc.stopTracking(); return@setOnClickListener }
+                val mpm = getSystemService(android.media.projection.MediaProjectionManager::class.java)
+                @Suppress("DEPRECATION")
+                startActivityForResult(mpm.createScreenCaptureIntent(), REQ_SCREEN)
+            }
+        }
+        col.addView(trackBtn)
+        trackText = TextView(this).apply { textSize = 13f; setPadding(0, dp(2), 0, dp(4)) }
+        col.addView(trackText)
+
         overlay = Button(this).apply {
             text = "Allow floating talk button over the game"
             setOnClickListener {
@@ -225,6 +243,15 @@ class MainActivity : Activity() {
         RadioService.start(this)
     }
 
+    @Deprecated("startActivityForResult is enough for one system dialog")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_SCREEN) return
+        if (resultCode == RESULT_OK && data != null) RadioService.instance?.startTracking(resultCode, data)
+        else RadioState.addLog("!! Radar tracking needs screen sharing - tap the button again and choose Start")
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) RadioService.start(this)
@@ -247,6 +274,9 @@ class MainActivity : Activity() {
             else -> Color.rgb(200, 200, 200)
         })
         startStop.text = if (RadioState.running) "Stop radio" else "Start radio"
+        trackBtn.isEnabled = RadioState.running
+        trackBtn.text = if (RadioState.trackingOn) "Stop radar tracking" else "Track me on radar (share screen)"
+        trackText.text = RadioState.track ?: "Shares your screen so ATC sees you on the radar (PTFS minimap must be open)."
         callsign.isEnabled = !RadioState.running
         server.isEnabled = !RadioState.running
         overlay.visibility = if (Settings.canDrawOverlays(this)) View.GONE else View.VISIBLE

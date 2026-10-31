@@ -42,6 +42,11 @@ For flying PTFS on a phone or tablet: talk to the controllers with a floating pu
    to move it. Tap the small frequency tag under it to pick a station without leaving the game. When ATC talks,
    their words show beside it for a few seconds. Stop the radio from the notification.
 
+**Radar tracking:** after **Start radio**, tap **Track me on radar (share screen)** and allow screen sharing
+(choose the entire screen). About once a second the app sends a screenshot to the server, which finds the PTFS
+minimap and reads the aircraft's position off it with the same tracker the PC app uses, and puts the pilot on the
+radar. Keep the minimap open. It sends the whole screen only to find the minimap, then just the minimap (~10 KB/s).
+
 **Updates:** the app checks GitHub when it opens and every hour while the radio runs. When a new build is out it
 shows **Update available** (and a notification); tapping it downloads the new APK and Android asks to confirm the
 install - one tap, Android never installs apps silently outside the Play Store.

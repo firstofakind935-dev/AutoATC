@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- radar tracking: the screen is shared (with the pilot's permission) so the server can read the minimap -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- installing updates from GitHub (Updater.kt); Android still asks the pilot to confirm each one -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -40,6 +42,6 @@
         <service
             android:name=".RadioService"
             android:exported="false"
-            android:foregroundServiceType="microphone|mediaPlayback" />
+            android:foregroundServiceType="microphone|mediaPlayback|mediaProjection" />
     </application>
 </manifest>

@@ -48,6 +48,9 @@ object RadioState {
     var stations: List<Station> = emptyList()
     var tx = Tx.IDLE
     var lastAtc: String? = null
+    /** Radar tracking from the screen (ScreenTracker): on/off and what it's doing. */
+    var trackingOn = false
+    var track: String? = null
     val log = ArrayDeque<String>()
 
     private val listeners = mutableListOf<() -> Unit>()

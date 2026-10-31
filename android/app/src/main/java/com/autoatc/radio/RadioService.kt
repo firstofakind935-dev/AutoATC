@@ -72,14 +72,44 @@ class RadioService : Service(), RadioClient.Listener {
         return START_STICKY
     }
 
-    private fun goForeground() {
+    // ---- radar tracking from the screen (ScreenTracker) -------------------------------------------------------------
+    private var tracker: ScreenTracker? = null
+
+    /** After the pilot allowed screen sharing (MainActivity): start sending screenshots for the radar. */
+    fun startTracking(resultCode: Int, data: Intent) {
+        stopTracking()
+        try {
+            // Android 14+: the service must be a screen-sharing foreground service before the projection is created
+            goForeground(projection = true)
+            val mpm = getSystemService(android.media.projection.MediaProjectionManager::class.java)
+            val projection = mpm.getMediaProjection(resultCode, data) ?: run { RadioState.addLog("!! Screen sharing was not allowed"); return }
+            tracker = ScreenTracker(this, projection, prefs).also { it.start() }
+            RadioState.trackingOn = true
+            RadioState.addLog("Radar tracking on: keep PTFS on screen with the minimap open")
+        } catch (e: Exception) {
+            RadioState.addLog("!! Radar tracking failed: ${e.message}")
+            stopTracking()
+        }
+        RadioState.changed()
+    }
+
+    fun stopTracking() {
+        tracker?.stop()
+        tracker = null
+        RadioState.trackingOn = false
+        RadioState.changed()
+    }
+
+    private fun goForeground(projection: Boolean = false) {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "Radio", NotificationManager.IMPORTANCE_LOW))
         }
         val n = notification()
         if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            if (projection) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            startForeground(NOTIFICATION_ID, n, type)
         } else {
             startForeground(NOTIFICATION_ID, n)
         }
@@ -249,6 +279,7 @@ class RadioService : Service(), RadioClient.Listener {
 
     // ---- shutdown --------------------------------------------------------------------------------------------------
     private fun shutdown() {
+        stopTracking()
         updateHandler.removeCallbacks(updateCheck)
         updateScheduled = false
         if (keyed) ptt(false)
