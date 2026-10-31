@@ -20,6 +20,7 @@ function createPhoneTracker({ onPosition, logger = console, workerFile = path.jo
   const waiting = new Map(); // id -> resolve
   const queued = new Map(); // callsign -> {job, resolve} (only the newest frame per pilot)
   let busy = false;
+  let stopped = false;
 
   function start() {
     worker = new Worker(workerFile);
@@ -36,7 +37,7 @@ function createPhoneTracker({ onPosition, logger = console, workerFile = path.jo
       waiting.clear();
       busy = false;
       worker = null;
-      setTimeout(start, 1000);
+      if (!stopped) setTimeout(start, 1000); // a crash: start a fresh one
     });
   }
 
@@ -51,7 +52,7 @@ function createPhoneTracker({ onPosition, logger = console, workerFile = path.jo
 
   /** Queues a frame; resolves with the worker's answer (or {ok:false} if a newer frame from this pilot replaced it). */
   function submit(callsign, kind, jpegBuf) {
-    if (!worker) start();
+    if (!worker && !stopped) start();
     return new Promise((resolve) => {
       const old = queued.get(callsign);
       if (old) old.resolve({ ok: false, reason: 'skipped (a newer frame arrived)' });
@@ -78,7 +79,7 @@ function createPhoneTracker({ onPosition, logger = console, workerFile = path.jo
     res.json(result);
   });
 
-  return { router, submit, stop: () => worker && worker.terminate() };
+  return { router, submit, stop() { stopped = true; if (worker) worker.terminate(); } };
 }
 
 module.exports = { createPhoneTracker };
