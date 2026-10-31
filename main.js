@@ -423,6 +423,8 @@ function startPttWatcher() {
 }
 ipcMain.handle('ptt-set-key', (event, name) => { if (pttWatcher) pttWatcher.setKey(name); return pttWatcher ? pttWatcher.supported : false; });
 ipcMain.handle('ptt-supported', () => (pttWatcher ? pttWatcher.supported : false));
+// "Set talk button": the next key or mouse button the pilot presses becomes push-to-talk
+ipcMain.handle('ptt-capture', () => (pttWatcher ? pttWatcher.capture(10000) : null));
 
 app.whenReady().then(() => {
   createControlWindow();

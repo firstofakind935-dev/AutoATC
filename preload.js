@@ -60,6 +60,8 @@ contextBridge.exposeInMainWorld('companion', {
   setPttKey: (name) => ipcRenderer.invoke('ptt-set-key', name),
   pttSupported: () => ipcRenderer.invoke('ptt-supported'),
   pttKeys: () => Object.keys(require('./lib/pttKey').PTT_KEYS),
+  pttKeyLabel: (key) => require('./lib/pttKey').keyLabel(key),
+  capturePttKey: () => ipcRenderer.invoke('ptt-capture'),
   getAirports: () => ipcRenderer.invoke('get-airports'),
   getDisplays: () => ipcRenderer.invoke('get-displays'),
   createOverlay: (displayId) => ipcRenderer.invoke('create-overlay', displayId),

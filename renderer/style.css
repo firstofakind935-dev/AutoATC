@@ -294,3 +294,4 @@ input[type="checkbox"] {
 }
 #pttBtn { user-select: none; touch-action: none; }
 #pttBtn.transmitting { background: #c0392b; border-color: #c0392b; }
+.ptt-set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
