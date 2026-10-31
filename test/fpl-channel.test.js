@@ -32,7 +32,7 @@ test('Bot Manager files a channel post for its author, replies with the squawk, 
   const { BotManagerBot } = require('../src/bot/BotManagerBot');
   const bot = new BotManagerBot({ name: 'Bot Manager', token: 'x', guildId: '1' }, []);
   const msg = (content, id = 'm1', channelId = '1537904841358311524') => {
-    const m = { id, content, channelId, author: { id: '300000000000000001', username: 'skyhawk', bot: false }, member: { displayName: 'Skyhawk' }, replies: [], reactions: [] };
+    const m = { id, content, channelId, createdTimestamp: Date.parse('2026-10-31T22:00:00Z'), author: { id: '300000000000000001', username: 'skyhawk', bot: false }, member: { displayName: 'Skyhawk' }, replies: [], reactions: [] };
     m.reply = async (r) => { m.replies.push(r.content); };
     m.react = async (e) => { m.reactions.push(e); };
     return m;
@@ -51,6 +51,16 @@ test('Bot Manager files a channel post for its author, replies with the squawk, 
     const chat = msg('anyone flying to tokyo tonight?', 'm3');
     await bot._onFlightPlanMessage(chat);
     assert.deepStrictEqual(chat.replies, []);
+
+    const early = msg('DAL777 B738 IRFD-ITKO', 'm5');
+    early.createdTimestamp = Date.parse('2026-10-30T20:00:00Z');
+    await bot._onFlightPlanMessage(early);
+    assert.deepStrictEqual(early.replies, [], 'before the event: ignored');
+    const late = msg('DAL778 B738 IRFD-ITKO', 'm6');
+    late.createdTimestamp = Date.parse('2026-11-02T20:00:00Z');
+    await bot._onFlightPlanMessage(late);
+    assert.match(late.replies[0], /ended/);
+    assert.ok(!store.list().some((p) => /DAL77/.test(p.callsign)));
 
     const elsewhere = msg('DAL999 B738 IRFD-ITKO', 'm4', '999');
     await bot._onFlightPlanMessage(elsewhere);

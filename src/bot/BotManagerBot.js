@@ -16,6 +16,10 @@ const MONITOR_API_KEY = process.env.MONITOR_API_KEY || null;
 // Job 3: the Discord channel where pilots post flight plans (FPL_CHANNEL_ID; FPL_CHANNEL_ID=off turns it off).
 // Reading message text needs the Message Content intent switched on for this bot in the Discord Developer Portal.
 const FPL_CHANNEL_ID = process.env.FPL_CHANNEL_ID === 'off' ? null : (process.env.FPL_CHANNEL_ID || '1537904841358311524');
+// Only plans posted during the event are filed (Discord only sends new messages, never the channel's history):
+// FPL_EVENT_START / FPL_EVENT_END as ISO times. Default: 31 October, until noon UTC the next day.
+const FPL_EVENT_START = Date.parse(process.env.FPL_EVENT_START || '2026-10-31T00:00:00Z');
+const FPL_EVENT_END = Date.parse(process.env.FPL_EVENT_END || '2026-11-01T12:00:00Z');
 
 /**
  * Not an ATC voice position - a fleet-wide utility bot with two jobs:
@@ -91,6 +95,9 @@ class BotManagerBot {
     const found = ['callsign', 'aircraft', 'dep', 'arr'].filter((k) => fpl[k]);
     if (found.length < 2) return; // chat, not a flight plan
     const reply = (text) => message.reply({ content: text, allowedMentions: { repliedUser: false } }).catch(() => {});
+    const postedAt = message.createdTimestamp || Date.now();
+    if (postedAt < FPL_EVENT_START) return; // before the event: not taken
+    if (postedAt > FPL_EVENT_END) { await reply('Flight plans are only taken during the event, and it has ended.'); return; }
     if (found.length < 4) {
       const missing = ['callsign', 'aircraft', 'dep', 'arr'].filter((k) => !fpl[k]).map((k) => ({ dep: 'departure', arr: 'arrival' }[k] || k));
       await reply(`I couldn't find the ${missing.join(' and ')}. Post it like this:\n\`\`\`\nCallsign: DAL123\nAircraft: B738\nDeparture: IRFD\nArrival: ITKO\n\`\`\``);
