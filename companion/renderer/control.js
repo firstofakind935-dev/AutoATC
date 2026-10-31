@@ -1033,15 +1033,50 @@ function setupRadio() {
   });
 
   const select = document.getElementById('pttKeySelect');
-  for (const name of window.companion.pttKeys()) select.add(new Option(name, name));
-  select.value = settings.pttKey || 'Right Ctrl';
-  select.addEventListener('change', async () => {
-    settings.pttKey = select.value;
+  const presets = window.companion.pttKeys();
+  const showKey = (key) => {
+    // a key set by pressing it gets its own entry in the list
+    for (const o of [...select.options]) if (o.dataset.custom) o.remove();
+    if (!presets.includes(key)) {
+      const o = new Option(window.companion.pttKeyLabel(key), key);
+      o.dataset.custom = '1';
+      select.add(o, 0);
+    }
+    select.value = key;
+  };
+  const setKey = async (key) => {
+    settings.pttKey = key;
     await window.companion.saveSettings(settings);
-    window.companion.setPttKey(select.value);
+    window.companion.setPttKey(key);
+    showKey(key);
+  };
+  for (const name of presets) select.add(new Option(name, name));
+  showKey(settings.pttKey || 'Right Ctrl');
+  select.addEventListener('change', () => setKey(select.value));
+
+  const capBtn = document.getElementById('pttCaptureBtn');
+  const capHint = document.getElementById('pttCaptureHint');
+  capBtn.addEventListener('click', async () => {
+    capBtn.disabled = true;
+    capBtn.textContent = 'Press it now...';
+    capHint.textContent = 'Press the key or mouse button you want (Esc to cancel). You have 10 seconds.';
+    const got = await window.companion.capturePttKey();
+    capBtn.disabled = false;
+    capBtn.textContent = 'Set talk button';
+    if (got) {
+      await setKey(got.key);
+      capHint.textContent = `Talk button set to ${got.label}. Hold it to transmit.`;
+      addLine(`Push-to-talk is now ${got.label}`);
+    } else {
+      capHint.textContent = 'Nothing set. Click, then press the key or mouse button you want to talk with.';
+    }
   });
   window.companion.pttSupported().then((ok) => {
-    if (!ok) addLine('!! Push-to-talk from inside the game works on Windows only - here, hold the Hold to talk button instead.');
+    if (!ok) {
+      addLine('!! Push-to-talk from inside the game works on Windows only - here, hold the Hold to talk button instead.');
+      capBtn.disabled = true;
+      capHint.textContent = 'Setting a talk button works on Windows.';
+    }
   });
   const volume = document.getElementById('radioVolume');
   volume.value = settings.radioVolume != null ? settings.radioVolume : 1;
