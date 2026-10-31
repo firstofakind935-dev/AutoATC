@@ -5,6 +5,7 @@ const { AtcBot } = require('./AtcBot');
 const { findFallback } = require('../botmanager/hierarchy');
 const { buildFrequencyMap, normalizeFrequency } = require('../botmanager/frequencyLookup');
 const { makeLogger } = require('../utils/logger');
+const { parseFlightPlanMessage } = require('../botmanager/flightPlanMessage');
 
 const STATUS_POLL_MS = 15_000;
 const TUNE_POLL_MS = 5_000;
@@ -12,6 +13,9 @@ const HEARTBEAT_INTERVAL_MS = 60_000; // same purpose as AtcBot's - keeps this b
 
 const MONITOR_URL = process.env.MONITOR_URL || null;
 const MONITOR_API_KEY = process.env.MONITOR_API_KEY || null;
+// Job 3: the Discord channel where pilots post flight plans (FPL_CHANNEL_ID; FPL_CHANNEL_ID=off turns it off).
+// Reading message text needs the Message Content intent switched on for this bot in the Discord Developer Portal.
+const FPL_CHANNEL_ID = process.env.FPL_CHANNEL_ID === 'off' ? null : (process.env.FPL_CHANNEL_ID || '1537904841358311524');
 
 /**
  * Not an ATC voice position - a fleet-wide utility bot with two jobs:
@@ -46,17 +50,74 @@ class BotManagerBot {
     this.tuneTimer = null;
     this.heartbeatTimer = null;
 
-    this.client = new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
-    });
+    this.fplFiled = new Map(); // Discord message id -> {callsign, pilotId}: deleting the message cancels the plan
+    this.client = this._makeClient(!!FPL_CHANNEL_ID);
+  }
 
-    this.client.on('ready', () => this._onReady().catch((err) => this.logger.error('Startup failed:', err)));
-    this.client.on('interactionCreate', (interaction) => this._onInteraction(interaction).catch((err) => this.logger.error('Interaction failed:', err)));
-    this.client.on('error', (err) => this.logger.error('Discord client error:', err));
+  _makeClient(readMessages) {
+    const intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates];
+    if (readMessages) intents.push(GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent);
+    const client = new Client({ intents });
+    client.on('ready', () => this._onReady().catch((err) => this.logger.error('Startup failed:', err)));
+    client.on('interactionCreate', (interaction) => this._onInteraction(interaction).catch((err) => this.logger.error('Interaction failed:', err)));
+    client.on('error', (err) => this.logger.error('Discord client error:', err));
+    if (readMessages) {
+      client.on('messageCreate', (m) => this._onFlightPlanMessage(m).catch((err) => this.logger.error('Flight plan message failed:', err.message)));
+      client.on('messageDelete', (m) => this._onFlightPlanDeleted(m).catch(() => {}));
+    }
+    return client;
   }
 
   async start() {
-    await this.client.login(this.config.token);
+    try {
+      await this.client.login(this.config.token);
+    } catch (err) {
+      // Message Content not switched on in the Developer Portal: Discord refuses the login. Don't let that take
+      // failover and frequency moves down with it - start without reading the flight-plan channel.
+      const disallowed = err.code === 'DisallowedIntents' || /disallowed intents|privileged intent/i.test(err.message || '');
+      if (!FPL_CHANNEL_ID || !disallowed) throw err;
+      this.logger.warn('Message Content intent is not enabled for this bot (Developer Portal -> Bot -> Privileged Gateway Intents) - starting without the flight-plan channel.');
+      this.client.destroy();
+      this.client = this._makeClient(false);
+      await this.client.login(this.config.token);
+    }
+  }
+
+  // ---------- Job 3: flight plans posted in the Discord channel ----------
+
+  async _onFlightPlanMessage(message) {
+    if (message.channelId !== FPL_CHANNEL_ID || message.author.bot || !MONITOR_URL) return;
+    const fpl = parseFlightPlanMessage(message.content);
+    const found = ['callsign', 'aircraft', 'dep', 'arr'].filter((k) => fpl[k]);
+    if (found.length < 2) return; // chat, not a flight plan
+    const reply = (text) => message.reply({ content: text, allowedMentions: { repliedUser: false } }).catch(() => {});
+    if (found.length < 4) {
+      const missing = ['callsign', 'aircraft', 'dep', 'arr'].filter((k) => !fpl[k]).map((k) => ({ dep: 'departure', arr: 'arrival' }[k] || k));
+      await reply(`I couldn't find the ${missing.join(' and ')}. Post it like this:\n\`\`\`\nCallsign: DAL123\nAircraft: B738\nDeparture: IRFD\nArrival: ITKO\n\`\`\``);
+      return;
+    }
+    const pilot = { id: message.author.id, name: message.member?.displayName || message.author.globalName || message.author.username };
+    const response = await this._monitorFetch('/api/flightplans/from-discord', { method: 'POST', body: JSON.stringify({ ...fpl, pilot }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      await message.react('❌').catch(() => {});
+      await reply(`Couldn't file that: ${body.error || `server answered ${response.status}`}`);
+      return;
+    }
+    const p = body.plan;
+    this.fplFiled.set(message.id, { callsign: p.callsign, pilotId: pilot.id });
+    if (this.fplFiled.size > 2000) this.fplFiled.delete(this.fplFiled.keys().next().value);
+    await message.react('✅').catch(() => {});
+    await reply(`**${p.callsign}** ${response.status === 201 ? 'filed' : 'updated'}: ${p.dep} → ${p.arr}, ${p.aircraft}. Route: radar vectors. Squawk **${p.squawk}**.\nCall ${p.dep} Delivery (or Ground/Tower) for your clearance. Delete your message to cancel the plan.`);
+    this.logger.info(`Flight plan from Discord: ${p.callsign} ${p.dep}-${p.arr} by ${pilot.name}`);
+  }
+
+  async _onFlightPlanDeleted(message) {
+    const filed = this.fplFiled.get(message.id);
+    if (!filed || !MONITOR_URL) return;
+    this.fplFiled.delete(message.id);
+    await this._monitorFetch('/api/flightplans/from-discord/cancel', { method: 'POST', body: JSON.stringify({ callsign: filed.callsign, pilot: { id: filed.pilotId } }) });
+    this.logger.info(`Flight plan ${filed.callsign} cancelled (Discord message deleted)`);
   }
 
   async _onReady() {

@@ -29,16 +29,34 @@ function clean(value, max) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
+/** An airport typed as a code ("ITKO") or a name ("Tokyo", "Greater Rockford", "St Barths") -> ICAO, or as typed. */
+function airportCode(value) {
+  const v = clean(value, 40).toUpperCase();
+  if (/^[A-Z]{4}$/.test(v)) return v;
+  const plain = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '').replace(/^(GREATER|SAINT|ST)/, '');
+  const want = plain(v);
+  if (!want) return v;
+  const names = [...AIRPORTS, ['IBTH', 'Barths'], ['IBTH', 'St Barts'], ['IUFO', 'UFO'], ['ISAU', 'Southampton']];
+  const hit = names.find(([, name]) => plain(name) === want)
+    || names.find(([, name]) => plain(name).startsWith(want) || want.startsWith(plain(name)));
+  if (hit) return hit[0];
+  // a code inside the text: a known airport ("Rockford IRFD"), or one in brackets ("Somewhere (IXYZ)")
+  const known = v.split(/[^A-Z]+/).find((w) => AIRPORTS.some(([icao]) => icao === w));
+  if (known) return known;
+  const bracketed = v.match(/\(([A-Z]{4})\)/);
+  return bracketed ? bracketed[1] : v;
+}
+
 /** Validates a filing; returns {plan} or {error}. */
 function validate(body) {
   const callsign = clean(body && body.callsign, 12).toUpperCase().replace(/[\s-]/g, '');
   const aircraft = clean(body && body.aircraft, 30).toUpperCase();
-  const dep = clean(body && body.dep, 20).toUpperCase();
-  const arr = clean(body && body.arr, 20).toUpperCase();
+  const dep = airportCode(body && body.dep);
+  const arr = airportCode(body && body.arr);
   if (!/^[A-Z0-9]{2,10}$/.test(callsign)) return { error: 'Callsign: letters and numbers only, like DAL123 or N42Y.' };
   if (!/^[A-Z0-9][A-Z0-9 \-/]{1,29}$/.test(aircraft)) return { error: 'Aircraft type: like A320, B738 or Cessna 172.' };
-  if (!/^[A-Z]{4}$/.test(dep)) return { error: 'Departure: a 4-letter airport code like IRFD.' };
-  if (!/^[A-Z]{4}$/.test(arr)) return { error: 'Arrival: a 4-letter airport code like ITKO.' };
+  if (!/^[A-Z]{4}$/.test(dep)) return { error: 'Departure: an airport code like IRFD (or a name like Rockford).' };
+  if (!/^[A-Z]{4}$/.test(arr)) return { error: 'Arrival: an airport code like ITKO (or a name like Tokyo).' };
   return { plan: { callsign, aircraft, dep, arr } };
 }
 
@@ -181,7 +199,7 @@ function createFlightPlans({ file = null, historyFile = null, settingsFile = nul
 }
 
 // ---- HTTP -------------------------------------------------------------------------------------------------------
-function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, adminKey = null } = {}) {
+function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, adminKey = null, botAuth = () => false } = {}) {
   // with Discord sign-in set up, filing needs it (that's what makes the per-pilot flight count work)
   const userOf = (req) => (login ? login.userOf(req) : null);
   const needsLogin = () => !!(login && login.configured);
@@ -216,6 +234,25 @@ function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, admi
     if (r.error) return res.status(r.status).json({ error: r.error });
     res.status(r.status).json({ plan: r.plan, token: r.token });
   });
+  // Bot Manager files flight plans posted in the Discord flight-plan channel, on behalf of the poster
+  // (header Authorization: Bearer <the fleet's monitor key>, checked by `botAuth`)
+  router.post('/from-discord', (req, res) => {
+    if (!botAuth(req)) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    const pilot = b.pilot && /^\d{5,25}$/.test(String(b.pilot.id)) ? { id: String(b.pilot.id), name: String(b.pilot.name || 'Pilot').slice(0, 40) } : null;
+    if (!pilot) return res.status(400).json({ error: 'pilot {id, name} is required' });
+    const r = store.file(b, '', pilot);
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    res.status(r.status).json({ plan: r.plan });
+  });
+  router.post('/from-discord/cancel', (req, res) => {
+    if (!botAuth(req)) return res.status(401).json({ error: 'unauthorized' });
+    const b = req.body || {};
+    const r = store.cancel(b.callsign, '', b.pilot ? { id: String(b.pilot.id) } : null);
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    res.status(204).end();
+  });
+
   // admins (the admin console, header x-admin-key = ADMIN_KEY or CONTROLLER_KEY)
   function isAdmin(req, res) {
     const key = adminKey && (typeof adminKey === 'function' ? adminKey() : adminKey);
@@ -248,4 +285,4 @@ function createFlightPlanRouter(store, { limitPerMinute = 20, login = null, admi
   return router;
 }
 
-module.exports = { createFlightPlans, createFlightPlanRouter, validate, AIRPORTS, ROUTE };
+module.exports = { createFlightPlans, createFlightPlanRouter, validate, airportCode, AIRPORTS, ROUTE };

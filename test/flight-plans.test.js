@@ -30,7 +30,8 @@ test('filing, updating with the token, refusing someone else\'s callsign, cancel
 test('bad input is refused with a reason; old plans expire', () => {
   assert.match(validate({ callsign: '<b>', aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' }).error, /Callsign/);
   assert.match(validate({ callsign: 'DAL1', aircraft: '', dep: 'IRFD', arr: 'ITKO' }).error, /Aircraft/);
-  assert.match(validate({ callsign: 'DAL1', aircraft: 'A320', dep: 'Rockford', arr: 'ITKO' }).error, /Departure/);
+  assert.match(validate({ callsign: 'DAL1', aircraft: 'A320', dep: 'Nowhere Intl', arr: 'ITKO' }).error, /Departure/);
+  assert.strictEqual(validate({ callsign: 'DAL1', aircraft: 'A320', dep: 'Rockford', arr: 'Tokyo' }).plan.dep, 'IRFD', 'names work too');
   let t = Date.parse('2026-10-31T18:00:00Z');
   const s = createFlightPlans({ now: () => t });
   s.file({ callsign: 'DAL1', aircraft: 'A320', dep: 'IRFD', arr: 'ITKO' }, '');
