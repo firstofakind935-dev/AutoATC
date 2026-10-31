@@ -1,0 +1,37 @@
+{
+  "icao": "ITRC",
+  "iata": "TRN",
+  "name": "Training Centre",
+  "location": "Carrigknock, Rockford",
+  "elevationFt": "3'",
+  "coordinates": "N41 34.8  W000 00.6",
+  "runways": [
+    {
+      "designator": "36",
+      "heading": "360°",
+      "length": {
+        "feet": "1286'",
+        "meters": "392m"
+      }
+    },
+    {
+      "designator": "18",
+      "heading": "180°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "groundLayout": "Runway 18/36, with a Backtrack Area near the Rwy 36 end. A single taxiway A connects the runway near the Rwy 18 end to the Apron (FBO, Fuel). Only one taxiway letter exists here (A) - never invent additional ones.",
+  "otherLabels": [
+    "APRON",
+    "Fuel",
+    "Elev 3'",
+    "FBO",
+    "Backtrack",
+    "Area",
+    "A",
+    "1",
+    "N"
+  ],
+  "sourceFile": "Rockford/Training Center/ITRC Ground Chart.svg"
+}

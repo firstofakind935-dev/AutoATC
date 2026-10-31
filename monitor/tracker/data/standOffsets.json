@@ -1,0 +1,4 @@
+{
+ "note": "Per airport: nm (x east, y south) added to a stand fix, to line the ground chart up with the real map where the chart is traced a little off. Empty since the exact game frame (data/gameFrame.json): the old ITKO nudge (-0.181, -0.134) was compensating the old stud fit and agrees with the new frame within 0.05 nm.",
+ "airports": {}
+}

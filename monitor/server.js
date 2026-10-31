@@ -7,6 +7,7 @@ const { createPublicApiRouter } = require('./publicApi');
 const { createFleetInvites, invitePage } = require('./fleetInvites');
 const { createRadioHub } = require('./radio');
 const { createFlightPlans, createFlightPlanRouter } = require('./flightPlans');
+const { createPhoneTracker } = require('./tracker/phoneTracker');
 
 const PORT = process.env.PORT || 3000;
 const INGEST_API_KEY = process.env.INGEST_API_KEY || null;
@@ -512,6 +513,17 @@ const flightPlans = createFlightPlans({
 });
 app.use('/api/flightplans', createFlightPlanRouter(flightPlans));
 app.use('/fpl', express.static(path.join(__dirname, 'fpl')));
+// Radar tracking for phone pilots: the Android app sends screenshots, the server reads the minimap
+// (monitor/tracker/ - the companion's own tracker, on a worker thread) and files the position like the companion does.
+const phoneTracker = createPhoneTracker({
+  onPosition: ({ callsign, position }) => {
+    const key = normalizeCallsign(callsign);
+    if (!key) return;
+    const prev = positions.get(key);
+    positions.set(key, { callsign, aircraftType: prev ? prev.aircraftType : null, speed: null, position, source: 'phone', receivedAt: Date.now() });
+  },
+});
+app.use('/api/phone-frame', phoneTracker.router);
 
 // /radar is the 24SPY-based radar (a modified fork of 24SPY by tiaguinho_2009,
 // non-commercial licence - see public/radar/LICENSE.md and README). The older

@@ -1,0 +1,31 @@
+{
+  "icao": "IBRD",
+  "iata": "BIR",
+  "name": "Bird Island Airfield",
+  "location": "Bird Island, Orenji",
+  "elevationFt": "3'",
+  "coordinates": "N41 55.7  W000 00.4",
+  "runways": [
+    {
+      "designator": "8",
+      "heading": "080°",
+      "length": {
+        "feet": "1137'",
+        "meters": "347m"
+      }
+    },
+    {
+      "designator": "26",
+      "heading": "260°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "groundLayout": "IBRD is a single-runway airfield (Runway 8/26) with no lettered taxiway system - a small apron area runs alongside the runway on its northwest side, connecting directly to the FBO ramp and a Hangar roughly mid-field. Aircraft taxi along that apron/runway edge to reach the FBO or hangar. No taxiway letters exist here - never invent one.",
+  "otherLabels": [
+    "N",
+    "FBO",
+    "Hangar"
+  ],
+  "sourceFile": "Orenji/Bird Island/IBRD Ground Chart.svg"
+}

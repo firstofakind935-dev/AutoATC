@@ -1,0 +1,4 @@
+{
+ "note": "Per airport: nm (x east, y south) added to fixes matched on the world-map picture. Empty: the picture is on the exact game frame (data/gameFrame.json). Built by scripts/build-world-anchors.js.",
+ "airports": {}
+}

@@ -1,0 +1,66 @@
+{
+  "icao": "IMLR",
+  "iata": "MEL",
+  "name": "Mellor Intl.",
+  "location": "Mellor, Rockford",
+  "elevationFt": "40'",
+  "coordinates": "N41 39.6  W000 05.9",
+  "runways": [
+    {
+      "designator": "25",
+      "heading": "246°",
+      "length": null
+    },
+    {
+      "designator": "7",
+      "heading": "066°",
+      "length": null
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "126.030"
+    },
+    {
+      "facility": "MELLOR Delivery",
+      "frequency": "121.930"
+    },
+    {
+      "facility": "MELLOR Tower",
+      "frequency": "133.850"
+    },
+    {
+      "facility": "MELLOR Radar",
+      "frequency": "125.650"
+    }
+  ],
+  "groundLayout": "Runway 07/25. Taxiway A runs parallel to the runway the full length, from connector A1 near the Rwy 25 end to connector A2 near the Rwy 07 end, serving the Apron (numbered stands, Terminal, Control Tower, Ground Crew Station, Fuel). Taxiway B (B1/B2) branches off mid-field to the Hangar, and taxiway C (C1/C2) branches off further along to the Helipad. Real taxiway letters: A, B, C.",
+  "otherLabels": [
+    "Hangar",
+    "Helipad",
+    "Terminal",
+    "Elev 40'",
+    "Fuel",
+    "Ground Crew",
+    "Station",
+    "Control",
+    "Tower",
+    "A1",
+    "B1",
+    "B2",
+    "C1",
+    "C2",
+    "A2",
+    "A",
+    "APRON",
+    "1",
+    "2",
+    "3",
+    "4",
+    "2997'",
+    "913m",
+    "N"
+  ],
+  "sourceFile": "Rockford/Mellor/IMLR Ground Chart.svg"
+}

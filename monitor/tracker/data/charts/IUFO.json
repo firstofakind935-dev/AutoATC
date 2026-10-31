@@ -1,0 +1,31 @@
+{
+  "icao": "IUFO",
+  "iata": "UFO",
+  "name": "UFO Base",
+  "location": "Vitet, St Barthélemy",
+  "elevationFt": "1'",
+  "coordinates": "N41 50.8  E000 05.1",
+  "runways": [
+    {
+      "designator": "8",
+      "heading": "076°",
+      "length": null
+    },
+    {
+      "designator": "26",
+      "heading": "226°",
+      "length": null
+    }
+  ],
+  "frequencies": [],
+  "groundLayout": "IUFO is uncontrolled and VFR-only - no Ground, Tower, Delivery, or other ATC position exists here, and none should ever be assumed. Pilots self-announce on UNICOM 122.8 rather than receiving clearances. The only way in or out is via Saint Barthélemy (IBTH), and it's a two-stage handoff, not a clearance: departing IUFO, an aircraft leaves VFR on UNICOM 122.8, contacts Barths Center for flight following, gets vectored, and is handed off to Barths VFR Tower (118.450) to be sequenced to land at IBTH. Inbound to IUFO works the reverse: work Barths VFR until near IUFO, then leave the frequency and self-announce on UNICOM 122.8 for the approach/landing. Barths Delivery (118.705) is a separate, optional step, only relevant if a pilot who arrived VFR from IUFO wants to continue onward via IFR after landing. If you are working a different position and a pilot mentions IUFO, route them through Center -> VFR Tower rather than a direct handoff. Runway 08/26 with no connecting taxiway drawn to Main Apron (Hangar) - aircraft cross open ground between the runway and the apron. No taxiway letters exist here - never invent one.",
+  "otherLabels": [
+    "MAIN",
+    "APRON",
+    "Hangar",
+    "551'",
+    "168m",
+    "N"
+  ],
+  "sourceFile": "Saint Barthelemy/UFO Base/IUFO Ground Chart.svg"
+}

@@ -1,0 +1,98 @@
+{
+  "icao": "ILAR",
+  "iata": "LCA",
+  "name": "Larnaca Intl.",
+  "location": "Larnaca, Cyprus",
+  "elevationFt": "1'",
+  "coordinates": "N41 39.5  E000 08.8",
+  "runways": [
+    {
+      "designator": "6",
+      "heading": "064°",
+      "length": null
+    },
+    {
+      "designator": "24",
+      "heading": "244°",
+      "length": {
+        "feet": "3355'",
+        "meters": "1023m"
+      }
+    }
+  ],
+  "frequencies": [
+    {
+      "facility": "D-ATIS",
+      "frequency": "126.550"
+    },
+    {
+      "facility": "Larnaca Delivery",
+      "frequency": "120.575"
+    },
+    {
+      "facility": "Ground",
+      "frequency": "119.400"
+    },
+    {
+      "facility": "Tower",
+      "frequency": "121.200"
+    },
+    {
+      "facility": "Larnaca Departure",
+      "frequency": "130.200"
+    }
+  ],
+  "groundLayout": "Runway 06/24, with a Run Up Area near the Rwy 24 end (hot spot HS1 there - converging taxiways/potential runway incursion risk, confirm ATC instruction and wingtip clearance). Taxiway D (segments D1-D7) runs parallel to the runway the full length. Taxiway C (segments C1-C4) branches off D mid-field to serve West Apron (numbered stands) and East Apron (Terminal, Ground Crew Station, Heli 1/2). Taxiway B serves the Cargo Terminal/Fuel area, and taxiway E (E1/E2) serves Aircraft Parking and Hangars near the Rwy 06 end. Real taxiway letters: A, B, C, D, E.",
+  "otherLabels": [
+    "HOT SPOT",
+    "ATC instructions.",
+    "clearance.",
+    "HS1",
+    "HS",
+    "EAST",
+    "APRON",
+    "WEST",
+    "Heli 1",
+    "Heli 2",
+    "Terminal",
+    "Cargo",
+    "Ground Crew",
+    "Station",
+    "ACFT",
+    "PARKING",
+    "Control",
+    "Tower",
+    "A",
+    "B",
+    "C",
+    "C4",
+    "D",
+    "D5",
+    "D6",
+    "D7",
+    "E",
+    "E2",
+    "E1",
+    "Hangars",
+    "Fuel",
+    "1",
+    "2",
+    "3",
+    "5",
+    "6",
+    "7",
+    "Stopway",
+    "Run Up",
+    "Area",
+    "C1",
+    "D1",
+    "D2",
+    "C2",
+    "D3",
+    "D4",
+    "C3",
+    "4",
+    "N"
+  ],
+  "sourceFile": "Cyprus/Larnaca/ILAR Ground Chart.svg"
+}

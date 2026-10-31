@@ -1,0 +1,259 @@
+{
+ "note": "Runway thresholds (x, y in ground-chart units, 100 studs each) and headings, read off the radar ground charts by scripts/build-runways.js.",
+ "airports": {
+  "IGAR": {
+   "4": {
+    "x": -168.456,
+    "y": 243.084,
+    "headingDeg": 42,
+    "lengthUnits": 15.5
+   },
+   "22": {
+    "x": -158.101,
+    "y": 231.488,
+    "headingDeg": 222,
+    "lengthUnits": 15.5
+   }
+  },
+  "IIAB": {
+   "9L": {
+    "x": 220.548,
+    "y": 402.591,
+    "headingDeg": 95,
+    "lengthUnits": 23.6
+   },
+   "9R": {
+    "x": 220.294,
+    "y": 405.489,
+    "headingDeg": 95,
+    "lengthUnits": 23.6
+   },
+   "27L": {
+    "x": 243.764,
+    "y": 407.583,
+    "headingDeg": 275,
+    "lengthUnits": 23.6
+   },
+   "27R": {
+    "x": 244.017,
+    "y": 404.69,
+    "headingDeg": 275,
+    "lengthUnits": 23.6
+   }
+  },
+  "IJAF": {
+   "7": {
+    "x": 455.552,
+    "y": 4.32,
+    "headingDeg": 71,
+    "lengthUnits": 12.5
+   },
+   "25": {
+    "x": 467.347,
+    "y": 0.092,
+    "headingDeg": 251,
+    "lengthUnits": 12.5
+   }
+  },
+  "IKFL": {
+   "7": {
+    "x": -367.342,
+    "y": -42.659,
+    "headingDeg": 67,
+    "lengthUnits": 15.5
+   },
+   "16": {
+    "x": -360.025,
+    "y": -52.262,
+    "headingDeg": 157,
+    "lengthUnits": 15.5
+   },
+   "25": {
+    "x": -353.13,
+    "y": -48.722,
+    "headingDeg": 247,
+    "lengthUnits": 15.5
+   },
+   "34": {
+    "x": -353.961,
+    "y": -38.048,
+    "headingDeg": 337,
+    "lengthUnits": 15.5
+   }
+  },
+  "ILAR": {
+   "6": {
+    "x": 203.641,
+    "y": 328.573,
+    "headingDeg": 64,
+    "lengthUnits": 19.9
+   },
+   "24": {
+    "x": 221.547,
+    "y": 319.811,
+    "headingDeg": 244,
+    "lengthUnits": 19.9
+   }
+  },
+  "IMLR": {
+   "7": {
+    "x": -202.34,
+    "y": 151.672,
+    "headingDeg": 66,
+    "lengthUnits": 17.2
+   },
+   "25": {
+    "x": -186.66,
+    "y": 144.656,
+    "headingDeg": 246,
+    "lengthUnits": 17.2
+   }
+  },
+  "IPAP": {
+   "17": {
+    "x": 316.242,
+    "y": 333.895,
+    "headingDeg": 174,
+    "lengthUnits": 18.5
+   },
+   "35": {
+    "x": 318.166,
+    "y": 352.336,
+    "headingDeg": 354,
+    "lengthUnits": 18.5
+   }
+  },
+  "IPPH": {
+   "11": {
+    "x": 171.452,
+    "y": -209.389,
+    "headingDeg": 111,
+    "lengthUnits": 24.3
+   },
+   "15": {
+    "x": 173.616,
+    "y": -216.641,
+    "headingDeg": 151,
+    "lengthUnits": 18.9
+   },
+   "29": {
+    "x": 194.137,
+    "y": -200.642,
+    "headingDeg": 291,
+    "lengthUnits": 24.3
+   },
+   "33": {
+    "x": 182.784,
+    "y": -200.14,
+    "headingDeg": 331,
+    "lengthUnits": 18.9
+   }
+  },
+  "IRFD": {
+   "25L": {
+    "x": -20.243,
+    "y": 200.766,
+    "headingDeg": 247,
+    "lengthUnits": 21.6
+   },
+   "25C": {
+    "x": -12.778,
+    "y": 193.564,
+    "headingDeg": 247,
+    "lengthUnits": 20.1
+   },
+   "25R": {
+    "x": -25.914,
+    "y": 195.882,
+    "headingDeg": 247,
+    "lengthUnits": 18.7
+   },
+   "7L": {
+    "x": -43.086,
+    "y": 203.223,
+    "headingDeg": 67,
+    "lengthUnits": 18.7
+   },
+   "7C": {
+    "x": -31.3,
+    "y": 201.402,
+    "headingDeg": 67,
+    "lengthUnits": 20.1
+   },
+   "7R": {
+    "x": -40.099,
+    "y": 209.252,
+    "headingDeg": 67,
+    "lengthUnits": 21.6
+   }
+  },
+  "ISAU": {
+   "8": {
+    "x": -467.863,
+    "y": 275.733,
+    "headingDeg": 81,
+    "lengthUnits": 13.6
+   },
+   "26": {
+    "x": -454.274,
+    "y": 274.724,
+    "headingDeg": 261,
+    "lengthUnits": 13.6
+   }
+  },
+  "ITEY": {
+   "13": {
+    "x": -346.529,
+    "y": -63.905,
+    "headingDeg": 133,
+    "lengthUnits": 27.8
+   },
+   "31": {
+    "x": -326.691,
+    "y": -44.399,
+    "headingDeg": 313,
+    "lengthUnits": 27.8
+   }
+  },
+  "ITKO": {
+   "2": {
+    "x": -70.004,
+    "y": -307.076,
+    "headingDeg": 20,
+    "lengthUnits": 20.5
+   },
+   "13": {
+    "x": -94.735,
+    "y": -337.378,
+    "headingDeg": 127,
+    "lengthUnits": 26.4
+   },
+   "20": {
+    "x": -62.971,
+    "y": -326.327,
+    "headingDeg": 200,
+    "lengthUnits": 20.5
+   },
+   "31": {
+    "x": -73.948,
+    "y": -321.036,
+    "headingDeg": 307,
+    "lengthUnits": 26.4
+   }
+  },
+  "IZOL": {
+   "10": {
+    "x": 434.902,
+    "y": 29.34,
+    "headingDeg": 106,
+    "lengthUnits": 26.3
+   },
+   "28": {
+    "x": 460.146,
+    "y": 36.609,
+    "headingDeg": 286,
+    "lengthUnits": 26.3
+   }
+  }
+ }
+}
