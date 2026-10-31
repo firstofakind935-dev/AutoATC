@@ -1,6 +1,7 @@
 # Builds the Windows installer for the AutoATC Companion app and publishes it as a download:
 #   https://github.com/firstofakind935-dev/AutoATC/releases/latest/download/AutoATC-Companion-Setup.exe
-# Runs on every push to this branch (companion-app), or by hand from the Actions tab.
+# Runs on every push to this branch (companion-app), or by hand from the Actions tab. Installed apps update
+# themselves from it (lib/updater.js reads latest.yml from the latest release).
 # Built on Windows so the Windows parts of the native libraries (push-to-talk / key input) are the ones packaged.
 name: Companion installer
 
@@ -49,7 +50,10 @@ jobs:
           name: AutoATC Companion 1.0.${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           make_latest: true
-          files: dist/AutoATC-Companion-Setup.exe
+          # latest.yml tells installed apps there's a new version (lib/updater.js)
+          files: |
+            dist/AutoATC-Companion-Setup.exe
+            dist/latest.yml
           body: |
             **Download:** AutoATC-Companion-Setup.exe below, run it, and follow the installer.
             Windows may warn that the app is from an unknown publisher (it isn't code-signed): click **More info** -> **Run anyway**.

@@ -426,8 +426,17 @@ ipcMain.handle('ptt-supported', () => (pttWatcher ? pttWatcher.supported : false
 // "Set talk button": the next key or mouse button the pilot presses becomes push-to-talk
 ipcMain.handle('ptt-capture', () => (pttWatcher ? pttWatcher.capture(10000) : null));
 
+// Automatic updates (lib/updater.js): the control window shows "Restart to update" once a new version is downloaded.
+let updater = null;
+ipcMain.handle('update-ready', () => (updater ? updater.readyVersion() : null));
+ipcMain.handle('update-install', () => { if (updater) updater.installNow(); });
+
 app.whenReady().then(() => {
   createControlWindow();
+  updater = require('./lib/updater').startAutoUpdates({
+    app,
+    onReady: (version) => { if (controlWindow) controlWindow.webContents.send('update-ready', version); },
+  });
   try { startPttWatcher(); } catch (err) { console.error('push-to-talk unavailable:', err.message); }
   // F8: take a position fix from the open big map, from inside the game.
   globalShortcut.register('F8', () => { if (controlWindow) controlWindow.webContents.send('map-fix-hotkey'); });

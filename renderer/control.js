@@ -1221,3 +1221,22 @@ function showLoadErrors() {
   populateStandAirports();
   await populateDisplays();
 })();
+
+// Automatic updates: a new version downloads in the background and installs when the app closes; this bar offers to
+// restart now instead.
+(function updateBar() {
+  const bar = document.getElementById('updateBar');
+  if (!bar || !window.companion.onUpdateReady) return;
+  const show = (version) => {
+    if (!version) return;
+    document.getElementById('updateText').textContent = `Version ${version} is ready. It installs when you close the app.`;
+    bar.hidden = false;
+  };
+  window.companion.onUpdateReady(show);
+  window.companion.updateReady().then(show);
+  document.getElementById('updateBtn').addEventListener('click', () => {
+    document.getElementById('updateBtn').disabled = true;
+    document.getElementById('updateText').textContent = 'Updating - the app reopens in a moment...';
+    window.companion.installUpdate();
+  });
+})();

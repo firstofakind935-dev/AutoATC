@@ -62,6 +62,10 @@ contextBridge.exposeInMainWorld('companion', {
   pttKeys: () => Object.keys(require('./lib/pttKey').PTT_KEYS),
   pttKeyLabel: (key) => require('./lib/pttKey').keyLabel(key),
   capturePttKey: () => ipcRenderer.invoke('ptt-capture'),
+  // automatic updates (lib/updater.js)
+  onUpdateReady: (callback) => ipcRenderer.on('update-ready', (event, version) => callback(version)),
+  updateReady: () => ipcRenderer.invoke('update-ready'),
+  installUpdate: () => ipcRenderer.invoke('update-install'),
   getAirports: () => ipcRenderer.invoke('get-airports'),
   getDisplays: () => ipcRenderer.invoke('get-displays'),
   createOverlay: (displayId) => ipcRenderer.invoke('create-overlay', displayId),
